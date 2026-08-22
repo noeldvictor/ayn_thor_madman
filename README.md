@@ -39,8 +39,9 @@ Easy to use.**
   set works on every system.
 - **Quality of life, everywhere.** Texture improvement with per-class routing,
   HD texture packs, mods and translations installed in-app, one cheat library
-  across every system, a per-game override for every option, and known-good
-  settings gathered from the community.
+  across every system, a per-game override for every option, per-game patches
+  for speed and for gameplay changes, and known-good settings gathered from
+  the community.
 
 That last group is the reason to build one app instead of running eight
 separate emulators.
@@ -61,6 +62,27 @@ and the scheduler. Backends are modified on purpose.
 RetroArch is also the anti-pattern for usability here: cheats are not first
 class, hotkeys are not common across cores, and it demands study before it
 gives you a game.
+
+## Per-game patches
+
+Per-game patches are a first-class feature. They do two jobs: make a specific
+game faster, and change a game. Gameplay tweaks, unlocks, restored content and
+translations all use the same engine as a speed patch.
+
+The engine is shared. A patch is data that names a game, a version, an intent
+and the bytes to change. A speed patch carries its measurement from the device.
+
+Ghidra is used when a game needs reverse engineering. The finding is recorded.
+The Ghidra project is not committed.
+
+## Development
+
+Custom skills live in `.claude/skills/` in this repo. A skill holds a
+procedure that would otherwise be retyped: a build recipe, a flash sequence, a
+measurement run, an extraction checklist.
+
+Research goes in `research_log/`. Work goes in `work_log/`. Console-specific
+experiments go in `console_lab/`. Write the log as you go.
 
 ## The duplication problem
 

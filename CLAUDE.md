@@ -868,10 +868,20 @@ Before you add a document:
 
 git-lfs is not set up. See [Open decisions](#open-decisions).
 
-## Per-game patches for speed
+## Per-game patches
 
-Some games need a patch to run well. A shared optimisation cannot fix a game
-that fights the hardware in its own specific way.
+**We want per-game patches. They are a first-class feature, not a fallback.**
+
+Use them for two jobs:
+
+- **Speed.** A shared optimisation cannot fix a game that fights the hardware
+  in its own specific way. Patch the game.
+- **Change.** Gameplay tweaks, quality-of-life fixes, unlocks, restored
+  content and translations. We already wrote infinite life and super shot
+  patches for Star Fox Zero in `cemuThorBuiltin`.
+
+Both use one engine. A patch that changes a game and a patch that speeds it up
+differ only in intent, and both need the same format, loader and UI.
 
 **The engine is shared. The patches are per-game data.**
 
@@ -888,10 +898,15 @@ patch format.** xenia has `GamePatchManager` and eden has `patch_manager`.
 Rules:
 
 - A patch states the game id, the version and what it changes.
-- A patch states **why**. A patch without a measured reason is a guess.
-- A patch carries its measurement: the scene, the before number and the after
-  number, on the device.
+- A patch states its **intent**: speed, fix, or change. The UI groups them by
+  intent, because a person choosing a cheat and a person chasing frames want
+  different lists.
+- A patch states **why**. A speed patch without a measured reason is a guess.
+- A speed patch carries its measurement: the scene, the before number and the
+  after number, on the device.
 - A patch is a per-game override like any other. The user can turn it off.
+- Installing a patch takes one action in the app. See
+  [Foundation](#foundation) point 4.
 
 ### Ghidra
 
