@@ -94,6 +94,44 @@ The app is not built on libretro. See
 To make this possible, the toolchain must be unified first. See
 [One toolchain](#0-one-toolchain--do-this-first).
 
+## Licences constrain the one-app plan
+
+**Read this before you design how a backend loads.** The licences are not all
+compatible. Checked 2026-08-22.
+
+| Fork | Licence | Grant |
+| --- | --- | --- |
+| ARMSX2 | GPL-3.0 | `COPYING.GPLv3` |
+| melonDS-android | GPL-3.0 | `LICENSE` |
+| eden-thor | GPL-3.0 | `LICENSE.txt` |
+| GameThor | GPL-3.0 | `LICENSE` |
+| azahar-thor | GPL-2.0 **or later** | "Licensed under GPLv2 or any later version" |
+| Vita3K-Thor | GPL-2.0 **or later** | "either version 2 of the License, or (at your option) any later version" |
+| rpcsx-ui-android | GPL-2.0, **no or-later found** | README says each file carries its own licence |
+| Cemu-thor | MPL-2.0 | `LICENSE.txt` |
+| xenia-thor | BSD | `LICENSE`, Ben Vanik |
+
+What this means:
+
+- **GPL-2.0-only and GPL-3.0 cannot be combined in one binary.** They are
+  incompatible licences.
+- azahar and Vita3K grant "or later", so they can be used as GPL-3.0. They are
+  safe to combine with ARMSX2, melonDS and eden.
+- **rpcsx is the risk.** No "or later" grant was found. rpcs3 upstream is
+  GPL-2.0. Its README states that each file carries its own licence, so the
+  answer may differ per file. If rpcsx is GPL-2.0-only, its code cannot go in
+  the same binary as ARMSX2, melonDS, eden or GameThor.
+- MPL-2.0 (Cemu) and BSD (xenia) combine with GPL. Both are compatible.
+
+**This is unresolved and it constrains the packaging decision.** Verify the
+rpcsx grant before you choose how backends load. See
+[Open decisions](#open-decisions), item 2.
+
+A separate process, or a separately distributed module, is a different legal
+question from one linked binary. That is one reason the loading decision is
+still open. This note is not legal advice. Get the answer confirmed before you
+distribute anything.
+
 ## The key idea
 
 **Share assets and paradigms across the emulators. Solve a problem once.
@@ -381,14 +419,39 @@ extension set.
 | API level | 33 |
 | ABI | `arm64-v8a` |
 | Hardware | qcom |
-| adb address | `192.168.1.3:5555` |
+| Connection | Wi-Fi adb, port 5555 |
+
+**Wi-Fi adb is the preferred connection.** The Thor stays on a wall charger
+during a test run. A long run does not drain the battery, and battery level
+does not confound a performance measurement.
 
 **A second device is attached to this box.** A Quest 2 answers adb as well. A
 bare `adb` command fails with "more than one device/emulator".
 
-**Always pass `-s` to adb.** Use `adb -s 192.168.1.3:5555 <command>`. Never
-run a bare `adb shell`, `adb install` or `adb push`. A command without `-s`
-either fails or reaches the wrong device.
+**Never run a bare `adb` command. Always pass `-s`.**
+
+**Do not hardcode the address.** It was `192.168.1.3:5555` on 2026-08-22. A
+Wi-Fi address changes when the DHCP lease changes. Resolve it at run time:
+
+```sh
+# Pick the Thor by model, not by address.
+THOR=$(adb devices | awk '/device$/{print $1}' | while read s; do
+  [ "$(adb -s "$s" shell getprop ro.product.model | tr -d '\r')" = "AYN Thor" ] \
+    && echo "$s"
+done)
+adb -s "$THOR" shell ...
+```
+
+Wi-Fi adb rules:
+
+- Reconnect with `adb connect <ip>:5555` after the Thor sleeps or the network
+  drops. Treat a dropped connection as normal, not as a fault.
+- Verify the target model before any `install`, `push` or `shell` that writes.
+  A wrong `-s` value flashes the Quest.
+- Do not measure performance over Wi-Fi adb while pulling a large capture. The
+  transfer competes with the run. Pull after the run ends.
+- Record the battery level and the charge state with every measurement. State
+  whether the Thor was on the charger.
 
 ### 1. Upscaling and filters
 

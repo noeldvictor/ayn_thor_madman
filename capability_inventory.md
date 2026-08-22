@@ -54,6 +54,38 @@ Quality values:
 | Cheat source: citra wiki | azahar-thor | shipped | `cheat_sources/citra-games-wiki`. |
 | AI cheat discovery | ai_cheat_helper_switch | unknown | Separate repo. Not surveyed. |
 
+## GPU driver management — the most duplicated capability
+
+Six forks vendor `libadrenotools` and each wrote its own driver picker. This is
+the same feature, six times, for one GPU. It is the clearest shared-layer
+candidate in the fleet.
+
+| Capability | Fork | Quality | Notes |
+| --- | --- | --- | --- |
+| Driver manager UI | xenia-thor | shipped | `GpuDriverManager.java`, `GpuDriverManagerActivity`, `GpuDriverPackage`. |
+| Driver helper | azahar-thor | shipped | `GpuDriverHelper.kt`, `GpuDriverMetadata.kt`. Vendors `libadrenotools`. |
+| Driver helper | eden-thor | shipped | `GpuDriverHelper.kt`, `GpuDriverMetadata.kt`. Has a local patch. |
+| Driver screen and advisor | rpcsx-ui-android | shipped | `GpuDriversScreen.kt`, `GpuDriverAdvisor.kt`. |
+| libadrenotools vendored | Vita3K-Thor | shipped | `external/libadrenotools`. No picker found. |
+| libadrenotools vendored | Cemu-thor | shipped | `dependencies/libadrenotools`. No picker found. |
+
+`GpuDriverAdvisor` in rpcsx is the only one that advises rather than lists.
+Read it first.
+
+## Per-game profiles
+
+| Capability | Fork | Quality | Notes |
+| --- | --- | --- | --- |
+| Per-game profiles | xenia-thor | shipped | `GameProfiles.java`. |
+| Per-game optimisations UI | xenia-thor | shipped | `GameOptimizationsActivity.java`. |
+| Game patch manager | xenia-thor | shipped | `GamePatchManager.java`, plus its activity. |
+| Content installer | xenia-thor | shipped | `ContentInstaller.java`, `ContentManagerActivity`. |
+| Controller mapping UI | xenia-thor | shipped | `ControllerMappingActivity.java`. |
+| Crash reporter | xenia-thor | shipped | `CrashReporter.java`. |
+
+xenia-thor has the most complete Android shell in the fleet. Survey it before
+you design the app UI.
+
 ## Test and QA infrastructure
 
 This is the largest synergy gap found so far. Items exist in four forks. No

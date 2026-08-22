@@ -2,6 +2,19 @@
 
 The master repo for a unified emulator on the **AYN Thor**.
 
+> **Personal experiment. Work in progress. Not a product.**
+>
+> This code is written by AI agents, under my direction. It is a private
+> experiment on my own handheld. It is not supported.
+>
+> - No support. Do not open an issue.
+> - No pull requests. Do not send one.
+> - No release schedule. No promise that anything here works.
+> - Do not contact me about this repo.
+>
+> Read it if it is useful to you. Copy from it if it helps. Do not expect a
+> reply.
+
 The Thor is a Snapdragon 8 Gen 2 handheld with an Adreno 740 GPU, running
 Android 13. Every part of this project targets that one device.
 
