@@ -52,6 +52,9 @@ map disagree.
 | `hardware_ref/console/` | Manuals for each emulated console. |
 | `console_lab/` | Experiments and speedups for one console only. |
 
+Compress any manual before you commit it. Prefer a link plus extracted notes
+over the file itself.
+
 Name a log file `YYYYMMDD_HHMM_<slug>.md`.
 
 ## The fleet
@@ -62,7 +65,7 @@ them. It does not contain them.
 Tier 1 targets: xenia-thor, rpcsx-ui-android-thor, Cemu-thor, azahar-thor,
 watermelon-DS-THOR, Vita3K-Thor and ARMSX2.
 
-Tier 2: GameThor, eden-thor and melonds_HD_2.
+Tier 2: GameThor and eden-thor.
 
 The full map, with paths and upstream sources, is in
 [`CLAUDE.md`](CLAUDE.md#the-fleet).

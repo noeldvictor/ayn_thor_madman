@@ -15,127 +15,176 @@ Quality values:
 | `verified` | Runs on the device. Not measured in a real scene. |
 | `built` | Compiles and passes a self-test. Not run on the device. |
 | `design` | A document exists. No code. |
-| `none` | Not present. |
+
+Surveyed 2026-08-22. **The first version of this file was wrong.** It covered
+two forks and implied the rest had nothing. Read every "not surveyed" line
+below as a gap in the survey, never as an absence in the fork.
 
 ## Texture filtering and upscaling
 
+**Four forks implement this independently.** None share code.
+
 | Capability | Fork | Quality | Notes |
 | --- | --- | --- | --- |
-| Per-class texture routing | ARMSX2 | verified | `TextureClass { World, Ui }`. 2026-08-21. |
-| Per-producer filtering | melonDS-android | shipped | `HdFilterTarget`: 3D, OBJ sprite, BG layer. |
-| Texture-time upscaler | ARMSX2 | verified | `GSTextureUpscaler`. 13 kernels, 26/26 self-tests. |
-| Neural upscaler | ARMSX2 | verified | Anime4K, FSRCNN, SESR, ESPCN. `.a2nn` format. No weights shipped. |
+| Texture-time upscaler, 13 kernels | ARMSX2 | verified | `GSTextureUpscaler`. 26/26 self-tests. |
+| Neural upscaler | ARMSX2 | verified | Anime4K, FSRCNN, SESR, ESPCN. `.a2nn`. No weights shipped. |
 | Algorithm enum, 24 entries | ARMSX2 | verified | `GSTextureUpscaleAlgorithm`. The fleet superset. |
+| Present-time FSR1 | ARMSX2 | built | `GSUpscaler::FSR1`. |
+| Per-producer filtering | melonDS-android | shipped | `HdFilterTarget`: 3D, OBJ sprite, BG layer. |
+| Plane filter modes 1-12 | melonDS-android | shipped | Vulkan compute shaders. |
 | ScaleFX, 5 passes | melonDS-android | shipped | `VulkanScaleFXPass0..4`. |
+| **Anime4K, present-time, both backends** | **azahar-thor** | **shipped** | `opengl_present_anime4k.frag` and `vulkan_present_anime4k.frag`. |
+| **Texture filtering shader set** | **azahar-thor** | **shipped** | `xbrz_freescale`, `mmpx`, `scale_force`, `bicubic`, `refine`, `x_gradient`, `y_gradient`. |
+| FSR1 upscaler | rpcsx-ui-android | shipped | `Emu/RSX/Program/Upscalers/FSR1/`, plus a GL path. |
+| Bilinear and nearest passes | rpcsx-ui-android | shipped | `Emu/RSX/GL/upscalers/`. |
 | librashader, Vulkan | melonDS-android | shipped | `VulkanRetroArchFilterChain`. Two local patches. |
 | librashader, OpenGL ES | melonDS-android | shipped | `OpenGlRetroArchFilterChain`. |
-| librashader | ARMSX2 | built | Vendored. Integration not read yet. |
-| HD texture pack, content hash | melonDS-android | shipped | Desktop-compatible format. Fleet candidate. |
-| Present-time FSR1 | ARMSX2 | built | `GSUpscaler::FSR1`. Vulkan compute. |
+| librashader vendored | ARMSX2 | built | Integration not read. |
 | Shader diagnostics | melonDS-android | shipped | `ShaderDiagnostics`. |
 
-## Tooling and automation
+azahar `xbrz_freescale` is a free-scale variant. ARMSX2 does not have one.
+
+Not surveyed for texture filtering: Cemu-thor, xenia-thor, Vita3K-Thor,
+eden-thor.
+
+## HD texture packs and custom textures
 
 | Capability | Fork | Quality | Notes |
 | --- | --- | --- | --- |
-| On-device MCP server | ARMSX2 | design | `docs/mcp-server.md`. Four capability groups. |
-| Neural model converter | ARMSX2 | verified | `tools/make_a2nn.py`. |
+| **Custom textures with materials** | **azahar-thor** | **shipped** | `custom_textures/`: `custom_tex_manager`, `material`, `custom_format`. Materials carry more than colour. |
+| Content-hash pack format | melonDS-android | shipped | Desktop-compatible. Dump and replace. |
+| **Graphic packs with ASM patching** | **Cemu-thor** | **shipped** | `GraphicPack2`, `GraphicPack2Patches`, parser and applier. |
+| Custom Thor graphic packs | Cemu-thor | shipped | `bin/graphicPacks/cemuThorBuiltin/`. Star Fox Zero packs written here. |
+| Texture dump | xenia-thor | shipped | `src/xenia/gpu/texture_dump.cc`. |
 | Texture pack getter | ARMSX2 | design | `docs/texture-pack-getter.md`. |
-| Per-fork skills | melonds_HD_2 | shipped | `.claude/skills/`. |
-| ARM64 review, per cluster | ARMSX2 | design | Not benchmarked on the device. |
-| ARM reference manuals | ARMSX2 | shipped | `docs/reference/arm/`. Move to `hardware_ref/thor/cpu/`. |
 
-## Cheats, mods and content
+Cemu `GraphicPack2` is the most capable format in the fleet. It combines
+texture replacement, shader replacement and runtime ASM patching in one thing.
+
+## Cheats
+
+**Five forks support cheats. Each uses a different format.**
 
 | Capability | Fork | Quality | Notes |
 | --- | --- | --- | --- |
+| Cheat engine, Atmosphere VM | eden-thor | shipped | `cheat_engine`, `dmnt_cheat_vm`, `dmnt_cheat_types`. |
+| VitaCheat runtime and database | Vita3K-Thor | shipped | `cheats/`, `tools/convert_vitacheat.py`. Database synced to the Thor. |
+| **Cheat badges in the library** | **Vita3K-Thor** | **shipped** | `reports/20260510_152227_virtual-cartridges-cheat-badges-hotkeys.md`. The badge idea is already built. |
+| Cheat coverage inventory | Vita3K-Thor | shipped | `reports/20260510_192847_cheat-coverage-inventory.md`. |
+| Cheat overlay UI | rpcsx-ui-android | shipped | `Emu/RSX/Overlays/HomeMenu/overlay_home_menu_cheats`. |
+| Bundled cheat database | rpcsx-ui-android | shipped | `app/src/main/assets/cheats/ncl/`. Thousands of `.ncl` files. |
 | Cheat source: Sharkive | azahar-thor | shipped | `cheat_sources/Sharkive`. |
 | Cheat source: CTRPF-AR | azahar-thor | shipped | `cheat_sources/CTRPF-AR-CHEAT-CODES`. |
 | Cheat source: citra wiki | azahar-thor | shipped | `cheat_sources/citra-games-wiki`. |
-| AI cheat discovery | ai_cheat_helper_switch | unknown | Separate repo. Not surveyed. |
+| Cheats through graphic packs | Cemu-thor | shipped | `GamePatch`, plus the Star Fox Zero patches. |
+| Cheat documentation | eden-thor | shipped | `docs/user/UsingCheats.md`. |
 
-## GPU driver management — the most duplicated capability
+`ai_cheat_helper_switch` is a separate repo. **Not surveyed. No capability is
+claimed for it.**
 
-Six forks vendor `libadrenotools` and each wrote its own driver picker. This is
-the same feature, six times, for one GPU. It is the clearest shared-layer
-candidate in the fleet.
+## Mods and patches
 
 | Capability | Fork | Quality | Notes |
 | --- | --- | --- | --- |
-| Driver manager UI | xenia-thor | shipped | `GpuDriverManager.java`, `GpuDriverManagerActivity`, `GpuDriverPackage`. |
-| Driver helper | azahar-thor | shipped | `GpuDriverHelper.kt`, `GpuDriverMetadata.kt`. Vendors `libadrenotools`. |
-| Driver helper | eden-thor | shipped | `GpuDriverHelper.kt`, `GpuDriverMetadata.kt`. Has a local patch. |
+| Mod manager | eden-thor | shipped | `src/frontend_common/mod_manager`. |
+| Patch manager | eden-thor | shipped | `src/core/file_sys/patch_manager`. |
+| Game patch manager and UI | xenia-thor | shipped | `GamePatchManager.java`, plus its activity. |
+| Runtime ASM patching | Cemu-thor | shipped | `GraphicPack2PatchesApply`, with its own parser. |
+
+## GPU driver management — the most duplicated capability
+
+Six forks vendor `libadrenotools` and each wrote its own driver picker. Same
+feature, six times, for one GPU. There is no per-emulator variation to
+preserve. This is the lowest-risk extraction in the fleet.
+
+| Capability | Fork | Quality | Notes |
+| --- | --- | --- | --- |
+| Driver manager UI | xenia-thor | shipped | `GpuDriverManager`, `GpuDriverManagerActivity`, `GpuDriverPackage`. |
+| Driver helper | azahar-thor | shipped | `GpuDriverHelper.kt`, `GpuDriverMetadata.kt`. |
+| Driver helper | eden-thor | shipped | `GpuDriverHelper.kt`, `GpuDriverMetadata.kt`. Local patch. |
 | Driver screen and advisor | rpcsx-ui-android | shipped | `GpuDriversScreen.kt`, `GpuDriverAdvisor.kt`. |
-| libadrenotools vendored | Vita3K-Thor | shipped | `external/libadrenotools`. No picker found. |
-| libadrenotools vendored | Cemu-thor | shipped | `dependencies/libadrenotools`. No picker found. |
+| libadrenotools vendored | Vita3K-Thor | shipped | No picker found. |
+| libadrenotools vendored | Cemu-thor | shipped | No picker found. |
 
-`GpuDriverAdvisor` in rpcsx is the only one that advises rather than lists.
-Read it first.
+`GpuDriverAdvisor` is the only one that advises rather than lists. Read it
+first.
 
-## Per-game profiles
+## Per-game profiles and the app shell
 
 | Capability | Fork | Quality | Notes |
 | --- | --- | --- | --- |
 | Per-game profiles | xenia-thor | shipped | `GameProfiles.java`. |
 | Per-game optimisations UI | xenia-thor | shipped | `GameOptimizationsActivity.java`. |
-| Game patch manager | xenia-thor | shipped | `GamePatchManager.java`, plus its activity. |
-| Content installer | xenia-thor | shipped | `ContentInstaller.java`, `ContentManagerActivity`. |
+| Content installer and manager | xenia-thor | shipped | `ContentInstaller`, `ContentManagerActivity`. |
 | Controller mapping UI | xenia-thor | shipped | `ControllerMappingActivity.java`. |
 | Crash reporter | xenia-thor | shipped | `CrashReporter.java`. |
+| Game profile system | Cemu-thor | shipped | `Cafe/GameProfile/`. |
 
 xenia-thor has the most complete Android shell in the fleet. Survey it before
 you design the app UI.
 
-## Test and QA infrastructure
-
-This is the largest synergy gap found so far. Items exist in four forks. No
-fork has more than two. Nothing is shared.
+## Shader caches
 
 | Capability | Fork | Quality | Notes |
 | --- | --- | --- | --- |
-| Headless GPU dump replay | ARMSX2 | shipped | `pcsx2-gsrunner`. Replays a GS dump with no game. |
+| Shader cache | Cemu-thor | shipped | `LatteShaderCache`. |
+
+Not surveyed elsewhere. Most forks probably have one. Shader compile stutter is
+a Thor-wide problem and this table is nearly empty. Close that gap.
+
+## Test and QA infrastructure
+
+Items exist in five forks. No fork holds more than three. Nothing is shared.
+
+| Capability | Fork | Quality | Notes |
+| --- | --- | --- | --- |
+| Headless GPU dump replay | ARMSX2 | shipped | `pcsx2-gsrunner`. |
 | RenderDoc capture hook | ARMSX2 | shipped | `pcsx2-gsrunner/RenderDocCapture.cpp`. |
 | Golden image comparer | ARMSX2 | shipped | `pcsx2-gsrunner/comparer.js`, `comparer.css`. |
 | Headless EE runner | ARMSX2 | shipped | `pcsx2-eerunner`. |
 | GPU trace dump and viewer | xenia-thor | shipped | `d3d12_trace_dump_main.cc`, `d3d12_trace_viewer_main.cc`. |
 | GPU trace viewer on Android | xenia-thor | shipped | `GpuTraceViewerActivity.java`. |
 | RenderDoc replay agent skill | xenia-thor | shipped | `.agents/skills/xenia-renderdoc-replay/`. |
-| Record and replay test plan | xenia-thor | design | `docs/research/20260530-130500-automated-test-record-replay-plan.md`. |
-| Deterministic input, no movies | xenia-thor | design | `docs/research/20260529-210700-deterministic-input-avoid-movies.md`. |
+| Record and replay test plan | xenia-thor | design | `docs/research/20260530-130500-...md`. |
+| Deterministic input, no movies | xenia-thor | design | `docs/research/20260529-210700-...md`. |
 | On-device regression suite | Vita3K-Thor | shipped | `tools/android/run-thor-regression-suite.ps1`. |
 | Savestate regression fixture | Vita3K-Thor | shipped | `tools/android/run-thor-quickstate-regression.ps1`. |
 | Render regression matrix | Vita3K-Thor | shipped | `tools/android/thor-render-regression-matrix.json`. |
 | Regression ledger agent skill | Vita3K-Thor | shipped | `.agents/skills/vita3k-regression-ledger/`. |
-| Input movie record and replay | azahar-thor | shipped | `src/core/movie.cpp`. Record and play dialogs. |
-| RSX capture replay | rpcsx-ui-android-thor | shipped | `rsx_replay.cpp`, from rpcs3. |
 | Replay hooks in GXM | Vita3K-Thor | shipped | `SceGxmInternalForReplay.cpp`. |
+| Input movie record and replay | azahar-thor | shipped | `src/core/movie.cpp`, with dialogs. |
+| RSX capture replay | rpcsx-ui-android | shipped | `rsx_replay.cpp`. |
 
-No test or replay capability was found in Cemu-thor, eden-thor,
-melonDS-android or GameThor.
+Nothing found in Cemu-thor, eden-thor, melonDS-android or GameThor.
 
-## Not yet surveyed
+## Tooling
 
-No capability is recorded yet for these forks:
+| Capability | Fork | Quality | Notes |
+| --- | --- | --- | --- |
+| On-device MCP server | ARMSX2 | design | `docs/mcp-server.md`. Four capability groups. |
+| Neural model converter | ARMSX2 | verified | `tools/make_a2nn.py`. |
+| VitaCheat converter | Vita3K-Thor | shipped | `tools/convert_vitacheat.py`. |
+| Per-fork agent skills | Vita3K-Thor, xenia-thor | shipped | Both under `.agents/skills/`. |
+| ARM64 review, per cluster | ARMSX2 | design | Not benchmarked on the device. |
+| ARM reference manuals | ARMSX2 | shipped | `docs/reference/arm/`. Move to `hardware_ref/thor/cpu/`. |
 
-- Cemu-thor
-- eden-thor
-- GameThor
+## Survey gaps
 
-Partly surveyed. Test infrastructure only:
+Partly surveyed forks:
 
-- xenia-thor
-- Vita3K-Thor
-- rpcsx-ui-android-thor
-- azahar-thor, plus the cheat sources
+- Cemu-thor: texture filtering, tests, per-game overrides.
+- xenia-thor: texture filtering, cheats.
+- Vita3K-Thor: texture filtering, packs.
+- eden-thor: texture filtering, packs, tests.
+- GameThor: everything. Nothing recorded.
 
-These areas are not surveyed in any fork:
+Not surveyed in any fork:
 
-- Per-game profile systems
-- Control overlays
+- Control overlays and touch input
 - Save and state conventions
-- Shader caches
 - Thread and cluster affinity
-- Vulkan driver selection
+- Audio backends and latency
+- Frame pacing and vsync handling
 
 ## Source
 

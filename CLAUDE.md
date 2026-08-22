@@ -129,8 +129,41 @@ rpcsx grant before you choose how backends load. See
 
 A separate process, or a separately distributed module, is a different legal
 question from one linked binary. That is one reason the loading decision is
-still open. This note is not legal advice. Get the answer confirmed before you
-distribute anything.
+still open.
+
+### Checked and clear
+
+- **Cemu, MPL-2.0.** MPL-2.0 combines with GPL through its secondary licence
+  clause, unless a file carries the Exhibit B "Incompatible With Secondary
+  Licenses" notice. The Cemu source files sampled carry no licence header at
+  all, and no Exhibit B notice was found outside the licence text itself.
+  Cemu is therefore compatible. Re-check if you pull in a new dependency.
+- **xenia, BSD.** Permissive. It combines with GPL.
+- **librashader.** Dual licensed. The vendored tree carries both `LICENSE.md`
+  (MPL-2.0) and `LICENSE-GPL.md`. Either path works for this project.
+
+### Still unverified
+
+- **rpcsx.** A per-file header scan was started and timed out. The repo has
+  thousands of files under `app/src/main/cpp/rpcsx/`. Run the scan as a
+  background job, not inline. This is Phase 0.1 in
+  [Order of work](#order-of-work).
+
+### Other licence questions, not yet answered
+
+- **Cheat databases.** Sharkive, CTRPF-AR-CHEAT-CODES, citra-games-wiki and
+  the bundled `.ncl` files in rpcsx each have their own terms. Redistributing
+  a cheat database is not automatically permitted. Check before shipping one.
+- **Neural model weights.** ARMSX2 already declines to ship trained weights and
+  states the reason is licensing. Any weights added later need the same check.
+- **Shader presets.** Slang presets taken from the RetroArch ecosystem carry
+  their own licences, often GPL. Anime4K itself is MIT.
+- **GPL and app store distribution.** A GPL-3.0 app and a store's DRM terms can
+  conflict. This matters only if you distribute through a store. It does not
+  affect a personal build.
+- **Firmware and BIOS.** Not code in these repos, but never commit one.
+
+This note is not legal advice. Confirm before you distribute anything.
 
 ## The key idea
 
@@ -217,8 +250,23 @@ ARMSX2 holds ARM manuals at `armsx2-thor/ARMSX2/docs/reference/arm/`. Move
 them to `hardware_ref/thor/cpu/` when you next work in that fork. Until then,
 read them where they are.
 
-**Large binary files bloat the repo.** A manual is often a large PDF. Decide on
-git-lfs before you commit a large set. This is not decided yet.
+**Never commit a large manual uncompressed.** A PDF manual can be hundreds of
+megabytes. Git keeps every version forever, so a large binary is permanent
+weight in every future clone.
+
+Before you add a document:
+
+1. **Compress it.** Store a PDF as `.pdf.zst` or `.pdf.xz`. Record the
+   decompression command next to it.
+2. **Prefer a link and a summary** over the file itself. A public ARM manual
+   does not need a copy here. Record the URL, the document number, the
+   revision and the date. Add the extracted facts as text.
+3. **Extract the part you need.** A 900-page manual usually answers one
+   question. Put the answer in Markdown. Markdown compresses, diffs and
+   searches. A PDF does none of those.
+4. **Never commit a file over 50 MB** without deciding on git-lfs first.
+
+git-lfs is not set up. See [Open decisions](#open-decisions).
 
 ## Console lab
 
@@ -279,7 +327,18 @@ shared layer. See [ARMSX2 is the seed](#armsx2-is-the-seed).
 | --- | --- | --- |
 | GameThor | `gamethor` | GameNative |
 | eden-thor | `eden-thor` | eden-emu |
-| melonds_HD_2 | `melonds_HD/melonds_HD_2` | no upstream set |
+
+**eden-thor holds no custom work.** It is one commit ahead of upstream, and
+that commit only adds fork notes. Reset it from upstream when you next touch
+it. Nothing is lost.
+
+eden upstream is **not on GitHub**. It is `https://git.eden-emu.dev/eden-emu/eden.git`.
+The `upstream` push URL is set to `DISABLED` on purpose. Fetch before you judge
+the drift; the local `upstream/master` ref may be stale.
+
+`melonds_HD_2` is dropped from the fleet. `melonDS-android` replaced it. The
+last commit to `melonds_HD_2` was 2026-07-12; `melonDS-android` was updated
+2026-08-21. Do not invest in `melonds_HD_2`.
 
 ### Obsolete
 
@@ -792,6 +851,93 @@ Device measurements run in a queue.
   `nethersx2-thor/`, `xenia-thor-workspace/`, `ps3-thor/`, `melonds_HD/` and
   `psvita/`. Some workspace directories have their own `.git`. The fork is
   inside.
+
+## Order of work
+
+Do these in order. Each phase unblocks the next. Do not start a renderer
+feature before phase 3.
+
+### Phase 0 — unblock and baseline
+
+**0.1 Verify the rpcsx licence.** Scan the file headers under
+`ps3-thor/rpcsx-ui-android/app/src/main/cpp/rpcsx/` for an "or later" grant.
+This costs minutes and it decides the packaging. See
+[Licences](#licences-constrain-the-one-app-plan).
+
+**0.2 Decide where shared code lives.** A directory in this repo, consumed by
+each fork's build. Answer this before any extraction. It is a smaller question
+than the packaging of the shipped app, and it does not wait on 0.1.
+
+**0.3 Build every Tier 1 fork as it stands today. Record the result.** You
+cannot migrate a toolchain you cannot build. One work log for each fork. Record
+the command, the time taken and the failure.
+
+This baseline also answers [Open decisions](#open-decisions) item 3, the build
+location, with measured build times instead of a guess.
+
+### Phase 1 — migrate the toolchain
+
+Move each fork to [the standard row](#the-standard-row). One fork at a time.
+Build after each change. Verify C++20 per fork.
+
+Start with **melonDS-android**. It is the only fork with a build recipe already
+verified on this box, dated 2026-07-12 in `melonds_HD/CLAUDE.md`. A known-good
+starting point separates a toolchain failure from a recipe failure.
+
+Then continue in rising order of build cost. Leave ARMSX2, Cemu-thor and
+xenia-thor until last. They are the most expensive to build.
+
+**Nothing can be shared until this phase ends.** Seven C++ runtimes cannot
+share native code.
+
+### Phase 2 — extract the GPU driver manager
+
+This is the first extraction. It is chosen because it carries the least risk.
+
+Six forks vendor `libadrenotools` and each wrote its own driver picker. There
+is one GPU. There is no real per-emulator variation to preserve, unlike the
+texture class list.
+
+Read `rpcsx-ui-android` `GpuDriverAdvisor.kt` first. It is the only
+implementation that advises rather than lists.
+
+This phase proves the five extraction steps end to end. See
+[How to build the shared layer](#how-to-build-the-shared-layer). If the process
+fails here, it fails on an easy case, and that is cheap to learn.
+
+### Phase 3 — extract the test harness and build the MCP device surface
+
+These two ship together. The harness needs capture. The MCP surface provides
+it.
+
+Take these, in this order:
+
+1. The Vita3K-Thor on-device regression suite and its savestate fixture runner.
+   It already runs on the Thor.
+2. The ARMSX2 golden image comparer, `comparer.js`.
+3. The ARMSX2 headless replay pattern, `pcsx2-gsrunner`.
+4. The two existing agent skills, from xenia-thor and Vita3K-Thor.
+
+Build the MCP on-device surface against
+`armsx2-thor/ARMSX2/docs/mcp-server.md`.
+
+**After this phase, an agent can tell a good port from a regression.** Before
+it, the fan-out in [Agentic acceleration](#agentic-acceleration) does damage.
+
+### Phase 4 — per-class routing and upscaling
+
+The flagship feature. It is safe to attempt only after phase 3.
+
+Base the shared algorithm enum on ARMSX2 `GSTextureUpscaleAlgorithm`. Add
+`Super2xSaI` and `Quilez` from melonDS-android. Keep the class list per-fork.
+
+### Later
+
+- The game library, cover art and per-game overrides. Survey xenia-thor
+  `GameProfiles.java` first. It is the most complete Android shell in the
+  fleet.
+- Cheat database unification.
+- Mod and translation loading.
 
 ## Open decisions
 
