@@ -808,6 +808,37 @@ The fleet targets one device. The specification below comes from the fork docs.
 | Efficiency cores | 3x Cortex-A510 |
 | GPU | Adreno 740 |
 | OS | Android 13 |
+| Displays | **Two, both internal** |
+
+### Two displays
+
+Read from the device with `dumpsys display` on 2026-08-22. **Both are
+`type=INTERNAL`.** Screen-2 is a real second built-in panel, not an HDMI
+output.
+
+| | Display 0 | Display 4 |
+| --- | --- | --- |
+| Name | `Built-in Screen` | `Screen-2` |
+| Native | 1080 x 1920 | 1080 x 1240 |
+| Landscape | 1920 x 1080 | 1240 x 1080 |
+| Refresh | 60 and 120 Hz | 60 and 120 Hz |
+| Max luminance | 420 nits | 500 nits |
+| Density | 369 dpi | 369 dpi |
+| Touch | INTERNAL | **EXTERNAL, and present** |
+| Flags | default display | `FLAG_PRESENTATION` |
+| Layer stack | 0 | 4 |
+
+Facts that matter:
+
+- **Screen-2 has touch.** A DS bottom screen, a 3DS bottom screen and a Wii U
+  GamePad screen are all touch screens. The hardware matches the guest.
+- **Screen-2 carries `FLAG_PRESENTATION`.** Android renders to it through the
+  Presentation API.
+- **Both panels support 120 Hz, and the device is capped to 60 Hz by a user
+  setting.** `PRIORITY_USER_SETTING_PEAK_REFRESH_RATE` votes a 60 Hz maximum.
+  Check this before you trust any frame pacing measurement.
+- The two panels have different maximum luminance, 420 against 500 nits. A
+  colour or brightness match between them is not automatic.
 
 The CPU is a 1+4+3 heterogeneous complex. The cores do not share a pipeline
 model.
@@ -1412,6 +1443,68 @@ app owns those paths.
 Also show the totals across the whole library, sorted by size. The first
 question is usually "which game should I delete", not "how big is this one".
 
+### 9. Dual-screen routing
+
+**The Thor has two internal touch displays. Three systems in the fleet are
+dual-screen. No other frontend can do this properly.**
+
+| System | Guest screens | Fits the Thor |
+| --- | --- | --- |
+| DS, melonDS-android | 2 screens, the lower one touch | Directly |
+| 3DS, azahar-thor | Top, and a lower touch screen | Directly |
+| Wii U, Cemu-thor | TV, plus a GamePad touch screen | Directly |
+| Everything else | 1 screen | Screen-2 is free for other use |
+
+This is the strongest hardware-specific feature available to this project. It
+cannot be copied by a frontend that targets many devices, because most devices
+have one screen.
+
+### The routing contract
+
+A backend declares its guest screens. It does not decide where they go.
+
+Each guest screen declares:
+
+- A name, such as `top`, `bottom`, `tv`, `gamepad`.
+- Its native size and aspect.
+- Whether it accepts touch.
+- Whether the game needs it. A DS game always needs both. A Wii U game may not
+  use the GamePad screen at all.
+
+The app owns the routing. The user picks a layout per game, and the choice is
+a per-game override like any other. See
+[The game library and per-game overrides](#6-the-game-library-and-per-game-overrides).
+
+Layouts to support:
+
+- One guest screen on each physical display. The obvious case.
+- Both guest screens on display 0, with Screen-2 showing something else.
+- One guest screen only, at full size, ignoring the other.
+- Swapped, for a person who wants the touch screen on top.
+
+**Touch must follow the screen.** If the DS lower screen renders on Screen-2,
+touch on Screen-2 must reach the guest lower screen. A routing change that
+does not move the touch mapping is a bug.
+
+### Screen-2 when the game is single-screen
+
+Most systems have one screen, which leaves Screen-2 free. Useful content:
+
+- The cheat list, live and toggleable while playing.
+- The performance overlay: FPS, frametime, temperature, charge.
+- A map, a guide or notes for the game.
+- The storage view for that game.
+
+**Do not render an idle Screen-2 at full rate.** A second panel drawn every
+frame costs power and thermal headroom for no benefit. Draw it on change, and
+state its cost in any performance measurement.
+
+### 120 Hz is available and currently disabled
+
+Both panels support 120 Hz. The device is capped to 60 Hz by a user setting.
+Any frame pacing or refresh rate work must check the current cap first, or it
+will measure the setting rather than the hardware.
+
 ### Vulkan is the substrate
 
 Every Tier 1 fork renders through Vulkan on Android. A Vulkan interop contract
@@ -1682,6 +1775,53 @@ the command, the time taken and the failure.
 
 This baseline also answers [Open decisions](#open-decisions) item 3, the build
 location, with measured build times instead of a guess.
+
+### Two tracks run in parallel
+
+Track A is Kotlin and has no native dependency. Track B is the native work.
+They do not block each other. Run both.
+
+| | Track A: app and contract | Track B: native and shared layer |
+| --- | --- | --- |
+| Depends on | nothing | the toolchain |
+| Language | Kotlin | C++ |
+| Output | the UI shell and the backend contract | the packed binary and the shared layer |
+
+They meet when the first backend is wired to the shell.
+
+### Track A — the UI shell defines the contract
+
+**Build the shell before reading more emulator code.** The shell is not a
+mockup. It is how the backend contract gets discovered, and its output is a
+specification.
+
+Do it in this order:
+
+1. **List the screens.** Library, game detail, in-game overlay, settings,
+   cheats, patches, storage, driver manager, dual-screen layout.
+2. **Build the shell with fake data.** Navigable, on the device, both
+   displays. No emulator behind it.
+3. **Pin the settings schema.** Every setting gets a stable key, a type, a
+   default and an owner. A setting without a key cannot be overridden per
+   game, and a per-game override for every option is a requirement.
+4. **Pin the per-game override resolution.** Per-game value, then Thor
+   profile, then backend default. One resolver, in one place.
+5. **Write the contract.** The minimum every backend implements, and the
+   extensions a backend may declare. This falls out of steps 1 to 4 rather
+   than being argued in advance.
+
+**Read `xenia-thor` first.** It has the most complete Android shell in the
+fleet: `GameProfiles`, `GameOptimizationsActivity`, `GamePatchManager`,
+`ContentInstaller`, `ControllerMappingActivity`, `CrashReporter`. Start from
+what it learned. See [`capability_inventory.md`](capability_inventory.md).
+
+**Use the capability inventory as the reality check.** Do not design a screen
+for a capability no backend has. Do not omit one that four backends already
+have.
+
+The shell runs on the device from the first week. A shell that only runs on a
+desktop hides the two-display problem, which is the hardest layout question in
+the app.
 
 ### Phase 1 — migrate the toolchain
 
