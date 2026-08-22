@@ -107,7 +107,7 @@ compatible. Checked 2026-08-22.
 | GameThor | GPL-3.0 | `LICENSE` |
 | azahar-thor | GPL-2.0 **or later** | "Licensed under GPLv2 or any later version" |
 | Vita3K-Thor | GPL-2.0 **or later** | "either version 2 of the License, or (at your option) any later version" |
-| rpcsx-ui-android | GPL-2.0, **no or-later found** | README says each file carries its own licence |
+| rpcsx-ui-android | **GPL-2.0-only**, verified | `LICENSE` is GPLv2. No or-later grant in any emulator source file. |
 | Cemu-thor | MPL-2.0 | `LICENSE.txt` |
 | xenia-thor | BSD | `LICENSE`, Ben Vanik |
 
@@ -126,13 +126,12 @@ What this means:
   eden-thor or GameThor.** Those are GPL-3.0.
 - MPL-2.0 (Cemu) and BSD (xenia) combine with GPL. Both are compatible.
 
-**This is unresolved and it constrains the packaging decision.** Verify the
-rpcsx grant before you choose how backends load. See
+**This constrains the packaging decision.** See
 [Open decisions](#open-decisions), item 2.
 
 A separate process, or a separately distributed module, is a different legal
-question from one linked binary. That is one reason the loading decision is
-still open.
+question from one linked binary. That question is still open, and it is now
+the blocker.
 
 ### Checked and clear
 
