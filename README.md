@@ -94,6 +94,28 @@ measurement run, an extraction checklist.
 Research goes in `research_log/`. Work goes in `work_log/`. Console-specific
 experiments go in `console_lab/`. Write the log as you go.
 
+## The render target: native quality, not the average of seven forks
+
+The gap between an emulator and a native game on this device is **structural,
+not CPU**.
+
+PS2, Xbox 360 and Wii U had eDRAM or immediate-mode GPUs. Switching render
+targets and reading back were cheap there. The Adreno 740 is a tile-based
+deferred renderer, where each of those is a GMEM resolve out to system memory
+and back. A faithful emulator inherits a rendering structure designed for the
+opposite architecture.
+
+Faithfulness is required at the pixel. It is not required at the pass boundary.
+
+So the target is not the average of seven portable Vulkan layers. It is what a
+renderer looks like if it will only ever run on one Adreno 740, under one
+pinned driver, on one device. See
+[`shared_layer/THOR_RENDER.md`](shared_layer/THOR_RENDER.md).
+
+The reference point is a well-optimised **native** game captured on the Thor,
+not another emulator. The difference between that capture and a backend capture
+is the roadmap.
+
 ## The duplication problem
 
 Agentic coding accelerates duplication. A feature that used to be built once,
@@ -140,6 +162,10 @@ map disagree.
 | `hardware_ref/thor/` | Manuals for the Thor: SoC, CPU, GPU, Android, device. |
 | `hardware_ref/console/` | Manuals for each emulated console. |
 | `console_lab/` | Experiments and speedups for one console only. |
+| `shared_layer/PATTERNS.md` | The eight pipelines every emulator has. |
+| `shared_layer/THOR_RENDER.md` | The render architecture for this device. |
+| `app/SCREENS.md` | The 14 screens, and the backend contract they imply. |
+| `app/shell/` | The Compose shell, with fake data. Builds and runs. |
 
 Compress any manual before you commit it. Prefer a link plus extracted notes
 over the file itself.

@@ -568,6 +568,53 @@ This does not cancel [the hot path philosophy](#the-philosophy-share-the-hot-pat
 below. It narrows where it applies. Reaching into a core is still sanctioned;
 it now needs a read that proves the reach is worth it.
 
+### The target is a native-quality render path, not the average of seven forks
+
+Decided 2026-08-22. **This supersedes "extract the seven device layers".**
+
+Every one of those seven Vulkan layers was written to be **portable** across
+desktop and mobile vendors, drivers and API versions. Extracting from them
+yields the union of seven sets of compromises. Portability is exactly the thing
+this project refuses to pay for.
+
+The specification is [`shared_layer/THOR_RENDER.md`](shared_layer/THOR_RENDER.md):
+what a renderer looks like if it will only ever run on one Adreno 740, under
+one pinned Turnip build, on one device. Eight commitments, of which the central
+one is that **the render graph is a GMEM residency plan** rather than a
+formality.
+
+Extraction still happens. It now has a target to aim at, instead of averaging.
+
+### The reference is a native game, not another emulator
+
+**The gap between an emulator and native on this device is structural, not
+CPU.**
+
+PS2, Xbox 360 and Wii U had eDRAM or immediate-mode GPUs. Switching render
+targets, reading back and setting state per draw were cheap there. On a tiler
+each one is a GMEM resolve out to system memory and back. **A faithful emulator
+inherits a rendering structure designed for the opposite architecture**, and no
+amount of CPU work recovers those frames.
+
+| | Well-optimised native | A faithful emulator |
+| --- | --- | --- |
+| Render passes | one, merged subpasses | one per guest target switch |
+| Resolves per frame | zero beyond present | one per target switch |
+| Draw order | front to back, LRZ rejects | the guest's, LRZ breaks |
+| Pipelines | all precompiled | created as the guest sets state, so stutter |
+
+**Faithfulness is required at the pixel. It is not required at the pass
+boundary.** That is the licence to rewrite guest render structure into a
+tiler-friendly one, and it is the same insight behind xenia's translation
+conclusion.
+
+**The experiment this implies, and it needs no emulator work:** capture a
+well-optimised native game on the Thor with Perfetto and Snapdragon Profiler,
+record pass count, resolves, GMEM residency, the vertex against fragment split,
+bandwidth and watts, then capture one backend on a comparable scene. **The
+difference between those two captures is the actual roadmap.** xenia already
+has the skills for both captures.
+
 ### Start with Vulkan, at the device layer, not the renderer
 
 Decided 2026-08-22 after reading. **This is now the first extraction, ahead of
