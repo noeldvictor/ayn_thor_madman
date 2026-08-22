@@ -186,18 +186,71 @@ the shared harness.** Do not design a new format first.
 
 | Capability | Fork | Quality | Notes |
 | --- | --- | --- | --- |
-| On-device MCP server | ARMSX2 | design | `docs/mcp-server.md`. Four capability groups. |
+| **On-device MCP server, implemented** | **xenia-thor** | **shipped** | `tools/thor/mcp/thor_mcp_server.py`. Read it before writing a new one. |
+| On-device MCP server, design | ARMSX2 | design | `docs/mcp-server.md`. Four capability groups. |
 | Neural model converter | ARMSX2 | verified | `tools/make_a2nn.py`. |
 | VitaCheat converter | Vita3K-Thor | shipped | `tools/convert_vitacheat.py`. |
 | Per-fork agent skills | Vita3K-Thor, xenia-thor | shipped | Both under `.agents/skills/`. |
 | ARM64 review, per cluster | ARMSX2 | design | Not benchmarked on the device. |
 | ARM reference manuals | ARMSX2 | shipped | `docs/reference/arm/`. Move to `hardware_ref/thor/cpu/`. |
 
+## Thor measurement and optimisation harness
+
+`xenia-thor/tools/thor/` holds **137 scripts**: 88 PowerShell, 32 shell, 8
+python, 8 `.mjs` workflows, plus `mcp/`. It is the most developed Thor-specific
+work in the fleet and was unrecorded until 2026-08-22.
+
+| Capability | Fork | Quality | Notes |
+| --- | --- | --- | --- |
+| MCP server, implemented | xenia-thor | shipped | `tools/thor/mcp/thor_mcp_server.py`. |
+| Power and affinity A/B, 3 arms | xenia-thor | shipped | `power_affinity_ab.sh`. Gates on Discharging. |
+| ADPF target A/B | xenia-thor | shipped | `bd_adpf_ab.sh`. |
+| GMEM census and A/B | xenia-thor | shipped | Adreno tile memory. Nothing else touches this. |
+| LRZ census and report | xenia-thor | shipped | Low resolution Z. |
+| Variable rate shading | xenia-thor | shipped | `bd_vrs_capture.sh`, `bd_vrs_heavy_pass_ab.sh`. |
+| Resolution and render mode A/B | xenia-thor | shipped | `bd_resolution_ab.sh`, `bd_render_mode.sh`. |
+| Shader statistics | xenia-thor | shipped | `bd_shader_stats.sh`, `bd_shader_report.py`. |
+| ARM64 codegen audits, ~40 scripts | xenia-thor | shipped | `thor_a64_*`, `thor_hir_*`. Deepest CPU work in the fleet. |
+| Perfetto and GPU capture | xenia-thor | shipped | `thor_gpu_perfetto.ps1`, `thor_gpu_capture.ps1`. |
+| TAS, deterministic input | xenia-thor | shipped | `thor_tas.ps1`. |
+| Game matrix | xenia-thor | shipped | `thor_game_matrix.ps1`. |
+| Evidence ledger | xenia-thor | shipped | `thor_evidence.ps1`, `thor_verify_capture.ps1`. |
+| Ghidra headless import | xenia-thor | shipped | `ghidra_headless_import.ps1`. Ghidra tooling already exists. |
+| Agent goal loop | xenia-thor | shipped | `thor_codex_goal_loop.ps1`. |
+| Multi-agent workflows | xenia-thor | shipped | 8 `wf_*.mjs`, including `wf_arm64_adreno_research.mjs`. |
+
+## Performance hints, pacing, affinity and audio
+
+| Capability | Fork | Quality | Notes |
+| --- | --- | --- | --- |
+| Android Performance Hints, ADPF | Cemu-thor | shipped | `src/Cafe/Android/AndroidPerformanceHints.*`. |
+| Android Performance Hints, ADPF | xenia-thor | shipped | `gpu_adpf_performance_hints`, disabled by device config today. |
+| Per-game frame pacing UI | ARMSX2 | shipped | **iOS only.** A ready-made port to Android. |
+| Audio latency model | melonDS-android | shipped | `AudioLatency.kt`. |
+| Oboe audio | ARMSX2, melonDS-android, eden-thor | shipped | Three separate integrations. |
+| Affinity mask | eden-thor | shipped | `k_affinity_mask.h`. |
+| Vsync manager | eden-thor | shipped | `vsync_manager`. |
+
+Nothing found in azahar-thor, Vita3K-Thor or GameThor.
+
+## Cemu-thor
+
+Cemu had no capability recorded before 2026-08-22.
+
+| Capability | Quality | Notes |
+| --- | --- | --- |
+| Android SAF filesystem | shipped | `fscDeviceAndroidSAF`, `FileStream_saf`. |
+| Full Android app | shipped | `src/android/app/`, `NativeInput.cpp`. |
+| Texture cache and loader | shipped | `LatteTextureCache`, `LatteTextureLoader`. |
+| On-screen overlay | shipped | `LatteOverlay`. |
+| Per-game controller profile | shipped | `bin/controllerProfiles/CemuThor_StarFoxZero_StarFox64ish.xml`. |
+| Audio, full AX | shipped | `snd_core/ax_*`. |
+
 ## Survey gaps
 
 Partly surveyed forks:
 
-- Cemu-thor: texture filtering, tests, per-game overrides.
+- Cemu-thor: texture filtering and tests. Everything else now recorded.
 - xenia-thor: texture filtering, cheats.
 - Vita3K-Thor: texture filtering, packs.
 - eden-thor: texture filtering, packs, tests.
@@ -207,9 +260,7 @@ Not surveyed in any fork:
 
 - Control overlays and touch input
 - Save and state conventions
-- Thread and cluster affinity
-- Audio backends and latency
-- Frame pacing and vsync handling
+- Save and state conventions
 
 ## Source
 

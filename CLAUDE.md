@@ -1300,9 +1300,20 @@ extension set.
 | Hardware | qcom |
 | Connection | Wi-Fi adb, port 5555 |
 
-**Wi-Fi adb is the preferred connection.** The Thor stays on a wall charger
-during a test run. A long run does not drain the battery, and battery level
-does not confound a performance measurement.
+**Wi-Fi adb is the preferred connection, so the cable can come out.**
+
+**A power measurement requires the device to be discharging.** Plugged in,
+`dumpsys` reports `status=Charging` and `current_now` flips sign between
+consecutive idle samples. Measured values from one idle run: -36988, +225591,
++165897, +224859, -16846 uA. **Any wattage read from a USB-attached session is
+fiction.**
+
+Gate every power measurement on `status=Discharging` and refuse to report
+otherwise. `xenia-thor/tools/thor/power_affinity_ab.sh` already does this.
+Copy the gate.
+
+Wi-Fi adb exists to make that possible: the device stays reachable with no
+cable attached.
 
 **A second device is attached to this box.** A Quest 2 answers adb as well. A
 bare `adb` command fails with "more than one device/emulator".
@@ -1329,8 +1340,12 @@ Wi-Fi adb rules:
   A wrong `-s` value flashes the Quest.
 - Do not measure performance over Wi-Fi adb while pulling a large capture. The
   transfer competes with the run. Pull after the run ends.
-- Record the battery level and the charge state with every measurement. State
-  whether the Thor was on the charger.
+- Record the battery level and the charge state with every measurement.
+- **Watts, not only frames.** The stated target for xenia on this device is
+  about 5 W and 50 C. Throughput alone answers the wrong question on a
+  handheld. A change that holds fps and lowers temperature is a win.
+- **State the expected signature before the run.** Name what the numbers
+  should do if the change works. A run with no prediction cannot fail.
 
 ### 1. Upscaling and filters
 
