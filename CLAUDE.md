@@ -126,12 +126,21 @@ What this means:
   eden-thor or GameThor.** Those are GPL-3.0.
 - MPL-2.0 (Cemu) and BSD (xenia) combine with GPL. Both are compatible.
 
-**This constrains the packaging decision.** See
-[Open decisions](#open-decisions), item 2.
+### Resolved by dropping PS3
 
-A separate process, or a separately distributed module, is a different legal
-question from one linked binary. That question is still open, and it is now
-the blocker.
+With `rpcsx-ui-android` out of the app, **every remaining fork is compatible
+under GPL-3.0**:
+
+- ARMSX2, melonDS-android, eden-thor and GameThor are GPL-3.0 already.
+- azahar-thor and Vita3K-Thor grant "or later", so both can be used as
+  GPL-3.0.
+- Cemu is MPL-2.0 and xenia is BSD. Both combine with GPL-3.0.
+
+**The unified app is GPL-3.0.** One linked binary is legally clean. The
+combined-work question is no longer a blocker, and the loading model is an
+engineering decision again.
+
+Re-open this section if PS3 returns. Nothing else reintroduces the conflict.
 
 ### Checked and clear
 
@@ -144,23 +153,30 @@ the blocker.
 - **librashader.** Dual licensed. The vendored tree carries both `LICENSE.md`
   (MPL-2.0) and `LICENSE-GPL.md`. Either path works for this project.
 
-### What the rpcsx result forces
+### Why PS3 was dropped rather than worked around
 
-Private use triggers no obligation. **Distribution does.** This repo is public
-and an APK may be shared, so treat the constraint as live.
+Private use triggers no licence obligation. Distribution does, and this repo is
+public.
 
-Evaluate in this order:
+The options were: run backends as separate processes, distribute PS3
+separately, split the binaries by licence, or drop PS3. Every option except the
+last leaves an unanswered combined-work question and splits the app.
 
-1. **Backends as separate processes.** One APK, one UI, the PS3 backend in its
-   own process through `android:process`. The open question is whether shipping
-   both in one APK is still one combined work. Get a real answer.
-2. **PS3 as a separately distributed binary.** Legally clearest.
-3. **Split the binaries by licence.** ARMSX2 is GPL-3.0, so PS2 and PS3 cannot
-   share a linked binary either way.
-4. **Drop PS3 from the unified app.** Not preferred. rpcsx is a Tier 1 target.
+PS3 was dropped, decided 2026-08-22. The measurement made the choice easy:
 
-**Do not design the loading model until this is answered.** It is no longer
-only an engineering choice.
+| Part of rpcsx | Files |
+| --- | --- |
+| Kotlin and Java frontend | 84 |
+| Native core | 1510 |
+| Native core taken from rpcs3 | 874 |
+
+Rebuilding the frontend discards 5% of the fork and keeps the encumbered 95%.
+The core is the licence problem, and the core is the only part worth taking.
+
+**Adapting a GPL work does not change its licence.** An adaptation is a
+derivative work. Only a clean-room reimplementation from specifications, by
+somebody who never read the source, escapes the licence. No fork here is that.
+This rule applies to the whole fleet, not only to rpcsx.
 
 Method note for any future licence scan: use `git grep`. A per-file `head` loop
 times out on a repo this size.
@@ -327,7 +343,6 @@ repo does not contain them.
 | Fork | Path below `Documents/` | Harvest from |
 | --- | --- | --- |
 | xenia-thor | `xenia-thor-workspace/xenia-thor` | xenia-canary, xenia-edge |
-| rpcsx-ui-android-thor | `ps3-thor/rpcsx-ui-android` | RPCSX, rpcs3, aps3e, ARMSX3 |
 | Cemu-thor | `cemu-thor-experiment`, branch `android-port` | cemu-project, SapphireRhodonite, SSimco |
 | azahar-thor | `azahar-thor/azahar` | azahar-emu |
 | watermelon-DS-THOR | `melonds_HD/melonDS-android` | WatermelonDS, melonDS-android-lib |
@@ -336,6 +351,20 @@ repo does not contain them.
 
 ARMSX2 is an active target. ARMSX2 is also the reference implementation of the
 shared layer. See [ARMSX2 is the seed](#armsx2-is-the-seed).
+
+### Deferred — PS3
+
+`ps3-thor/rpcsx-ui-android` is **out of the unified app**, decided 2026-08-22.
+
+Reason: rpcsx is GPL-2.0-only, and its core is the encumbered part. The
+frontend is 84 Kotlin and Java files. The native core is 1510 files, of which
+874 come from rpcs3. Rebuilding the frontend discards 5% of the work and keeps
+100% of the licence problem.
+
+**Dropping PS3 makes every remaining licence compatible.** See
+[Licences](#licences-constrain-the-one-app-plan).
+
+The fork stays on disk. Keep harvesting ideas from it. Do not link its code.
 
 ### Tier 2 — carried along
 
@@ -879,9 +908,8 @@ feature before phase 3.
 GPL-2.0-only. It cannot share a binary with the GPL-3.0 forks. See
 [Licences](#licences-constrain-the-one-app-plan).
 
-**0.1b Answer the combined-work question.** Does one APK holding a GPL-2.0-only
-backend process and GPL-3.0 backends count as one combined work? This now
-blocks the loading model. It needs a real answer, not a guess.
+**0.1b Closed.** PS3 is out of the app, so no GPL-2.0-only code is linked. The
+combined-work question does not arise. The app is GPL-3.0.
 
 **0.2 Decide where shared code lives.** A directory in this repo, consumed by
 each fork's build. Answer this before any extraction. It is a smaller question
@@ -969,6 +997,7 @@ These are not settled. Do not assume an answer. Ask, or mark the assumption.
    backend is statically linked, a dynamic feature module, or a `dlopen` module
    inside the same app. This is not the libretro question. libretro is
    rejected. This is about packaging one app that holds several large cores.
+   It is an engineering decision only; the licences no longer constrain it.
 3. **The build location.** Options: local Windows or WSL, GitHub Actions, or a
    split. Cemu, Xenia and RPCSX are expensive to build locally. This decision
    sets how much an agent can do unattended.
