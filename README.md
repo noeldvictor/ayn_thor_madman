@@ -168,6 +168,7 @@ map disagree.
 | `capability_inventory.md` | Which fork has which capability. Read before you build. |
 | `hardware_ref/thor/` | Manuals for the Thor: SoC, CPU, GPU, Android, device. |
 | `hardware_ref/thor/gpu/VULKAN_TIPS.md` | Practical rules for Vulkan on the Adreno 740. |
+| `hardware_ref/thor/cpu/CORTEX_X3_NOTES.md` | Codegen rules for the prime core, from the ARM guide. |
 | `.claude/skills/` | Local skills: `capability-check`, `thor-measure`, `extract-subsystem`. |
 | `hardware_ref/console/` | Manuals for each emulated console. |
 | `console_lab/` | Experiments and speedups for one console only. |

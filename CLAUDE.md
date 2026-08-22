@@ -699,6 +699,38 @@ real workload, measured.** Then a second. Do not design it for seven.
    toolchain across seven C++ codebases is unproven, and the tiler research
    says a shared render path can be slower than what it replaces.
 
+## Two CPU leads worth chasing
+
+From the Cortex-X3 optimization guide, distilled in
+[`hardware_ref/thor/cpu/CORTEX_X3_NOTES.md`](hardware_ref/thor/cpu/CORTEX_X3_NOTES.md).
+Both are unmeasured and both are cheap to check.
+
+### Guest FP status flags may be serialising the machine
+
+`NZCV` and `SP` are **fully renamed** on the X3, so guest condition flags cost
+nothing. `FPSR`, `FPCR` and `APSR` are **not renamed**. Their reads are
+non-speculative and in-order, and some `FPCR` writes carry a flush side effect.
+
+> FPSR/FPSCR reads must wait for all prior instructions that may update the
+> status flags to execute and retire.
+
+**Emulators commonly emulate guest FPU status faithfully.** On this core that
+is a stall per access. Four forks generate ARM64: ARMSX2, xenia, Cemu and
+melonDS. Check what each does with guest FP status and rounding mode. Lazy or
+deferred handling could be a large win.
+
+### Spilling to the vector register file beats spilling to memory
+
+> Register transfers between general-purpose registers and ASIMD registers are
+> lower latency than reads and writes to the cache hierarchy, thus it is
+> recommended that GPR registers be filled/spilled to the VPR rather to memory.
+
+Register pressure is the central problem in a guest-to-host recompiler and the
+standard answer is a stack spill. On the X3 the vector file is faster than L1.
+Check whether any of the four recompilers does this.
+
+**Both leads belong in the experiment ledger before anyone acts on them.**
+
 ## The philosophy: share the hot path, not the periphery
 
 This is the central idea. Everything else follows from it.
@@ -1301,7 +1333,7 @@ manual here one time. Every fork reads it from here.
 | Directory | Contents |
 | --- | --- |
 | `hardware_ref/thor/soc/` | Snapdragon 8 Gen 2 documents |
-| `hardware_ref/thor/cpu/` | Cortex-X3, A715, A710, A510 manuals. ARM64 ISA. |
+| `hardware_ref/thor/cpu/` | Cortex-X3, A715, A710, A510. Includes [`CORTEX_X3_NOTES.md`](hardware_ref/thor/cpu/CORTEX_X3_NOTES.md), the codegen rules distilled from the X3 optimization guide. |
 | `hardware_ref/thor/gpu/` | Adreno 740, Vulkan, driver notes. Includes [`VULKAN_TIPS.md`](hardware_ref/thor/gpu/VULKAN_TIPS.md), the practical rules sheet for getting the most out of this GPU. |
 | `hardware_ref/thor/android/` | Android 13 platform notes, NDK notes |
 | `hardware_ref/thor/device/` | Panel, thermals, controller, battery |
