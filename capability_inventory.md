@@ -154,8 +154,33 @@ Items exist in five forks. No fork holds more than three. Nothing is shared.
 | Replay hooks in GXM | Vita3K-Thor | shipped | `SceGxmInternalForReplay.cpp`. |
 | Input movie record and replay | azahar-thor | shipped | `src/core/movie.cpp`, with dialogs. |
 | RSX capture replay | rpcsx-ui-android | shipped | `rsx_replay.cpp`. |
+| **Deterministic renderer case corpus** | **melonds_HD_2** | **shipped** | `renderer_cases/`. The best test artifact in the fleet. See below. |
+| **Differential test, hardware against software renderer** | **melonds_HD_2** | **shipped** | `case.json` stores expected frames for software, blackmagic3 and compute3d. |
+| Host-side case guards | melonds_HD_2 | shipped | `guards.json`, plus python guard scripts under `tools/`. |
 
-Nothing found in Cemu-thor, eden-thor, melonDS-android or GameThor.
+Nothing found in Cemu-thor, eden-thor or GameThor.
+
+### melonds_HD_2 `renderer_cases` is the model for the shared harness
+
+`melonds_HD_2` was dropped as a target. **It is not dropped as a source.** It
+holds the most complete test design in the fleet, and it combines four of the
+paradigms in one artifact:
+
+- **Savestate as the fixture.** `input/savestate.ml0`, plus `start_frame` and
+  `frame_count` for a deterministic range.
+- **Golden images.** `expected/software`, `expected/blackmagic3` and
+  `expected/blackmagic3_compute3d`.
+- **Differential testing.** The software renderer is the reference. A hardware
+  renderer is compared against it.
+- **No ROM in the repo.** The ROM is identified by sha256, size and header
+  fields. `input/` holds only notes and a `.gitkeep`.
+
+Cases are named by behaviour, not by game: `capture_sync`, `sprite_mosaic`,
+`rotscale_bg`, `obj_window`, `blend_priority`, `forced_blank`. The README
+states the corpus is for AI-driven renderer cases.
+
+**Read `renderer_cases/README.md` and `case.template.json` before designing
+the shared harness.** Do not design a new format first.
 
 ## Tooling
 

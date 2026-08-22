@@ -1034,9 +1034,13 @@ eden upstream is **not on GitHub**. It is `https://git.eden-emu.dev/eden-emu/ede
 The `upstream` push URL is set to `DISABLED` on purpose. Fetch before you judge
 the drift; the local `upstream/master` ref may be stale.
 
-`melonds_HD_2` is dropped from the fleet. `melonDS-android` replaced it. The
+`melonds_HD_2` is dropped **as a target**. `melonDS-android` replaced it. The
 last commit to `melonds_HD_2` was 2026-07-12; `melonDS-android` was updated
-2026-08-21. Do not invest in `melonds_HD_2`.
+2026-08-21. Do not add features to `melonds_HD_2`.
+
+**It is not dropped as a source.** It holds `renderer_cases/`, the most
+complete test design in the fleet. Harvest it. See
+[`capability_inventory.md`](capability_inventory.md).
 
 ### Obsolete
 
@@ -1536,9 +1540,15 @@ Ranked by value. The fleet already has most of them, in one fork each.
    this on the target hardware. The Thor is one fixed device, so the numbers
    are comparable across commits.
 
-7. **Differential testing, interpreter against recompiler.** Run the same code
-   through both, compare the state, and stop at the first divergence. This
-   finds a recompiler bug at the exact instruction instead of at the crash.
+7. **Differential testing against a reference implementation.** Run the same
+   work through both, compare, and stop at the first divergence. For a CPU
+   that is the interpreter against the recompiler, which finds a bug at the
+   exact instruction rather than at the crash. For a GPU it is the software
+   renderer against the hardware renderer.
+
+   In the fleet: **melonds_HD_2 `renderer_cases/` already does the GPU form.**
+   Each case stores expected frames for the software renderer and for each
+   hardware path. Nothing does the CPU form yet.
 
 8. **Sanitizer builds.** ASan, UBSan and TSan in the automated build. Many
    emulators cannot even compile with them. Getting there is the work.
@@ -1710,11 +1720,15 @@ it.
 
 Take these, in this order:
 
-1. The Vita3K-Thor on-device regression suite and its savestate fixture runner.
+1. **melonds_HD_2 `renderer_cases/`**, as the case format. It combines
+   savestate fixtures, golden images, differential comparison and ROM-by-hash
+   in one design. Read its `README.md` and `case.template.json` before you
+   design anything.
+2. The Vita3K-Thor on-device regression suite and its savestate fixture runner.
    It already runs on the Thor.
-2. The ARMSX2 golden image comparer, `comparer.js`.
-3. The ARMSX2 headless replay pattern, `pcsx2-gsrunner`.
-4. The two existing agent skills, from xenia-thor and Vita3K-Thor.
+3. The ARMSX2 golden image comparer, `comparer.js`.
+4. The ARMSX2 headless replay pattern, `pcsx2-gsrunner`.
+5. The two existing agent skills, from xenia-thor and Vita3K-Thor.
 
 Build the MCP on-device surface against
 `armsx2-thor/ARMSX2/docs/mcp-server.md`.
