@@ -78,11 +78,37 @@ in.
 | azahar-thor | `custom_textures/custom_tex_manager` |
 | xenia-thor | `src/xenia/gpu/`, plus `texture_dump.cc` |
 
-**Shared:** hashing, cache lookup, eviction, the upload path, per-class
-routing, upscaling, pack replacement, and the memory budget.
+**Read 2026-08-22.** See
+[`../research_log/20260822_2015_texture_cache_read.md`](../research_log/20260822_2015_texture_cache_read.md).
 
-**Not shared:** what the guest considers a texture, and the classification
-inputs. Only the emulator knows the producer, the palette and the plane.
+**Shared:** cache storage and lookup, eviction, the memory budget, the upload
+path, the point where replacement and upscaling hook in, pack loading with its
+async upload worker, and statistics with separated decline reasons.
+
+**Not shared, and this is a correction:** **hashing is not shared.** It hashes
+guest texel formats and guest palettes. The shared cache takes an **opaque key
+the backend computes**, never a key the shared layer defines. Also not shared:
+overlap and aliasing models, and format conversion including YUV.
+
+**The strongest shared-key insight:** ARMSX2 and melonDS independently arrived
+at the same design, a content hash of texel data plus a **separate** hash of
+the palette. ARMSX2 goes further with `WithRemovedCLUTHash()`, so the same
+texel data can be found independently of its palette. melonDS has no
+equivalent. Both target paletted-heavy machines.
+
+Cemu keys on physical address instead, and tracks textures that alias in memory
+at slice and mip granularity. Vita3K folds sampler state and YUV conversion
+into the same class. azahar's `CustomTexManager` is not a cache at all; it is a
+replacement asset manager with a `Material` model and async upload, and it is
+the best pack-loading model in the fleet.
+
+**The open design decision, and it is the first one to settle:** melonDS puts
+`HDTexPack* TexPack` and `HDTexPack* FilterCache` **inside** the cache entry.
+ARMSX2 keeps its upscaler deliberately pure and outside, because
+`GSTextureCache` owns insertion and "inventing a second owner of that lifetime
+is how it gets corrupted". Opposite answers, each with a stated reason.
+Recommendation: take the pure module, because a shared upscaler cannot own six
+different caches' lifetimes.
 
 **The classification difference is real and must be preserved:**
 
