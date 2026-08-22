@@ -88,8 +88,15 @@ The Ghidra project is not committed.
 ## Development
 
 Custom skills live in `.claude/skills/` in this repo. A skill holds a
-procedure that would otherwise be retyped: a build recipe, a flash sequence, a
-measurement run, an extraction checklist.
+procedure that would otherwise be retyped.
+
+- `capability-check` — which fork already has this? Run it before writing any
+  feature. Agentic coding accelerates duplication, and this is the guard.
+- `thor-measure` — how to measure on the device without producing a fake
+  number. Power readings while charging are fiction; cross-run comparisons are
+  confounded; a run with no temperature rise did not happen.
+- `extract-subsystem` — prove the duplication is real first. Three plans have
+  been reversed by opening the files.
 
 Research goes in `research_log/`. Work goes in `work_log/`. Console-specific
 experiments go in `console_lab/`. Write the log as you go.
@@ -160,6 +167,8 @@ map disagree.
 | `work_log/` | One file for each work session. |
 | `capability_inventory.md` | Which fork has which capability. Read before you build. |
 | `hardware_ref/thor/` | Manuals for the Thor: SoC, CPU, GPU, Android, device. |
+| `hardware_ref/thor/gpu/VULKAN_TIPS.md` | Practical rules for Vulkan on the Adreno 740. |
+| `.claude/skills/` | Local skills: `capability-check`, `thor-measure`, `extract-subsystem`. |
 | `hardware_ref/console/` | Manuals for each emulated console. |
 | `console_lab/` | Experiments and speedups for one console only. |
 | `shared_layer/PATTERNS.md` | The eight pipelines every emulator has. |

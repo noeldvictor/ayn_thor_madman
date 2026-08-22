@@ -201,12 +201,59 @@ It is also why xenia's ledger points at translation rather than emulation. A
 translation layer emits a **native** render structure instead of replaying a
 guest one.
 
+### The reference to use is not a game
+
+Researched 2026-08-22. **Khronos Vulkan-Samples performance samples beat any
+shipped game as the baseline.**
+
+A game gives one data point you cannot vary. The samples give a toggle.
+
+- They are built to demonstrate tiler behaviour, and the `subpasses` sample
+  exists specifically to show GMEM bandwidth savings.
+- They carry a Stats system reading hardware counters: GPU cycles, fragment
+  jobs, memory bandwidth.
+- Behaviour is switchable at run time, so subpasses on against off is one
+  capture, not two builds.
+
+Sources: [Performance samples](https://docs.vulkan.org/samples/latest/samples/performance/README.html),
+[the subpasses sample](https://github.com/KhronosGroup/Vulkan-Samples/blob/main/samples/performance/subpasses/README.adoc),
+[Tile Based Rendering best practices](https://github.khronos.org/Vulkan-Site/guide/latest/tile_based_rendering_best_practices.html).
+
+A shipped game still has a use, as a **real-workload ceiling**. Use both: the
+samples for mechanism, a game for the honest upper bound.
+
+### Two Adreno facts that change the design
+
+**FlexRender.** The Adreno switches **mid-frame** between binning with GMEM and
+direct rendering to system memory. It is not a mode you set once.
+
+Consequence: **the GPU can silently fall out of tiled rendering.** A render
+graph that assumes it stays in GMEM is wrong. Which mode a pass actually ran in
+must be measured, not assumed, and it belongs in the statistics of
+commitment 8.
+
+Source: [Adreno GPU on Mobile best practices](https://docs.qualcomm.com/nav/home/mobile_best_practices.html?product=1601111740035277).
+
+**`VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT`.** Transient attachments that never
+leave tile memory need no backing allocation. Reported savings reach roughly
+50 MB in sample scenes.
+
+Consequence for commitment 4: **a transient attachment is a declared category,
+not an allocation.** If the arena allocates memory for something that never
+leaves GMEM, it is wasting a fixed budget.
+
+**`LOAD_OP_CLEAR` beats `LOAD_OP_LOAD` on a tiler**, because a clear is a tile
+operation while a load is an external read. An attachment loaded when it could
+have been cleared is a per-tile bandwidth cost, and it is a checkable rule.
+
 ### The experiment this implies
 
 **Measure the reference before optimising anything.** It needs no emulator
 work.
 
-1. Run a well-optimised native game on the Thor.
+1. Run the Khronos Vulkan-Samples performance samples on the Thor, with the
+   subpass and load-op toggles, and record the delta each toggle produces.
+   Then run a well-optimised native game for the real-workload ceiling.
 2. Capture with Perfetto and Snapdragon Profiler. xenia already has skills for
    both: `xenia-thor-gpu-profile`, `xenia-snapdragon-profiler-gpu-metrics`,
    `xenia-thor-adb-gpu-stage-split`.

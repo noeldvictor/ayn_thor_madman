@@ -1302,7 +1302,7 @@ manual here one time. Every fork reads it from here.
 | --- | --- |
 | `hardware_ref/thor/soc/` | Snapdragon 8 Gen 2 documents |
 | `hardware_ref/thor/cpu/` | Cortex-X3, A715, A710, A510 manuals. ARM64 ISA. |
-| `hardware_ref/thor/gpu/` | Adreno 740, Vulkan, driver notes |
+| `hardware_ref/thor/gpu/` | Adreno 740, Vulkan, driver notes. Includes [`VULKAN_TIPS.md`](hardware_ref/thor/gpu/VULKAN_TIPS.md), the practical rules sheet for getting the most out of this GPU. |
 | `hardware_ref/thor/android/` | Android 13 platform notes, NDK notes |
 | `hardware_ref/thor/device/` | Panel, thermals, controller, battery |
 | `hardware_ref/console/ps2/` | PS2 hardware. Serves ARMSX2. |
@@ -1422,20 +1422,24 @@ Rules:
 - Update the skill when the procedure changes. A stale skill is worse than no
   skill, because it is trusted.
 
-Skills worth writing first:
+### Skills written so far
+
+| Skill | What it does |
+| --- | --- |
+| `capability-check` | Answer "which fork already has this?" before any feature work. |
+| `thor-measure` | Connect, avoid the traps that produce fake numbers, and record a result that can be trusted. |
+| `extract-subsystem` | Prove the duplication is real, pass the licence gate, then the five steps and the build guard. |
+
+Still to write:
 
 **Most of these already exist in `xenia-thor/.agents/skills/`, which holds 29
 skills. Port them. Do not write them again.**
 
 | Skill | What it does | Prior art |
 | --- | --- | --- |
-| `capability-check` | Answer "which fork already has this?" before any feature work. | none, write it |
 | `experiment-ledger` | Query before an experiment, record after. | `xenia-experiment-ledger` |
 | `evidence-discipline` | No performance number without a captured device file. | `xenia-thor-evidence-discipline` |
-| `thor-connect` | Resolve the Thor by model over Wi-Fi adb, never touch the Quest. | `xenia-thor-remote-debug` |
-| `thor-measure` | Run a scene, capture FPS, frametime, thermals and charge. | `xenia-thor-gpu-profile`, `xenia-thor-adb-gpu-stage-split` |
 | `fork-build` | Build one fork with its recipe and record the time. | `xenia-desktop-build`, `thor_build.ps1` |
-| `extract-subsystem` | Walk the five extraction steps and update `OWNED.md`. | none, write it |
 | `ghidra-finding` | Record a reverse-engineering result in the right place. | `xenia-ghidra-ooda-loop`, `xenia-thor-ghidra-game-patch` |
 | `autonomous-driver` | Build, deploy, launch, capture, classify, commit. | `xenia-thor-autonomous-driver` |
 
