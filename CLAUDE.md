@@ -355,6 +355,33 @@ Packing together is not free. Accept these:
   This is why [One toolchain](#0-one-toolchain--do-this-first) is Phase 1 and
   blocks everything.
 
+## Read before you claim
+
+**Every claim of the form "no fork has this" made in this repo has been wrong.**
+
+| Claim | Reality |
+| --- | --- |
+| No fork has differential testing | `melonds_HD_2/renderer_cases/` does |
+| The on-device MCP is design only | xenia has an implemented server |
+| No fork validates driver GPU family | rpcsx `GpuDriverAdvisor` does |
+| Three forks duplicate an LRU cache | three different designs |
+| Six forks duplicate a driver picker | four different concerns |
+| The Thor hardware profile is to be designed | rpcsx `ThorPerformanceProfile` exists |
+
+The cause is the same every time: **the inventory was built from file listings,
+and a listing cannot tell you what a file does.**
+
+Rules:
+
+1. **Never write "no fork has this" without a search that names its method.**
+   State what you searched for, where, and how.
+2. **A capability recorded from a listing is a hypothesis.** Mark it unread
+   until somebody opens the file.
+3. **Reading is cheap.** Each correction above took under fifteen minutes and
+   each reversed a plan that was already written down.
+4. **Similar names are not a shared capability.** Three LRU caches were three
+   designs. Six driver pickers were four concerns.
+
 ## Duplication must be structurally impossible
 
 **The root problem: agentic coding accelerates duplication.**
@@ -710,9 +737,14 @@ something no fork does today.
 
 - **The GPU driver manager gets smaller and sharper.** It stops being a
   browser for drivers and becomes: verify the pinned driver loaded, expose the
-  override, warn when the configuration is off baseline. Read
-  `rpcsx-ui-android` `GpuDriverAdvisor.kt` first, because advising is closer
-  to this job than listing.
+  override, warn when the configuration is off baseline.
+
+  **`rpcsx` `GpuDriverAdvisor.kt` already does the hard part.** It returns a
+  verdict of `INCOMPATIBLE`, `RISKY` or `COMPATIBLE`; `deviceTarget()` reports
+  `a7xx` and `Adreno 740` on the Thor; and `claimedFamilies()` recovers the
+  target family from a package name, including Qualcomm "Gen N" marketing.
+  It also states honestly that this is a heuristic, because AdrenoTools
+  metadata carries no target-GPU field. **Take it, do not rewrite it.**
 - **Every performance number states the driver build.** xenia's scripts
   already do this. It becomes a fleet rule.
 
@@ -1385,9 +1417,18 @@ ARMSX2's `GSTextureUpscaler` with the names changed.
 
 **Order extraction by risk, not by value:**
 
-1. The GPU driver manager. Six forks, one GPU, and xenia's is BSD. **Read all
-   six before extracting.** The variation looks like UI rather than algorithm,
-   but that is unproven.
+1. The GPU driver manager. **Read on 2026-08-22: it is four concerns, not six
+   copies.** Compose the shared version from the fork that does each best.
+
+   | Concern | Take from |
+   | --- | --- |
+   | Install and storage | any; they agree on ADPKG |
+   | Launch wiring, safe fallback | xenia-thor `GpuDriverManager` |
+   | Remote catalogue, recommendation | azahar-thor `GpuDriverHelper` |
+   | Device capability detection | eden-thor `GpuDriverHelper` |
+   | Suitability assessment | rpcsx `GpuDriverAdvisor` |
+
+   See [`research_log/20260822_1945_gpu_driver_manager_read.md`](research_log/20260822_1945_gpu_driver_manager_read.md).
 
    *The LRU cache was first here and has been removed.* Reading the three
    implementations showed three different designs for three constraints, not

@@ -96,23 +96,50 @@ claimed for it.**
 | Game patch manager and UI | xenia-thor | shipped | `GamePatchManager.java`, plus its activity. |
 | Runtime ASM patching | Cemu-thor | shipped | `GraphicPack2PatchesApply`, with its own parser. |
 
-## GPU driver management — the most duplicated capability
+## GPU driver management — READ, and it is four concerns not six copies
 
-Six forks vendor `libadrenotools` and each wrote its own driver picker. Same
-feature, six times, for one GPU. There is no per-emulator variation to
-preserve. This is the lowest-risk extraction in the fleet.
+**This section previously said "same feature six times, no variation to
+preserve." That was wrong.** Read on 2026-08-22. See
+[`research_log/20260822_1945_gpu_driver_manager_read.md`](research_log/20260822_1945_gpu_driver_manager_read.md).
+
+| Concern | Fork | Lines | Notes |
+| --- | --- | --- | --- |
+| Install, select, **launch wiring** | xenia-thor | 582 | `GpuDriverManager.java`. Sets `gpu_vulkan_driver*` cvars. A bad package can never brick a launch; the native loader falls back to the system driver. |
+| Install, **remote catalogue and recommendation** | azahar-thor | 467 | `getRecommendedDriverOptions`, `downloadRecommendedTurnipDriver`, `downloadDriverAssetPackage`. |
+| Install, **device capability detection** | eden-thor | 267 | `isAdrenoGpu`, `supportsCustomDriverLoading`, `getSystemDriverInfo`, `initializeFreedrenoConfigEarly`. |
+| **Suitability assessment** | rpcsx-ui-android | 284 | `GpuDriverAdvisor.kt`. See below. |
+| libadrenotools vendored | Vita3K-Thor | — | No picker. |
+| libadrenotools vendored | Cemu-thor | — | No picker. |
+
+The shared version is a **composition** of these, each taken from the fork
+that does it best. Not "pick one and delete five."
+
+### rpcsx `GpuDriverAdvisor` already validates the GPU family
+
+Recorded three times in this repo that no fork does this. It does.
+
+- `Verdict { INCOMPATIBLE, RISKY, COMPATIBLE }`.
+- `deviceTarget()` returns `a7xx`, `Adreno 740` on the Thor.
+- `claimedFamilies()` recovers the target family from the package name and
+  description, including Qualcomm **"Gen N"** marketing: Gen 1 and 2 map to
+  a7xx, Gen 3 and later to a8xx.
+- States plainly that this is a heuristic, because AdrenoTools metadata carries
+  no target-GPU field, and never presents an unrecognised package as verified.
+
+**Take it. Do not rewrite it.**
+
+## Thor hardware profile
 
 | Capability | Fork | Quality | Notes |
 | --- | --- | --- | --- |
-| Driver manager UI | xenia-thor | shipped | `GpuDriverManager`, `GpuDriverManagerActivity`, `GpuDriverPackage`. |
-| Driver helper | azahar-thor | shipped | `GpuDriverHelper.kt`, `GpuDriverMetadata.kt`. |
-| Driver helper | eden-thor | shipped | `GpuDriverHelper.kt`, `GpuDriverMetadata.kt`. Local patch. |
-| Driver screen and advisor | rpcsx-ui-android | shipped | `GpuDriversScreen.kt`, `GpuDriverAdvisor.kt`. |
-| libadrenotools vendored | Vita3K-Thor | shipped | No picker found. |
-| libadrenotools vendored | Cemu-thor | shipped | No picker found. |
+| **Thor performance profile** | **rpcsx-ui-android** | **shipped** | `net.rpcsx.performance.ThorPerformanceProfile`, 165 lines. `isThorTarget()`, `applyStartupDefaults()`, persisted `PROFILE_VERSION`, `ApplyResult` reporting changed and failed settings. |
 
-`GpuDriverAdvisor` is the only one that advises rather than lists. Read it
-first.
+Shared-layer item 3 was listed as a thing to design. It is partly built.
+
+It also carries a second affinity lesson: rpcsx keeps the **full** core mask on
+purpose, because restricting the process to the big cores drags Java, audio and
+compiler threads onto the same cores as emulation work. xenia found the
+opposite failure. Two forks, two findings, neither aware of the other.
 
 ## Per-game profiles and the app shell
 
