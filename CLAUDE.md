@@ -281,6 +281,92 @@ Packing together is not free. Accept these:
   This is why [One toolchain](#0-one-toolchain--do-this-first) is Phase 1 and
   blocks everything.
 
+## RetroArch is a source of ideas, not a model
+
+**We diverge from RetroArch on purpose.** Mine it for ideas. Do not copy its
+shape.
+
+What to take:
+
+- The separate-distribution pattern, for PS3 only. See
+  [How RetroArch handles a GPL-2 core](#how-retroarch-handles-a-gpl-2-core-under-a-gpl-3-frontend).
+- Slang shader presets, through librashader.
+- Its core list, as a map of which emulator is worth looking at per system.
+
+What to reject:
+
+- **The user experience.** RetroArch is hard to use. That is the stated reason
+  this project exists. A person should not need to learn a menu system to play
+  a game. See [Foundation](#foundation) point 4.
+- **The uniform core API.** One narrow interface for every system costs speed
+  and expressiveness. See
+  [The contract is thin](#the-contract-is-thin-because-the-cores-differ).
+- **Core-per-system-per-fork sprawl.** We ship one tuned backend per system,
+  not five choices.
+
+Treat RetroArch as the anti-pattern for usability. If a design decision moves
+the app closer to RetroArch's menus, it is wrong.
+
+## Future systems
+
+Wanted, but lower priority than the current fleet. No fork is chosen for any
+of these, and none is surveyed.
+
+| System | Notes |
+| --- | --- |
+| SNES | Several mature emulators. Licences differ sharply. |
+| GBA | Several mature emulators. |
+| N64 | Mature, but accuracy and speed vary a lot per emulator. |
+| Sega Genesis | Mature. Licence is the main risk. |
+| Dreamcast | One dominant Android-capable emulator. |
+| Sega Saturn | Hard to emulate. Fewer options. |
+| PSP | Mature, and already Android-native. |
+| PS4 | Early. Expect it to be immature. |
+| Xbox, original | Early on desktop. Not proven on ARM64. |
+| Japanese feature phone | For Rockman: Legend of the 5 Islands. See below. |
+
+### Adding a system: licence first, difficulty second
+
+**Check the licence before you evaluate the emulator.** This is now the gate.
+
+- A **GPL-3.0-compatible** core packs into the binary and inherits the whole
+  shared layer.
+- A **GPL-2.0-only** core becomes another PS3-style exception: an optional
+  separate install with no shared device, no shared cache and no shared upload
+  path.
+- A **non-commercial or otherwise non-free** core cannot be used at all.
+
+Two well-known landmines to verify early: some popular SNES and Genesis
+emulators carry custom non-commercial licences rather than the GPL. **Verify
+before you invest.** A permissive alternative usually exists for both systems.
+
+### The payoff compounds
+
+Each new backend is cheaper than the last. A new system inherits the shared
+upscaler, the per-class routing, the GPU driver manager, per-game overrides,
+the cheat library and the test harness. It supplies only what its own hardware
+knows.
+
+That is the argument for finishing the shared layer before adding systems. Add
+a system now and you port everything by hand. Add it later and you write a
+contract implementation.
+
+### The Japanese feature phone case
+
+Rockman: Legend of the 5 Islands is a Japanese feature phone game. That is a
+different problem from a console. The runtime is a Java profile such as
+NTT DoCoMo DoJa or i-appli, not a hardware machine.
+
+Consequences:
+
+- The work is a runtime implementation, not hardware emulation.
+- The shared layer gives it almost nothing. There is no texture upload path to
+  hook and no GPU to tune.
+- Treat it as a separate project that happens to live in the same app.
+
+Survey what exists before assuming this is small. It may be the hardest item
+on the list, despite the game being the smallest.
+
 ## Licences constrain the one-app plan
 
 **Read this before you design how a backend loads.** The licences are not all
