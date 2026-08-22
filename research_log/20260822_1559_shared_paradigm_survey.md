@@ -214,3 +214,55 @@ Unify on one row:
 
 Do this before any code extraction. Shared native code cannot exist across
 seven C++ runtimes.
+
+## Finding 6: the toolchain row is decided
+
+Read from the device over adb on 2026-08-22.
+
+| Property | Value |
+| --- | --- |
+| Model | AYN Thor |
+| Android | 13 |
+| API level | 33 |
+| ABI | arm64-v8a |
+| Hardware | qcom |
+| adb address | 192.168.1.3:5555 |
+
+A Quest 2 is also attached to this box. A bare adb command fails with "more
+than one device/emulator". Always pass `-s`.
+
+Installed NDK versions on this box: 25.0.8775105, 27.3.13750724,
+28.0.13004108, 28.2.13676358, 29.0.13113456, 29.0.14206865, 30.0.15729638.
+Installed platforms: android-33, android-35, android-36, android-37.0.
+
+NDK r29 is the latest stable release as of August 2026. NDK r30 is in beta and
+will become the LTS release. Android 17 is API 37, released 2026-06-16.
+
+Decision: NDK 29.0.14206865, arm64-v8a only, minSdk 33, targetSdk 37,
+compileSdk 37. Recorded in CLAUDE.md.
+
+## Finding 7: the test infrastructure is the largest synergy gap
+
+Four forks hold automated test and replay tools. No fork holds more than two.
+Nothing is shared.
+
+- ARMSX2: `pcsx2-gsrunner` replays a GS dump headless. It has a RenderDoc
+  capture hook and a golden image comparer, `comparer.js`. `pcsx2-eerunner`
+  runs the EE headless.
+- xenia-thor: GPU trace dump and viewer, an Android trace viewer activity, and
+  an agent skill at `.agents/skills/xenia-renderdoc-replay/`. Two research
+  documents on record and replay.
+- Vita3K-Thor: a working on-device regression suite, a savestate fixture
+  runner, a render regression matrix as JSON, and an agent skill at
+  `.agents/skills/vita3k-regression-ledger/`.
+- azahar-thor: input movie record and replay in `src/core/movie.cpp`.
+- rpcsx-ui-android-thor: `rsx_replay.cpp`, inherited from rpcs3.
+
+No test or replay capability found in Cemu-thor, eden-thor, melonDS-android or
+GameThor.
+
+**Extract the test harness before the renderer features.** Without a shared
+harness, an agent cannot separate a good port from a regression. The fan-out
+then produces damage instead of work.
+
+Full table in [`capability_inventory.md`](../capability_inventory.md).

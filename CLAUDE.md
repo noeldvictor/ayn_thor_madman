@@ -182,6 +182,39 @@ read them where they are.
 **Large binary files bloat the repo.** A manual is often a large PDF. Decide on
 git-lfs before you commit a large set. This is not decided yet.
 
+## Console lab
+
+`console_lab/<console>/` holds experiments and speedups that belong to one
+console only. The shared layer holds what propagates. The console lab holds
+what does not.
+
+Directories: `ps2`, `ps3`, `wiiu`, `3ds`, `nds`, `vita`, `xbox360`, `switch`,
+`pc`.
+
+Name a file `YYYYMMDD_HHMM_<slug>.md`, as in the logs.
+
+Use it for work that is tied to one machine:
+
+- A recompiler change for one CPU, such as the PS3 SPU or the Xbox 360 Xenon.
+- A graphics quirk of one GPU, such as the Wii U or the PS Vita GXM.
+- A cache or a memory map that only one console has.
+- A game-specific fix.
+
+**Default to the shared layer. Use the console lab only after you check.**
+Filing a change here is a claim that no other fork can use it. That claim is
+how the synergy was lost in the first place.
+
+Before you file here, answer two questions in the file:
+
+1. Which other forks did you check?
+2. Why can they not use this?
+
+If you cannot answer both, the work belongs in the shared layer.
+
+Record anything reusable in
+[`capability_inventory.md`](capability_inventory.md), even when the code stays
+console-specific. The idea can travel when the code cannot.
+
 ## The fleet
 
 The forks stay in their current directories. This repo tracks the forks. This
@@ -309,20 +342,53 @@ Measured values are in
 [`research_log/20260822_1559_shared_paradigm_survey.md`](research_log/20260822_1559_shared_paradigm_survey.md),
 Finding 5.
 
-Unify these:
+### The standard row
 
-- **NDK version.** One version. Choose the newest that every fork can build.
-- **ABI.** `arm64-v8a` only. The Thor is arm64. Drop `armeabi-v7a` and
-  `x86_64` from the shipping build. ARMSX2 already does this.
-- **`minSdk`.** One value, 33 or lower. The Thor runs Android 13, which is
-  API 33. GameThor targets API 28 today.
-- **`targetSdk` and `compileSdk`.** One value each.
-- **Gradle and AGP.** One version each. The fleet spans Gradle 7.3.3 to 9.6.1.
-- **C++ standard.** One value. melonDS-android declares `-std=c++17`.
-- **Vulkan setup.** One loader, one validation configuration, one extension
-  set.
+**Every fork uses this row. No fork sets its own value.** Decided 2026-08-22.
 
-Record the chosen row in this repo. Each fork reads it. No fork sets its own.
+| Setting | Value | Reason |
+| --- | --- | --- |
+| NDK | `29.0.14206865` | Latest stable r29. Installed on this box. |
+| ABI | `arm64-v8a` only | The device reports `arm64-v8a`. |
+| `minSdk` | 33 | The device reports API 33. |
+| `targetSdk` | 37 | Android 17, released 2026-06-16. |
+| `compileSdk` | 37 | Matches `targetSdk`. |
+| Gradle | 9.6.1 or newer | The newest already in the fleet. |
+| C++ standard | C++20 | Verify each fork builds. melonDS declares C++17. |
+
+Notes:
+
+- **NDK r30 is beta.** r30 becomes the LTS release. Move to it when it is
+  stable, not before. Seven emulator cores on a beta toolchain is a bad trade.
+  `30.0.15729638` is installed on this box. Do not use it for a shipping build.
+- Drop `armeabi-v7a` and `x86_64` from the shipping build. The Thor is arm64.
+  ARMSX2 already ships arm64 only.
+- `minSdk` 33 is exact. The app targets one device. A lower value buys nothing.
+- Google Play requires API 37 targeting from August 2027. This project is
+  ahead of that date.
+- **C++20 is not verified.** Build each fork before you commit to it. Record
+  the result in a work log.
+
+Unify the Vulkan setup too: one loader, one validation configuration and one
+extension set.
+
+### The device
+
+| Property | Value |
+| --- | --- |
+| Model | AYN Thor |
+| Android | 13 |
+| API level | 33 |
+| ABI | `arm64-v8a` |
+| Hardware | qcom |
+| adb address | `192.168.1.3:5555` |
+
+**A second device is attached to this box.** A Quest 2 answers adb as well. A
+bare `adb` command fails with "more than one device/emulator".
+
+**Always pass `-s` to adb.** Use `adb -s 192.168.1.3:5555 <command>`. Never
+run a bare `adb shell`, `adb install` or `adb push`. A command without `-s`
+either fails or reaches the wrong device.
 
 ### 1. Upscaling and filters
 
@@ -496,6 +562,96 @@ Build one MCP server with three surfaces.
 
 `armsx2-thor/ARMSX2/docs/mcp-server.md` scopes this into four capability
 groups. Read it first.
+
+## Tests are mandatory
+
+**A change without a test does not land.** This is the only way to develop at
+this scale. One person and an agent fleet cannot hold seven emulators in their
+head. The test suite holds it instead.
+
+An emulator is easier to test than most software, because it is deterministic
+by construction. The same input and the same state produce the same frame.
+Most emulator projects never use this. The paradigms below turn that property
+into automation.
+
+### The paradigms that make emulator QA automatic
+
+Ranked by value. The fleet already has most of them, in one fork each.
+
+1. **GPU trace capture and replay.** Capture the command stream, then replay it
+   headless without the game and without the CPU core. This tests the renderer
+   at full speed, in a queue, with no controller input. It is the single
+   highest-value test tool an emulator can have.
+
+   In the fleet: ARMSX2 `pcsx2-gsrunner` with `RenderDocCapture`. xenia-thor
+   `d3d12_trace_dump_main.cc` and `d3d12_trace_viewer_main.cc`, plus the
+   `GpuTraceViewerActivity` on Android. rpcsx `rsx_replay.cpp`.
+
+2. **Savestate as the test fixture.** Boot to a saved state instead of playing
+   to the scene. This cuts a test from minutes to seconds, and it removes the
+   menus, the intros and the loading from the measurement.
+
+   In the fleet: Vita3K-Thor `tools/android/run-thor-quickstate-regression.ps1`.
+
+3. **Golden image comparison.** Render a fixed frame, then compare it to a
+   stored reference with a perceptual metric. An optimisation that breaks the
+   rendering fails on its own, with no human looking at a screenshot.
+
+   In the fleet: ARMSX2 `pcsx2-gsrunner/comparer.js` and `comparer.css`.
+
+4. **Deterministic input replay.** Record the input stream, then replay it
+   exactly. This makes a whole play session a repeatable test.
+
+   In the fleet: azahar-thor `src/core/movie.cpp`, with record and play
+   dialogs. xenia-thor researched the opposite approach and wrote it up in
+   `docs/research/20260529-210700-deterministic-input-avoid-movies.md`. Read
+   both before you choose.
+
+5. **An on-device regression matrix.** A declared list of games, scenes and
+   settings that runs on the real hardware and reports a table.
+
+   In the fleet: Vita3K-Thor `tools/android/thor-render-regression-matrix.json`
+   and `run-thor-regression-suite.ps1`.
+
+6. **Performance as a test.** Record FPS, 1% low and frametime for each commit.
+   Fail the build on a regression beyond a threshold. Almost no emulator does
+   this on the target hardware. The Thor is one fixed device, so the numbers
+   are comparable across commits.
+
+7. **Differential testing, interpreter against recompiler.** Run the same code
+   through both, compare the state, and stop at the first divergence. This
+   finds a recompiler bug at the exact instruction instead of at the crash.
+
+8. **Sanitizer builds.** ASan, UBSan and TSan in the automated build. Many
+   emulators cannot even compile with them. Getting there is the work.
+
+9. **Boot and compatibility sweep.** Launch every game in the library headless,
+   record how far each reaches. This catches an upstream harvest that broke a
+   console without anybody playing it.
+
+### The gap
+
+Items 1 to 5 exist in the fleet **today**, spread across four forks. No fork
+has more than two. Nothing shares them.
+
+Two forks already wrote agent skills for this work:
+
+- `xenia-thor-workspace/xenia-thor/.agents/skills/xenia-renderdoc-replay/`
+- `psvita/Vita3K-Thor/.agents/skills/vita3k-regression-ledger/`
+
+**Extract the test harness before the renderer features.** A shared harness
+makes every later extraction safe to attempt. Without it, an agent cannot tell
+a good port from a regression, and the fan-out in
+[Agentic acceleration](#agentic-acceleration) produces damage instead of work.
+
+### Rules
+
+- Every shared-layer change needs a test that fails before the change.
+- Every performance claim needs a number from the device, and the commit it was
+  measured at.
+- Every harvested change needs the test that proves it survived the port.
+- A test that needs a human to look at a screenshot is not a test. Automate the
+  comparison or record it as a known limit.
 
 ## AI-driven development, QA and experiments
 

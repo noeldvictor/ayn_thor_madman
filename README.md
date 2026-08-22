@@ -34,8 +34,10 @@ map disagree.
 | `CLAUDE.md` | The operating contract. Read it first. |
 | `research_log/` | One file for each research session. |
 | `work_log/` | One file for each work session. |
+| `capability_inventory.md` | Which fork has which capability. Read before you build. |
 | `hardware_ref/thor/` | Manuals for the Thor: SoC, CPU, GPU, Android, device. |
 | `hardware_ref/console/` | Manuals for each emulated console. |
+| `console_lab/` | Experiments and speedups for one console only. |
 
 Name a log file `YYYYMMDD_HHMM_<slug>.md`.
 
@@ -68,6 +70,10 @@ The full map, with paths and upstream sources, is in
 Early. The contract is written. The first survey is complete. See
 [`research_log/`](research_log/).
 
-The next decision is the toolchain row: one NDK, one `minSdk`, one Gradle
-version for the whole fleet. The fleet currently spans NDK 22 to NDK 29.
-Shared native code cannot exist across that range.
+The toolchain row is decided: NDK 29.0.14206865, `arm64-v8a` only,
+`minSdk` 33, `targetSdk` 37, `compileSdk` 37. The fleet currently spans NDK 22
+to NDK 29, so every fork needs the change.
+
+The next work is the shared test harness. Four forks hold automated test and
+replay tools. No fork holds more than two, and nothing is shared. Extract that
+harness before any renderer feature.
