@@ -1300,6 +1300,28 @@ The extraction has two goals:
   time.
 - **AI legibility.** An agent must find and change the code without a guide.
 
+**Write the contract against a pattern, never against one fork's version.**
+[`shared_layer/PATTERNS.md`](shared_layer/PATTERNS.md) generalises the fleet
+into eight pipelines that every emulator has: code translation, texture
+upload, shader translation, memory mapping, presentation, input, state
+serialization, and configuration. Each entry names what is shared and what
+must stay in the backend.
+
+Read it before designing any contract. The contract for texture upload is not
+ARMSX2's `GSTextureUpscaler` with the names changed.
+
+**Order extraction by risk, not by value:**
+
+1. Support patterns with no guest-specific behaviour. The LRU cache exists
+   three times in the fleet and there is nothing to preserve per fork. If the
+   machinery cannot consolidate an LRU cache, it will not manage a texture
+   cache.
+2. The GPU driver manager. Six forks, no real variation, and xenia's is BSD.
+3. The shader and pipeline cache. Measurable, user-visible, no renderer
+   internals needed.
+4. Texture upload. The flagship feature lives here.
+5. Code translation. Last. It is the deepest reach into a core.
+
 Work in this order for each paradigm:
 
 1. Find every fork that implements it. Read each implementation.
