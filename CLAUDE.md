@@ -202,6 +202,41 @@ ARMSX3 is not a way around the problem. It is the same problem, stated more
 plainly. A relicence is not available either, because RPCS3 has many
 copyright holders.
 
+### No GPL-3.0 PS3 emulator exists
+
+Checked 2026-08-22. Every PS3 emulator is GPL-2.
+
+| Emulator | Licence | State |
+| --- | --- | --- |
+| RPCS3 | GPL-2.0-only | The only mature PS3 emulator. |
+| rpcsx | GPL-2.0, no or-later | Contains an rpcs3 subtree. |
+| ARMSX3 | GPL-2.0-only, stated | Direct Android port of RPCS3. |
+| aps3e | GPL-2.0-only | rpcs3-derived. |
+| Nucleus | GPL-2.0 | Independent, but **archived 2026-07-15**. Ran few games. |
+
+Nucleus is the only PS3 emulator not derived from RPCS3. It is dead and it was
+never close to usable. It is not a base.
+
+There is no permissive or GPL-3.0 PS3 emulator to fork.
+
+### Do not wait for a relicence
+
+No RPCS3 relicensing effort was found. Do not plan around one.
+
+A relicence needs consent from every copyright holder, or the removal and
+rewrite of the code of anyone who refuses. RPCS3 dates from 2011 and has
+hundreds of contributors. Projects of that size almost never relicence. The
+Linux kernel is stuck on GPL-2 for the same reason.
+
+Nobody is pushing for it because almost nobody hits this problem. A standalone
+PS3 fork has no conflict. The conflict appears only when PS3 is combined with
+GPL-3.0 emulators in one binary, which is what this project wanted to do.
+
+**Do not block on it.** Ship the GPL-3.0 app with the other eight systems.
+`ps3-thor/rpcsx-ui-android` already works as its own app; keep it that way. If
+RPCS3 ever relicences, revisit. The cost of revisiting is low, because the
+shared layer contract will already exist by then.
+
 ### Choose one side of the GPL fence
 
 The fleet splits into two groups that cannot share a linked binary.
