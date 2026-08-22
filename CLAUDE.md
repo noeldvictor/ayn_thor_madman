@@ -568,10 +568,86 @@ This does not cancel [the hot path philosophy](#the-philosophy-share-the-hot-pat
 below. It narrows where it applies. Reaching into a core is still sanctioned;
 it now needs a read that proves the reach is worth it.
 
+### Start with Vulkan, at the device layer, not the renderer
+
+Decided 2026-08-22 after reading. **This is now the first extraction, ahead of
+the driver manager.**
+
+**Seven forks each built their own Vulkan device layer.** Verified, not
+assumed:
+
+| Fork | Its own device layer |
+| --- | --- |
+| ARMSX2 | `GSDeviceVK`, plus a vendored `vk_mem_alloc.cpp` |
+| Cemu-thor | `VKRMemoryManager` |
+| azahar-thor | `vk_instance`, `vk_memory_util` |
+| melonDS-android | `VulkanContext` |
+| Vita3K-Thor | `vulkan/context.cpp`, `vulkan/allocator.cpp`, vendored VMA-Hpp |
+| xenia-thor | `ui/vulkan/`, `vulkan_shared_memory` |
+| eden-thor | `vulkan_device`, `vulkan_instance` |
+
+Three of them vendor a memory allocator separately.
+
+**Unlike every other candidate, this one cannot be guest-specific.** Creating an
+instance, choosing a physical device, setting up queues and allocating memory
+have no guest semantics. That is why this is genuine duplication where the LRU
+cache was not.
+
+It is also **required** by the packed binary. One binary cannot sensibly hold
+seven Vulkan devices.
+
+#### The line
+
+**Shared, below the renderer:**
+
+- Instance creation, extension and layer selection, validation configuration.
+- Physical device selection and queue families.
+- The logical device and queues.
+- One memory allocator and one memory budget owner.
+- One pipeline cache and one shader module cache, warmed across backends.
+- Descriptor pools, staging and upload buffers.
+- Swapchains for **both** displays, present and frame pacing.
+- Driver loading through adrenotools. The GPU driver manager work folds in
+  here rather than standing alone.
+
+**Not shared, and this is the important half:**
+
+- **Render pass and subpass structure.** Tiler-critical. Flattening it spills
+  GMEM to system memory. See
+  [Vulkan is the substrate](#vulkan-is-the-substrate-and-the-adreno-is-a-tiler).
+- **LRZ decisions.**
+- Draw translation, guest format conversion, and pipeline state derived from
+  guest state.
+
+**Do not build a shared renderer.** Build the layer beneath one. The emulators
+then stop creating their own device and take the shared one, which is the
+"work backwards" direction.
+
+#### Prior art
+
+`xenia-thor/docs/research/20260517-142224-thor-vulkan-device-baseline.md` is a
+measured device baseline, dated 2026-05-17. Board platform `kalama`, Vulkan
+instance API 1.3.0, device API 1.3.128, vendor ID `0x5143`, GPU clocks from
+680 MHz down to 124.8 MHz, stock driver
+`com.qualcomm.qti.gpudrivers.kalama.api33`. It also records the target as the
+**Thor Max**.
+
+**Read it before writing any device setup.** The capabilities are already
+measured on this hardware.
+
+#### Why this ordering is safer than it looks
+
+Building a device layer with no consumer is how an API comes out wrong. The
+contract avoided that by falling out of real screens.
+
+Apply the same rule: **bring up the shared device against one backend, on one
+real workload, measured.** Then a second. Do not design it for seven.
+
 ### What to do next
 
 1. Finish the app shell. Device-free, high value, no duplication risk.
-2. Compose the GPU driver manager from its four owners.
+2. **The shared Vulkan device layer**, brought up against one backend. See
+   above. The driver manager folds into this rather than being separate.
 3. **Prove the packed binary on two backends before committing seven.** One
    toolchain across seven C++ codebases is unproven, and the tiler research
    says a shared render path can be slower than what it replaces.

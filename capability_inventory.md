@@ -155,6 +155,30 @@ opposite failure. Two forks, two findings, neither aware of the other.
 xenia-thor has the most complete Android shell in the fleet. Survey it before
 you design the app UI.
 
+## Vulkan device layers — seven, and genuinely duplicated
+
+Verified 2026-08-22. Every fork built its own. **Unlike the LRU caches and the
+driver pickers, this cannot be guest-specific**: creating an instance, choosing
+a device, setting up queues and allocating memory have no guest semantics.
+
+| Fork | Implementation |
+| --- | --- |
+| ARMSX2 | `GSDeviceVK`, vendored `vk_mem_alloc.cpp` |
+| Cemu-thor | `VKRMemoryManager` |
+| azahar-thor | `vk_instance`, `vk_memory_util` |
+| melonDS-android | `VulkanContext` |
+| Vita3K-Thor | `vulkan/context.cpp`, `vulkan/allocator.cpp`, vendored VMA-Hpp |
+| xenia-thor | `ui/vulkan/`, `vulkan_shared_memory` |
+| eden-thor | `vulkan_device`, `vulkan_instance` |
+
+Three vendor a memory allocator separately.
+
+**Thor device baseline already measured:** xenia
+`docs/research/20260517-142224-thor-vulkan-device-baseline.md`, 2026-05-17.
+Board `kalama`, instance API 1.3.0, device API 1.3.128, vendor `0x5143`, GPU
+clocks 680 MHz to 124.8 MHz, target recorded as **Thor Max**. Read it before
+writing device setup.
+
 ## Shader caches
 
 | Capability | Fork | Quality | Notes |
