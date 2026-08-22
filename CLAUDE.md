@@ -415,6 +415,79 @@ Record the decision and its reasons before you extract. Add it to
 `shared_layer/OWNED.md`. A depth decision made once, in writing, stops the
 question being re-argued per fork.
 
+## What "high performance" means here
+
+Three models exist for running many emulators on one Android handheld. Ours is
+the third, and it is not a middle ground between the other two.
+
+| | Separate apps, the Retroid and Odin default | libretro and RetroArch | **This project** |
+| --- | --- | --- | --- |
+| Emulator | untouched, standalone | wrapped behind a narrow API | **hollowed out on the host side** |
+| Vulkan device | one per app | one per core | **one, shared** |
+| Shader cache | one per app | one per core | **one, shared** |
+| Texture path | one per app | one per core | **one, shared** |
+| Driver | chosen per app, by hand | chosen per app | **one pinned build, bundled** |
+| Thread scheduling | apps fight for the X3 | apps fight for the X3 | **one scheduler, cluster aware** |
+| Memory budget | no owner | no owner | **one owner** |
+| Settings | N schemas | one lowest common denominator | **one schema, every option per game** |
+| Can it make a core faster | no | no | **yes, that is the point** |
+
+### What a Thor core is
+
+**A Thor core is an emulator with its host-side pipelines removed.**
+
+That is the definition. It is not a libretro core and it is not a standalone
+emulator.
+
+- A **libretro core** keeps everything and is wrapped. RetroArch adds UI at
+  the edges and cannot reach inside, because it must support hundreds of
+  cores.
+- A **standalone emulator** keeps everything and shares nothing. Eight
+  standalone emulators on one device means eight Vulkan devices, eight shader
+  caches and eight fights over the prime core.
+- A **Thor core** keeps its guest side and **gives up its host side**. It
+  keeps the ISA decoder, the guest GPU model, the guest memory map and the
+  timing. It hands over the Vulkan device, the caches, the upload path, the
+  scheduler, the memory budget and the present path.
+
+See [`shared_layer/PATTERNS.md`](shared_layer/PATTERNS.md) for the line
+between guest side and host side, pipeline by pipeline.
+
+### Where the wins actually come from
+
+Be honest about which of these are proven and which are expectations.
+
+**Structural, and certain:**
+
+- One shader cache warmed across every session, instead of eight cold ones.
+- One memory budget arbitrating between texture and shader caches, on a device
+  with a hard ceiling.
+- One scheduler that knows there is a single X3 prime core. xenia already
+  measured guest threads pinned to the A510 cores while the X3 sat idle.
+- One pinned driver, so every backend gets the fastest known configuration
+  rather than whatever the user last installed.
+
+**Expected, and unproven:**
+
+- Link-time optimisation across the shared layer in the hot path.
+- Shared upscaling costing less than eight separate implementations.
+
+**Explicitly not claimed:**
+
+- A large frame win from a shared renderer. xenia's ledger records many
+  incremental GPU levers as `DEAD` or `FLAT`. See
+  [Expect maintenance wins from the shared layer, not large frame wins](#expect-maintenance-wins-from-the-shared-layer-not-large-frame-wins).
+
+### The features nobody else can copy
+
+Speed is not the only axis, and two items here are structurally unavailable to
+a multi-device product:
+
+- **Two internal touch displays.** Three systems in the fleet are dual-screen.
+  A frontend that targets many devices cannot rely on a second screen.
+- **One device, one driver, one hardware profile.** Every tuning decision can
+  be exact rather than defensive.
+
 ## The philosophy: share the hot path, not the periphery
 
 This is the central idea. Everything else follows from it.
@@ -2094,10 +2167,13 @@ They meet when the first backend is wired to the shell.
 mockup. It is how the backend contract gets discovered, and its output is a
 specification.
 
+**Step 1 is done.** [`app/SCREENS.md`](app/SCREENS.md) lists 14 screens and,
+for each, what it needs from a backend. The contract falls out of that last
+column and is drafted at the end of that file.
+
 Do it in this order:
 
-1. **List the screens.** Library, game detail, in-game overlay, settings,
-   cheats, patches, storage, driver manager, dual-screen layout.
+1. **List the screens.** Done. See [`app/SCREENS.md`](app/SCREENS.md).
 2. **Build the shell with fake data.** Navigable, on the device, both
    displays. No emulator behind it.
 3. **Pin the settings schema.** Every setting gets a stable key, a type, a
