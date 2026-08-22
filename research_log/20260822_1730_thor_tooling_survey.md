@@ -199,3 +199,106 @@ adrenotools. Relevant to the GPU driver manager extraction.
 3. Survey the `wf_*.mjs` workflow scripts. They are prior art for agentic
    orchestration in this project.
 4. Port the ARMSX2 iOS frame pacing UI to Android.
+
+## Online research, 2026-08-22
+
+Done to check the local findings against published guidance.
+
+### ADPF: the xenia finding matches Google's guidance
+
+Source: [Best practices for ADPF](https://developer.android.com/games/optimize/adpf/best-practices-adpf)
+and [Performance Hint API](https://source.android.com/docs/core/perf/performance-hint-api).
+
+Confirmed mechanics:
+
+- Every frame the app reports the **actual** duration, the sum of CPU and GPU
+  time, and the **target** duration from the render frame rate.
+- The system adjusts CPU frequency and scheduling when actual differs from
+  target.
+
+This confirms why the xenia `bd_adpf_ab.sh` reasoning is right. Blue Dragon is
+GPU-bound at about 15 fps and uncapped, so a fixed 60 fps target reports a
+deadline miss on every frame, and the system answers with CPU boost that
+cannot add a frame.
+
+Two rules to adopt from the guidance:
+
+- **Measure without ADPF first.** Establish the baseline before adding the
+  hint logic. Otherwise the hint is being tuned against an unknown.
+- **Test for 15 minutes or more.** Thermal behaviour only stabilises over a
+  long run. A short run measures the cold device, which is not how anybody
+  plays.
+
+The guidance also says ADPF should drive the game's own quality settings, not
+only report timings. That maps onto per-game profiles: the app can lower
+resolution or effects when the thermal headroom drops.
+
+### Adreno is a tiler, and that shapes the shared render path
+
+Sources: [Adreno GPU on Mobile best practices](https://docs.qualcomm.com/nav/home/mobile_best_practices.html?product=1601111740035277),
+[Turnip and tiled rendering](https://deepwiki.com/sailfishos-mirror/mesa/3.3.1-turnip-vulkan-driver-and-tiled-rendering),
+[Low-resolution-Z on Adreno GPUs](https://blogs.igalia.com/dpiliaiev/adreno-lrz/).
+
+- **GMEM is on-chip tile memory.** Adreno is a tile-based deferred renderer.
+  Rendering goes to a tile in GMEM, then resolves to system memory.
+- Turnip uses GMEM, VSC for binning, and LRZ for early depth rejection.
+- **Vulkan render passes and subpasses are the lever.** Multiple passes can
+  stay in GMEM. This is the main reason Vulkan beats GL on this hardware.
+- **Since Adreno 650, LRZ survives across render passes** if depth is stored
+  in one pass and loaded later, and LRZ state can be reused between passes.
+  The Adreno 740 is newer, so this applies.
+- Direct GMEM access extensions arrive at Adreno 840. **The 740 does not have
+  them.** Do not design around that.
+
+**Design consequence for the shared layer.** A shared render and upload path
+must be tiler-aware. Render pass structure is not a detail on this GPU; it
+decides whether work stays in GMEM or spills to system memory. A shared path
+that ignores this will be slower than the per-fork paths it replaces.
+
+This is the strongest argument found so far for xenia-thor leading the shared
+Vulkan work. Its GMEM and LRZ census scripts already measure exactly this, and
+no other fork has touched the layer.
+
+### Presentation API is the right route for Screen-2
+
+Source: [Multi-screen management within Android](https://innovorder.dev/multi-screen-management-within-android-56ef9052f066),
+[Using the Presentation API with Jetpack Compose](https://medium.com/@ibrahimethemsen/using-android-presentation-api-with-jetpack-compose-998adeae1130).
+
+- `Presentation` has existed since API 17 and is derived from `Dialog`.
+- `DisplayManager.getDisplays()` enumerates the displays. `DisplayListener`
+  handles connection changes.
+- It works with Jetpack Compose.
+
+Note the `Dialog` lineage. A `Presentation` owns a `Window`, so a Vulkan
+surface on Screen-2 needs a `SurfaceView` inside the `Presentation`, not a
+direct swapchain on the display.
+
+No published guidance was found on game performance with two rendered
+displays. **Treat the cost of a second swapchain as unmeasured.** Measure it
+before the dual-screen layout is assumed free.
+
+### Turnip on the Adreno 740
+
+Source: [AdrenoToolsDrivers](https://deepwiki.com/K11MCH1/AdrenoToolsDrivers),
+[Turnip driver guide 2026](https://pocket-gaming.org/2026/06/15/the-definitive-guide-to-android-turnip-drivers-hardware-compatibility-2026/).
+
+- Mesa v25 and v26 are the series for the Adreno 740 in 2026. Turnip v26.0.0
+  r7 is described as a community favourite for stability on Adreno 7xx.
+- Drivers load through adrenotools with no root.
+- Turnip supports more extensions than the stock Qualcomm driver, and is often
+  faster.
+
+xenia currently runs `mesa-turnip-v26.3.0-20260803-r7-vulkan-1.4.354-7`, which
+is newer than the community favourite. **The shared driver manager should
+curate a known-good list per backend, not only list what is installed.**
+`GpuDriverAdvisor` in rpcsx is the only implementation that advises, which is
+why it is the one to read first.
+
+## Open questions raised by this survey
+
+1. What does the second swapchain cost on Screen-2? Unmeasured, and the
+   dual-screen feature depends on the answer.
+2. Does the shared render path preserve LRZ reuse across passes? If not, the
+   shared layer loses performance the forks already have.
+3. Should the driver manager pin a known-good Turnip per backend, or track
+   one fleet-wide version?

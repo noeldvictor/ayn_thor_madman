@@ -1346,6 +1346,11 @@ Wi-Fi adb rules:
   handheld. A change that holds fps and lowers temperature is a win.
 - **State the expected signature before the run.** Name what the numbers
   should do if the change works. A run with no prediction cannot fail.
+- **Run for 15 minutes or more when heat matters.** Thermal behaviour only
+  settles over a long run. A short run measures a cold device, which is not
+  how anybody plays. This follows Google's ADPF guidance.
+- **Measure without ADPF first.** Establish the baseline before adding hint
+  logic, or the hint is tuned against an unknown.
 
 ### 1. Upscaling and filters
 
@@ -1575,11 +1580,40 @@ Both panels support 120 Hz. The device is capped to 60 Hz by a user setting.
 Any frame pacing or refresh rate work must check the current cap first, or it
 will measure the setting rather than the hardware.
 
-### Vulkan is the substrate
+### Vulkan is the substrate, and the Adreno is a tiler
 
 Every Tier 1 fork renders through Vulkan on Android. A Vulkan interop contract
 is the only foundation that exists across all of them. This makes a rework of
 the render path and the present path worthwhile.
+
+**The Adreno 740 is a tile-based deferred renderer. Design the shared render
+path for that, or it will be slower than the paths it replaces.**
+
+Facts that constrain the design:
+
+- **GMEM is on-chip tile memory.** Rendering goes to a tile in GMEM, then
+  resolves to system memory. A resolve that was not needed is wasted
+  bandwidth, and bandwidth is the budget on a handheld.
+- **Render passes and subpasses are the lever.** Several passes can stay in
+  GMEM. This is the main reason Vulkan beats GL here, and it is lost if the
+  shared path flattens the pass structure.
+- **LRZ, low resolution Z, rejects occluded fragments early.** Since the
+  Adreno 650 it survives across render passes when depth is stored and loaded
+  again, and its state can be reused between passes. The 740 supports this.
+- **Direct GMEM access extensions arrive at the Adreno 840.** The 740 does not
+  have them. Do not design around them.
+
+Consequence: **the shared render path must preserve each backend's render pass
+structure and its LRZ reuse.** A shared abstraction that reorders passes, or
+that forces a store and load where a backend kept data in GMEM, gives back
+more than it gains.
+
+xenia-thor should lead this work. Its `bd_gmem_ab.sh`, `bd_lrz_census.sh` and
+`bd_vrs_*` scripts already measure this layer, and no other fork has touched
+it. See [`capability_inventory.md`](capability_inventory.md).
+
+Open question, unmeasured: does a shared path keep LRZ reuse? Answer it before
+taking the render path into the shared layer.
 
 **You may rework major guts, and cores.** This project does not stay a thin
 patch set on top of upstream. Divergence is acceptable and expected when it
