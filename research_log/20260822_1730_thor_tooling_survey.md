@@ -302,3 +302,133 @@ why it is the one to read first.
    shared layer loses performance the forks already have.
 3. Should the driver manager pin a known-good Turnip per backend, or track
    one fleet-wide version?
+
+## Finding 9: xenia-thor has 29 agent skills and an experiment ledger
+
+`xenia-thor/.agents/skills/` holds **29 skills**. This is the prior art for the
+whole AI-first pillar, and it was unrecorded.
+
+### The skills that matter fleet-wide
+
+| Skill | What it encodes |
+| --- | --- |
+| `xenia-thor-evidence-discipline` | **MANDATORY** before stating any performance number. Capture device evidence to a file first. |
+| `xenia-experiment-ledger` | A SQLite database of experiments. Query it **before** running any device experiment. |
+| `xenia-thor-experiment-gate` | Gate risky experiments to prevent repeated guesses. |
+| `xenia-thor-autonomous-driver` | The full loop: preflight, build, deploy, launch, capture proof, classify, worklog, commit. |
+| `xenia-thor-ghidra-game-patch` | Author game patches as `.patch.toml` using Ghidra. |
+| `xenia-thor-adb-gpu-stage-split` | Per-stage Adreno 740 split over adb: binning, vertex, fragment, stall, per-draw cost. |
+| `xenia-snapdragon-profiler-gpu-metrics` | Adreno 740 hardware stage metrics. |
+| `xenia-windows-powershell-command-hygiene` | The PowerShell rules this repo also learned the hard way. |
+| `consult-hard` | Consult a heavyweight external model to red-team a plan. |
+| `xenia-continual-harness-refiner` | Online refinement of the harness itself. |
+| `video-transcript-mining` | Mine technical talks into portable techniques. |
+
+The project rule stated in the driver skill: **"no behavioral claim without
+device proof."** That matches the rule this repo wrote independently.
+
+### The experiment ledger is the anti-duplication mechanism for experiments
+
+`tools/exp_ledger.py`, a SQLite database.
+
+```
+python tools/exp_ledger.py check "<keyword>"   # BEFORE any experiment
+python tools/exp_ledger.py add "<lever>" "<category>" "<verdict>" ...
+python tools/exp_ledger.py dead [category]     # the do-not-retry list
+python tools/exp_ledger.py wins                # the shipped stack
+```
+
+Verdicts: `DEAD`, `FLAT`, `WIN`, `GFX-LOSS`, `CONFOUNDED`, `OPEN`.
+Categories: `cpu gpu edram interlock shader rearch draw vertex fill
+measurement`.
+
+**This is the same idea as `capability_inventory.md`, applied to experiments
+rather than features.** One stops rebuilding a feature; the other stops
+re-running a dead lever. The fleet needs both.
+
+### The measurement discipline is stricter than ours
+
+From the ledger skill, and it corrects a looseness in this repo's rules:
+
+> Cross-run fps/gpu_frame_us is CONFOUNDED (BD scene complexity swings ~4x per
+> second). Only trust: single-run in-place alternating A/B on a GPU-busy
+> frame, screenshot correctness, qemu byte-identical, code facts. If a number
+> is cross-run, verdict it CONFOUNDED, not WIN/DEAD. Post-temp change confirms
+> the field was reached (no heating = idle/menu scene = invalid run).
+
+Three rules to adopt fleet-wide:
+
+1. **Cross-run comparison is untrustworthy.** Use in-place alternating A/B
+   within one run.
+2. **`CONFOUNDED` is a verdict**, not a failure to record. A number that
+   cannot be trusted must be labelled, not discarded and not promoted.
+3. **Temperature proves the run happened.** No heating means the scene was
+   idle or a menu, so the run is invalid regardless of what the counter said.
+
+### The `.patch.toml` format already exists
+
+The per-game patch format this repo specified as a design is built:
+
+- `src/xenia/patcher/patcher.cc` and `patch_db.cc`, the patcher.
+- `.agents/skills/xenia-thor-ghidra-game-patch/scripts/emit_patch_toml.py`,
+  which authors a patch from Ghidra.
+- The skill names both intents this repo specified: performance fixes such as
+  60 FPS or disabling blur and SSAO, and cheats such as infinite health.
+
+**Read this before designing a patch format.** Compare it against Cemu
+`GraphicPack2Patches` and pick one, rather than inventing a third.
+
+## Finding 10: the standing conclusion challenges the shared-layer thesis
+
+From `xenia-experiment-ledger`, recorded as the standing conclusion:
+
+> BD's gap is HLE-vs-LLE, proven by RE2 Remake running on the same Thor via
+> GameNative/DXVK. xenia EMULATES the 360 GPU (slow); the fix is TRANSLATING
+> D3D9->Vulkan like DXVK. Every incremental GPU lever is DEAD/FLAT because it
+> patches the emulator instead of replacing it. Do not propose more
+> incremental GPU levers - check first.
+
+The `xbox360-d3d-hle-recomp` skill records the long-term direction, dated
+2026-07-02: **D3D9-Xbox to Vulkan HLE, plus AOT static recompilation of the
+PPC.**
+
+### Why this matters to this repo
+
+**It is evidence against incremental optimisation as the main lever.** The
+shared layer is, in large part, incremental: shared caches, a shared upload
+path, a shared device. xenia measured many such levers and recorded them
+`DEAD` or `FLAT`.
+
+This does not invalidate the shared layer. Two things stay true:
+
+- The duplication is real and costs maintenance regardless of speed.
+- Some shared items are not incremental GPU levers at all: the driver
+  baseline, the test harness, per-game overrides, dual-screen routing,
+  storage visibility, cheats and patches.
+
+**But it does argue against expecting large frame wins from a shared
+renderer.** Set that expectation now, before the work is done and disappoints.
+
+### It also changes the view of GameThor
+
+GameThor was queued for a decision on whether it belongs in this app, because
+it runs Windows games through Proton and shares little with the emulator
+backends.
+
+**The ledger cites GameNative and DXVK as the proof that translation beats
+emulation on this device.** RE2 Remake runs on the Thor that way. GameThor is
+not an odd fit; it is the working example of the architecture xenia wants to
+move toward.
+
+Keep GameThor. Study it as evidence, not only as a backend.
+
+## Next after this survey
+
+1. Read `tools/exp_ledger.py` and decide whether the fleet adopts it as-is.
+2. Read `src/xenia/patcher/` and compare with Cemu `GraphicPack2Patches`.
+   Choose one patch format for the fleet.
+3. Port `xenia-thor-evidence-discipline` and `xenia-experiment-ledger` into
+   fleet skills. They are the measurement culture, and propagating it matters
+   more than propagating any single feature.
+4. Record the HLE-versus-LLE conclusion in CLAUDE.md as a caution on expected
+   gains from a shared renderer.

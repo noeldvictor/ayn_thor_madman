@@ -246,6 +246,50 @@ Cemu had no capability recorded before 2026-08-22.
 | Per-game controller profile | shipped | `bin/controllerProfiles/CemuThor_StarFoxZero_StarFox64ish.xml`. |
 | Audio, full AX | shipped | `snd_core/ax_*`. |
 
+## Agent skills and experiment discipline
+
+`xenia-thor/.agents/skills/` holds **29 skills**. This is the prior art for the
+whole AI-first pillar. Port these rather than writing new ones.
+
+| Capability | Fork | Quality | Notes |
+| --- | --- | --- | --- |
+| **Experiment ledger, SQLite** | **xenia-thor** | **shipped** | `tools/exp_ledger.py`. Query before an experiment, record after. Verdicts DEAD, FLAT, WIN, GFX-LOSS, CONFOUNDED, OPEN. |
+| **Evidence discipline, mandatory** | **xenia-thor** | **shipped** | No performance number without a captured device file. |
+| Experiment gate | xenia-thor | shipped | Blocks repeated guesses on risky experiments. |
+| Autonomous driver loop | xenia-thor | shipped | Preflight, build, deploy, launch, capture, classify, worklog, commit. |
+| **Game patch format, `.patch.toml`** | **xenia-thor** | **shipped** | `src/xenia/patcher/`, plus `emit_patch_toml.py` authoring from Ghidra. |
+| Ghidra OODA loop | xenia-thor | shipped | Logcat and profiles into Ghidra-assisted fixes. |
+| Adreno per-stage GPU split | xenia-thor | shipped | Binning, vertex, fragment, stall, per-draw cost, over adb. |
+| Snapdragon Profiler metrics | xenia-thor | shipped | Adreno 740 hardware stage metrics. |
+| PowerShell command hygiene | xenia-thor | shipped | The same rules this repo learned separately. |
+| External model consult | xenia-thor | shipped | `consult-hard`, red-teams a plan with a heavyweight model. |
+| Continual harness refiner | xenia-thor | shipped | Online refinement of the harness itself. |
+| Video transcript mining | xenia-thor | shipped | Technical talks into portable techniques. |
+| Desktop build workaround | xenia-thor | shipped | Defender quarantine and linker issues on this box. |
+
+The project rule stated in the driver skill matches the one this repo wrote
+independently: **no behavioural claim without device proof.**
+
+### The measurement discipline is stricter than ours was
+
+- Cross-run fps and frame time are **CONFOUNDED**. Scene complexity swings
+  several times a second.
+- Trust only an in-place alternating A/B inside one run on a busy frame,
+  screenshot correctness, byte-identical comparison, or code facts.
+- **Temperature proves the run happened.** No heating means an idle or menu
+  scene, so the run is invalid.
+
+### The standing conclusion
+
+> BD's gap is HLE-vs-LLE, proven by RE2 Remake running on the same Thor via
+> GameNative/DXVK. Every incremental GPU lever is DEAD/FLAT because it patches
+> the emulator instead of replacing it.
+
+**This reverses the open question about GameThor.** GameNative and DXVK are
+cited as the proof that translation beats emulation on this device. GameThor is
+not an odd fit for the fleet. It is the working example of the direction xenia
+wants to move toward. Keep it, and study it as evidence.
+
 ## Survey gaps
 
 Partly surveyed forks:
@@ -254,7 +298,7 @@ Partly surveyed forks:
 - xenia-thor: texture filtering, cheats.
 - Vita3K-Thor: texture filtering, packs.
 - eden-thor: texture filtering, packs, tests.
-- GameThor: everything. Nothing recorded.
+- GameThor: everything. Nothing recorded, but it is now strategically relevant as the DXVK translation example.
 
 Not surveyed in any fork:
 

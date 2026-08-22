@@ -1075,7 +1075,16 @@ differ only in intent, and both need the same format, loader and UI.
   layer.
 - A patch itself is data. It names a game, a version and the bytes to change.
 
-Cemu already has the best implementation of the mechanism in the fleet:
+**Two patch systems already exist. Choose between them; do not write a third.**
+
+- **xenia `.patch.toml`.** `src/xenia/patcher/patcher.cc` and `patch_db.cc`,
+  with `emit_patch_toml.py` authoring a patch from Ghidra. It already carries
+  both intents this repo specified: performance fixes such as 60 FPS or
+  disabling blur and SSAO, and cheats such as infinite health.
+- **Cemu `GraphicPack2Patches`.** Runtime ASM patching with its own parser,
+  bundled with texture and shader replacement.
+
+Cemu has the more capable mechanism in the fleet:
 `GraphicPack2Patches`, `GraphicPack2PatchesParser` and
 `GraphicPack2PatchesApply`, with runtime ASM patching. We already wrote patches
 with it, in `bin/graphicPacks/cemuThorBuiltin/`. **Read that before designing a
@@ -1126,14 +1135,20 @@ Rules:
 
 Skills worth writing first:
 
-| Skill | What it does |
-| --- | --- |
-| `capability-check` | Answer "which fork already has this?" before any feature work. |
-| `thor-connect` | Resolve the Thor by model over Wi-Fi adb, verify it, never touch the Quest. |
-| `thor-measure` | Run a scene, capture FPS, frametime, thermals and charge state. |
-| `fork-build` | Build one fork with its recipe and record the time. |
-| `extract-subsystem` | Walk the five extraction steps and update `OWNED.md`. |
-| `ghidra-finding` | Record a reverse-engineering result in the right place. |
+**Most of these already exist in `xenia-thor/.agents/skills/`, which holds 29
+skills. Port them. Do not write them again.**
+
+| Skill | What it does | Prior art |
+| --- | --- | --- |
+| `capability-check` | Answer "which fork already has this?" before any feature work. | none, write it |
+| `experiment-ledger` | Query before an experiment, record after. | `xenia-experiment-ledger` |
+| `evidence-discipline` | No performance number without a captured device file. | `xenia-thor-evidence-discipline` |
+| `thor-connect` | Resolve the Thor by model over Wi-Fi adb, never touch the Quest. | `xenia-thor-remote-debug` |
+| `thor-measure` | Run a scene, capture FPS, frametime, thermals and charge. | `xenia-thor-gpu-profile`, `xenia-thor-adb-gpu-stage-split` |
+| `fork-build` | Build one fork with its recipe and record the time. | `xenia-desktop-build`, `thor_build.ps1` |
+| `extract-subsystem` | Walk the five extraction steps and update `OWNED.md`. | none, write it |
+| `ghidra-finding` | Record a reverse-engineering result in the right place. | `xenia-ghidra-ooda-loop`, `xenia-thor-ghidra-game-patch` |
+| `autonomous-driver` | Build, deploy, launch, capture, classify, commit. | `xenia-thor-autonomous-driver` |
 
 **The fleet is inconsistent about where skills live.** xenia-thor and
 Vita3K-Thor use `.agents/skills/`. melonds_HD_2 uses `.claude/skills/`. Use
@@ -1451,6 +1466,15 @@ Wi-Fi adb rules:
   how anybody plays. This follows Google's ADPF guidance.
 - **Measure without ADPF first.** Establish the baseline before adding hint
   logic, or the hint is tuned against an unknown.
+- **Cross-run comparison is untrustworthy.** Scene complexity swings several
+  times a second, so two separate runs are not comparable. Use an in-place
+  alternating A/B inside one run, on a busy frame.
+- **`CONFOUNDED` is a verdict.** A number that cannot be trusted gets labelled,
+  not discarded and not promoted to a win.
+- **Temperature proves the run happened.** No heating means an idle or menu
+  scene, so the run is invalid whatever the counter said.
+- **Query the experiment ledger before running anything.** See
+  [The experiment ledger](#the-experiment-ledger).
 
 ### 1. Upscaling and filters
 
@@ -1897,6 +1921,55 @@ Rules for experiments:
   the rendering must fail the test automatically.
 - Report the true result. "Not benchmarked on the device" is a valid finding.
   The existing fork documents meet this standard. Meet it too.
+
+### The experiment ledger
+
+`xenia-thor` already has one: `tools/exp_ledger.py`, a SQLite database, driven
+by `.agents/skills/xenia-experiment-ledger/SKILL.md`.
+
+```
+python tools/exp_ledger.py check "<keyword>"   # BEFORE any experiment
+python tools/exp_ledger.py add "<lever>" "<category>" "<verdict>" ...
+python tools/exp_ledger.py dead [category]     # the do-not-retry list
+python tools/exp_ledger.py wins                # the shipped stack
+```
+
+Verdicts: `DEAD`, `FLAT`, `WIN`, `GFX-LOSS`, `CONFOUNDED`, `OPEN`.
+
+**This is the anti-duplication mechanism for experiments.**
+[`capability_inventory.md`](capability_inventory.md) stops a feature being
+rebuilt. The ledger stops a dead lever being re-run. The fleet needs both, and
+the ledger already exists. Adopt it rather than writing one.
+
+### Expect maintenance wins from the shared layer, not large frame wins
+
+**A caution recorded before the work starts.** xenia's ledger holds a standing
+conclusion:
+
+> BD's gap is HLE-vs-LLE, proven by RE2 Remake running on the same Thor via
+> GameNative/DXVK. xenia EMULATES the 360 GPU (slow); the fix is TRANSLATING
+> D3D9->Vulkan like DXVK. Every incremental GPU lever is DEAD/FLAT because it
+> patches the emulator instead of replacing it.
+
+Much of the shared layer is incremental: a shared device, shared caches, a
+shared upload path. xenia measured many levers of that kind and recorded them
+`DEAD` or `FLAT`.
+
+This does not cancel the shared layer. Two things stay true:
+
+- Duplication costs maintenance whatever it costs in frames. Six driver
+  managers is six bugs.
+- Several shared items are not GPU levers at all: the driver baseline, the
+  test harness, per-game overrides, dual-screen routing, storage visibility,
+  cheats and patches.
+
+**Set the expectation now.** The shared layer buys maintainability, features
+and consistency. Where it buys frames, prove it per subsystem against the
+ledger. Do not promise a large speedup from a shared renderer.
+
+The larger speed lever, on xenia's evidence, is architectural: translate the
+guest API rather than emulate the guest GPU. `xbox360-d3d-hle-recomp` records
+that direction, dated 2026-07-02.
 
 ### Agentic acceleration
 
