@@ -281,6 +281,55 @@ Packing together is not free. Accept these:
   This is why [One toolchain](#0-one-toolchain--do-this-first) is Phase 1 and
   blocks everything.
 
+## The philosophy: share the hot path, not the periphery
+
+This is the central idea. Everything else follows from it.
+
+**RetroArch shares the periphery. This project shares the hot path.**
+
+| | RetroArch | This project |
+| --- | --- | --- |
+| The core is | a black box behind a narrow API | modified on purpose |
+| The shared layer holds | UI, input, post-process shaders | the Vulkan device, the upload path, the caches, the scheduler |
+| It makes a core faster | no, it wraps it | yes, that is the point |
+| Breadth | ~200 cores, every platform | 8 backends, one device |
+| Therefore | lowest common denominator | maximum specialisation |
+
+RetroArch **cannot** make a core faster. It must accept a core as upstream
+wrote it, because it supports hundreds. That constraint is correct for
+RetroArch and wrong for us.
+
+We support a small number of backends on exactly one device. That buys the
+right to reach inside a core and take a responsibility away from it.
+
+### What this means in practice
+
+The shared layer does not wrap the texture upload path. It **replaces** it. The
+backend stops owning the Vulkan device, the memory budget, the thread pool and
+the shader cache, and hands each one to the shared layer.
+
+This is why [Foundation](#foundation) sanctions reworking major guts and cores.
+It is not licence to rewrite for taste. It is the specific work this philosophy
+requires.
+
+### The cost, stated plainly
+
+**The deeper the shared layer reaches, the harder upstream harvesting becomes.**
+
+A backend whose upload path we replaced cannot take an upstream change to that
+path. The conflict is not textual; the code being merged no longer has a place
+to go.
+
+This is the real tension in the project. Weigh it per subsystem:
+
+- A hot path that every backend implements badly is worth taking, and worth
+  the merge pain.
+- A subsystem where upstream is active and better than us is worth leaving
+  alone.
+
+Record the choice for each subsystem, with the reason, in
+[`capability_inventory.md`](capability_inventory.md).
+
 ## RetroArch is a source of ideas, not a model
 
 **We diverge from RetroArch on purpose.** Mine it for ideas. Do not copy its
