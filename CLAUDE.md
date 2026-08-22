@@ -84,7 +84,8 @@ five points below, do not make it.
 
 ### 1. One device, one graphics API
 
-Vulkan on Adreno 740. ARM64 on Snapdragon 8 Gen 2. Android 13.
+Vulkan on Adreno 740. ARM64 on Snapdragon 8 Gen 2. Android 13. One pinned
+Mesa Turnip driver. See [The driver baseline](#the-driver-baseline-pinned-turnip).
 
 We do not carry a second GPU backend, a second ABI or a second device. Every
 line of code may assume this hardware. A portability layer that costs speed is
@@ -552,6 +553,68 @@ Consequences:
 
 Survey what exists before assuming this is small. It may be the hardest item
 on the list, despite the game being the smallest.
+
+## The driver baseline: pinned Turnip
+
+Decided 2026-08-22.
+
+**The app bundles one pinned Mesa Turnip build, loads it by default, and treats
+it as the reference configuration.** A different driver is a per-game override,
+not the normal case.
+
+### Why the driver is mandated
+
+This is [Foundation](#foundation) point 1 extended one step. One device, one
+graphics API, and now one driver.
+
+- **The test harness needs it.** Golden image comparison is the backbone of
+  the QA plan. If a reference frame was rendered on Turnip and the run used
+  the stock Qualcomm driver, every difference is driver noise and the
+  comparison proves nothing. **Determinism requires a fixed driver.**
+- **Turnip exposes more extensions than the stock driver.** With the driver
+  guaranteed, the shared Vulkan layer can rely on a feature instead of
+  branching on availability. Branching in the hot path is what this
+  architecture exists to avoid.
+- **One driver, one bug surface.** Two drivers double the test matrix and
+  force every measurement to name which one ran.
+- xenia-thor already runs `mesa-turnip-v26.3.0-20260803-r7-vulkan-1.4.354-7`.
+  This makes existing practice official.
+
+### Three rules that make it safe
+
+1. **Pin the version. Do not track the latest.** Mesa moves quickly and a
+   Turnip regression would break the app silently. Upgrade the baseline
+   deliberately, with a measured before and after. Never automatically.
+2. **Bundle it. Do not ask the user to find one.** Driver hunting is the kind
+   of toil [Foundation](#foundation) point 4 forbids. The app ships the driver
+   and loads it through adrenotools. Mesa is MIT licensed, so bundling inside
+   a GPL-3.0 app is clean. Confirm the licence of the specific build before
+   shipping it.
+3. **Keep an escape hatch as a per-game override.** Every option is
+   overridable per game, and the driver is an option. Turnip is not
+   universally faster; some games regress on any given build. A different
+   Turnip, or the stock driver, is selectable per game and carries a warning
+   that it leaves the tested configuration.
+
+### What this changes
+
+- **The GPU driver manager gets smaller and sharper.** It stops being a
+  browser for drivers and becomes: verify the pinned driver loaded, expose the
+  override, warn when the configuration is off baseline. Read
+  `rpcsx-ui-android` `GpuDriverAdvisor.kt` first, because advising is closer
+  to this job than listing.
+- **Every performance number states the driver build.** xenia's scripts
+  already do this. It becomes a fleet rule.
+
+### The cost, accepted
+
+**Mandating a driver means inheriting its bugs.** If the pinned Turnip breaks
+one game, that is ours to work around. Upstream Mesa will not prioritise this
+handheld.
+
+Therefore the stock driver path must stay **functional**, not merely present.
+The shared Vulkan layer must not hard-depend on a Turnip-only extension
+without a fallback for the cases where a user has to switch.
 
 ## Licences constrain the one-app plan
 
@@ -2025,4 +2088,7 @@ These are not settled. Do not assume an answer. Ask, or mark the assumption.
 - **Backends are packed into one binary**, so shared flows can be optimised
   across them. PS3 is the one optional separate install, forced by its
   licence. See [The backend model](#the-backend-model).
+- **One pinned Mesa Turnip driver is bundled and is the reference
+  configuration.** A different driver is a per-game override. See
+  [The driver baseline](#the-driver-baseline-pinned-turnip).
 - **PS3 is deferred**, not cancelled.
