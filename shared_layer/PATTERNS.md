@@ -100,7 +100,18 @@ Cemu keys on physical address instead, and tracks textures that alias in memory
 at slice and mip granularity. Vita3K folds sampler state and YUV conversion
 into the same class. azahar's `CustomTexManager` is not a cache at all; it is a
 replacement asset manager with a `Material` model and async upload, and it is
-the best pack-loading model in the fleet.
+the best pack-loading model in the fleet. Read on 2026-08-22, four things to
+take from `material.h`:
+
+- **`std::vector<u64> hashes` per custom texture.** One replacement asset maps
+  to many guest hashes, so assets dedupe across textures. No other fork does
+  this.
+- **An async decode state machine**, `None`, `Pending`, `Decoded`, `Failed`,
+  held atomically, so the renderer never blocks on disk.
+- **PNG and DDS.** DDS stays compressed on disk and on the GPU, which matters
+  on a device with a hard storage and VRAM ceiling.
+- **Two maps only**, `Color` and `Normal`. Not a PBR stack. An earlier note in
+  this repo overstated this.
 
 **The open design decision, and it is the first one to settle:** melonDS puts
 `HDTexPack* TexPack` and `HDTexPack* FilterCache` **inside** the cache entry.

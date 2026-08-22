@@ -515,6 +515,67 @@ a multi-device product:
 - **One device, one driver, one hardware profile.** Every tuning decision can
   be exact rather than defensive.
 
+## Architecture assessment, 2026-08-22
+
+Recorded after reading the LRU caches, the driver managers and the texture
+caches. **The reads changed the thesis.**
+
+### What is solid
+
+- One app, packed binary, GPL-3.0, PS3 deferred. Licence-forced, not
+  preference.
+- The thin contract with declared extensions. **Proven**, by implementing it
+  for three deliberately divergent backends in `app/shell/`.
+- The eight pipelines and their shared and not-shared lines.
+- The pinned driver baseline.
+- Two displays as a differentiator no multi-device product can copy.
+- The measurement discipline inherited from xenia.
+
+### What is weak: the shared-code thesis
+
+Every duplication claim that has been read has shrunk:
+
+| Claimed | After reading |
+| --- | --- |
+| Three forks duplicate an LRU cache | three different designs |
+| Six forks duplicate a driver picker | four different concerns |
+| Texture cache hashing is shared | guest-specific, not shareable |
+| A shared renderer wins frames | xenia's ledger: incremental GPU levers `DEAD` or `FLAT` |
+
+**Four for four.** The more carefully the fleet is read, the less genuine code
+duplication there is. That is evidence and the plan must answer it.
+
+### The revised position
+
+**The value is not mostly in merging code. It is in three other places.**
+
+1. **The app layer.** One UI, one library, per-game overrides, dual-screen
+   routing, cheats, patches, storage. No duplication question arises, because
+   none of it exists yet in any fork. This half is strong and it is what the
+   project was asked for.
+2. **Propagating techniques.** ARMSX2's `WithRemovedCLUTHash` belongs in
+   melonDS. rpcsx's `GpuDriverAdvisor` belongs everywhere. The two affinity
+   lessons belong in one scheduler. azahar's `hashes` vector belongs in every
+   pack loader. **These are ideas, and ideas cross licence boundaries freely.**
+3. **Shared assets and infrastructure.** One driver, one shader cache, one
+   test harness, one measurement culture, one game library.
+
+**Revised philosophy: share the app, share the knowledge, share the assets, and
+be conservative about shared code.** Extract only where reading proves genuine
+duplication. The GPU driver manager still qualifies. The LRU cache did not.
+
+This does not cancel [the hot path philosophy](#the-philosophy-share-the-hot-path-not-the-periphery)
+below. It narrows where it applies. Reaching into a core is still sanctioned;
+it now needs a read that proves the reach is worth it.
+
+### What to do next
+
+1. Finish the app shell. Device-free, high value, no duplication risk.
+2. Compose the GPU driver manager from its four owners.
+3. **Prove the packed binary on two backends before committing seven.** One
+   toolchain across seven C++ codebases is unproven, and the tiler research
+   says a shared render path can be slower than what it replaces.
+
 ## The philosophy: share the hot path, not the periphery
 
 This is the central idea. Everything else follows from it.
