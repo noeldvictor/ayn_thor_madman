@@ -169,8 +169,7 @@ The goal is one workspace, one MCP, one shared layer and one app.
 
 **The product is one real app. It is not a hub over other emulators.** The app
 does not install seven other apps and launch them. The emulators become
-backends that the app fetches and drives, with one UI, one library and one
-settings system. The user sees one product. This is a unified emulator.
+backends inside one binary, with one UI, one library and one settings system. The user sees one product. This is a unified emulator.
 
 See [The backend model](#the-backend-model) for how a backend loads and why
 the contract between the app and a backend is deliberately thin.
@@ -185,40 +184,76 @@ To make this possible, the toolchain must be unified first. See
 
 Decided 2026-08-22. This resolves how a backend loads.
 
-**One app. Backends are separately distributed modules that the app fetches at
-run time.** The app does not link a backend at build time and does not ship
-one inside the APK.
+**Pack everything together. One binary. The only exception is PS3, which is an
+optional separate install.**
 
-This copies the distribution pattern RetroArch uses. It does not adopt
-libretro. See
+The reason is optimisation across shared flows. A backend that is a separate
+module cannot share a link unit, a Vulkan device or a cache with the rest. That
+cost is paid at run time, on a handheld, forever. It contradicts
+[Foundation](#foundation) point 2.
+
+### What packing together buys
+
+These are the shared flows. None of them work across a module boundary.
+
+- **One Vulkan device.** One instance, one device, one queue plan, one
+  allocator. Separate modules mean separate devices and duplicated memory
+  budgets.
+- **One pipeline and shader cache.** Shader compile stutter is a Thor-wide
+  problem. One cache serves every backend and survives between them.
+- **One texture upload path.** Per-class routing, upscaling and pack
+  replacement live in the upload path. Sharing it is the whole point of
+  [Per-class routing](#2-per-class-routing--the-first-shared-feature).
+- **One thread pool with cluster affinity.** The 8 Gen 2 is 1+4+3. Two
+  backends with their own pools fight over the X3 core. One scheduler does
+  not.
+- **One memory budget.** A handheld has a hard limit. One owner can decide
+  between a texture cache and a shader cache. Two owners cannot.
+- **Link-time optimisation across the boundary.** The shared layer sits in the
+  hot path. Inlining across it is free speed, and a module boundary blocks it.
+- **One frame pacing and present path.** Consistent pacing needs one owner.
+
+### The exception: PS3
+
+`ps3-thor/rpcsx-ui-android` is GPL-2.0-only and cannot share a binary with the
+GPL-3.0 code. It is therefore the one optional, separately installed backend.
+
+This is forced by the licence, not chosen for architecture. PS3 accepts the
+cost of separation: no shared device, no shared cache, no shared upload path.
+It gets the app's library and UI, and little else from the shared layer.
+
+PS3 is deferred until the backend contract takes shape. See
+[No GPL-3.0 PS3 emulator exists](#no-gpl-30-ps3-emulator-exists). The
+RetroArch separate-distribution pattern is how it returns, and it applies to
+PS3 alone. See
 [How RetroArch handles a GPL-2 core](#how-retroarch-handles-a-gpl-2-core-under-a-gpl-3-frontend).
 
-### This is still one app, not a hub
+**Do not let the PS3 exception shape the main design.** One backend under a
+different licence must not force every other backend behind a module boundary.
 
-The difference matters and is easy to lose.
+### This is one app, not a hub
 
 | Rejected hub model | This model |
 | --- | --- |
-| Installs other apps. | Fetches backend modules. |
+| Installs other apps. | One binary holds the backends. |
 | Each app has its own UI. | One UI. The app owns every screen. |
-| Launches another app and leaves. | Drives the backend itself. |
+| Launches another app and leaves. | Drives the backend in-process. |
 | The user sees seven products. | The user sees one product. |
 
-A user never sees a backend's own interface. There is no other interface. The
-app owns the library, the settings, the overlay, the profiles and the routing.
+A user never sees a backend's own interface. There is no other interface.
 
 ### The contract is thin, because the cores differ
 
-**Do not force one narrow API on every backend.** The cores are widely
-different. A PS2 recompiler, a Wii U graphic pack system and a DS plane
-compositor do not fit one shape. Forcing them into one is what makes libretro
-slow and limiting.
+Packing together does not mean one uniform core API. **Do not force a narrow
+API on every backend.** A PS2 recompiler, a Wii U graphic pack system and a DS
+plane compositor do not fit one shape. Forcing them into one is what makes
+libretro slow and limiting.
 
-Define a **minimum** contract that every backend must meet:
+Define a **minimum** contract that every backend meets:
 
 - Lifecycle: load, run, pause, stop, save state, load state.
-- Surface: how the backend receives a Vulkan surface and reports its size.
-- Input: how the app delivers a controller and touch state.
+- Surface: how the backend receives the shared Vulkan device and its target.
+- Input: how the app delivers controller and touch state.
 - Settings: the key namespace, and the resolution order for a per-game
   override.
 - Paths: where saves, states, packs, cheats and screenshots live.
@@ -226,25 +261,25 @@ Define a **minimum** contract that every backend must meet:
 Everything past that is a **per-backend extension**. A backend declares what
 extra it supports, and the app shows the UI for the ones present. Cemu
 declares graphic packs. melonDS declares three filter planes. ARMSX2 declares
-two texture classes. None of them pretends to be the others.
+two texture classes. None pretends to be the others.
 
-The shared layer sits above the contract, not inside the cores.
+The contract is an internal interface, not a module boundary. It exists for
+clarity, and it must stay inlinable.
 
-### What this buys, besides the licence hygiene
+### The costs, stated
 
-- **APK size.** Seven emulator cores in one package would be very large. The
-  user installs only the systems they use.
-- **Update rate.** Ship a backend fix without reshipping the app.
-- **Build isolation.** A broken Cemu build does not block a melonDS release.
-- **A licence escape hatch.** A GPL-2.0-only backend can be distributed
-  separately if PS3 ever returns.
+Packing together is not free. Accept these:
 
-### PS3 is deferred, not cancelled
-
-Punted 2026-08-22, until the backend contract takes shape.
-
-The pattern above is what would let PS3 return. Do not design for it now, and
-do not let it constrain the contract. Revisit once two backends work.
+- **A large binary.** Seven cores in one package. The app is sideloaded, so
+  size is tolerable, but it is real.
+- **Long builds.** A change to the shared layer rebuilds everything. This
+  raises the value of the build-location decision in
+  [Open decisions](#open-decisions).
+- **One crash takes the app down.** A fault in any core kills the process.
+  Crash isolation must come from testing, not from a process boundary.
+- **The toolchain must be unified first.** Seven C++ runtimes cannot link.
+  This is why [One toolchain](#0-one-toolchain--do-this-first) is Phase 1 and
+  blocks everything.
 
 ## Licences constrain the one-app plan
 
@@ -1361,6 +1396,7 @@ These are not settled. Do not assume an answer. Ask, or mark the assumption.
   [How to build the shared layer](#how-to-build-the-shared-layer).
 - **Per-game override for every option** is a requirement. See
   [The game library and per-game overrides](#6-the-game-library-and-per-game-overrides).
-- **Backends are separately distributed modules**, fetched at run time. The
-  contract is thin. See [The backend model](#the-backend-model).
+- **Backends are packed into one binary**, so shared flows can be optimised
+  across them. PS3 is the one optional separate install, forced by its
+  licence. See [The backend model](#the-backend-model).
 - **PS3 is deferred**, not cancelled.
