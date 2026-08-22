@@ -181,6 +181,49 @@ This rule applies to the whole fleet, not only to rpcsx.
 Method note for any future licence scan: use `git grep`. A per-file `head` loop
 times out on a repo this size.
 
+### Every PS3 path is GPL-2.0-only
+
+Do not re-open this. All three candidates derive from RPCS3, which is
+GPL-2.0-only.
+
+| Candidate | Base | Licence |
+| --- | --- | --- |
+| rpcsx-ui-android | RPCSX, with an rpcs3 subtree | GPL-2.0, no or-later grant |
+| ARMSX3 | RPCS3, direct Android port | **GPL-2.0-only, stated** |
+| aps3e | RPCS3 | GPL-2.0-only |
+
+ARMSX3 states it in its README, checked on the fetched `armsx3/master` branch
+in `ps3-thor/rpcs3-upstream`:
+
+> GPL-2.0-only, the same as RPCS3. See LICENSE. Some files may be licensed
+> differently, check the file headers.
+
+ARMSX3 is not a way around the problem. It is the same problem, stated more
+plainly. A relicence is not available either, because RPCS3 has many
+copyright holders.
+
+### Choose one side of the GPL fence
+
+The fleet splits into two groups that cannot share a linked binary.
+
+| GPL-3.0 side | GPL-2.0-only side |
+| --- | --- |
+| ARMSX2, PS2 | rpcsx or ARMSX3, PS3 |
+| melonDS-android, DS | |
+| eden-thor, Switch | |
+| GameThor, PC | |
+| azahar-thor, 3DS, elects GPL-3.0 | |
+| Vita3K-Thor, Vita, elects GPL-3.0 | |
+| Cemu-thor, MPL-2.0, compatible | |
+| xenia-thor, BSD, compatible | |
+
+Eight systems against one. **The app takes the GPL-3.0 side.**
+
+ARMSX2 alone settles it. ARMSX2 is GPL-3.0 and it is the seed of the shared
+layer. Choosing the GPL-2.0-only side to gain PS3 would cost PS2, DS, Switch
+and PC, and would leave the shared layer without its reference
+implementation.
+
 ### Why GPL-2.0-only and GPL-3.0 conflict
 
 Both licences contain the same defensive rule. GPL-2 section 6 and GPL-3
