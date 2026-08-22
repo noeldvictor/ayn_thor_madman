@@ -18,6 +18,31 @@ The master repo for a unified emulator on the **AYN Thor**.
 The Thor is a Snapdragon 8 Gen 2 handheld with an Adreno 740 GPU, running
 Android 13. Every part of this project targets that one device.
 
+## Foundation
+
+**Vulkan, on the AYN Thor, on ARM64. High speed. AI-driven at every level.
+Easy to use.**
+
+- **One device, one graphics API.** Vulkan on Adreno 740, ARM64 on Snapdragon
+  8 Gen 2. No second GPU backend. No second ABI. Code may assume this
+  hardware.
+- **Speed is the product.** The Thor is a handheld. Frame time and thermal
+  headroom decide whether a game is playable. An abstraction that costs frames
+  is rejected, which is why this is not built on libretro.
+- **AI-first at every level.** Agents do the development, the QA and the
+  experiments. Agents also do work inside the product: neural upscaling, and
+  per-game tuning a person would otherwise do by hand. The point is to remove
+  human toil.
+- **Easy to use.** Sensible defaults. One place for every setting. Nothing
+  needs a file manager, a text editor or a wiki.
+- **Quality of life, everywhere.** Texture improvement with per-class routing,
+  HD texture packs, mods and translations installed in-app, one cheat library
+  across every system, a per-game override for every option, and known-good
+  settings gathered from the community.
+
+That last group is the reason to build one app instead of running eight
+separate emulators.
+
 ## What this is
 
 A fleet of emulator forks exists. Each fork solves the same problems

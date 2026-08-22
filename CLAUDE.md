@@ -74,6 +74,90 @@ Also do not:
 - Add hype adjectives to a technical fact.
 - Hedge a measured result. State the number.
 
+## Foundation
+
+**Vulkan, on the AYN Thor, on ARM64. High speed. AI-driven at every level. Easy
+to use.**
+
+Read this before any design decision. If a change does not serve one of the
+five points below, do not make it.
+
+### 1. One device, one graphics API
+
+Vulkan on Adreno 740. ARM64 on Snapdragon 8 Gen 2. Android 13.
+
+We do not carry a second GPU backend, a second ABI or a second device. Every
+line of code may assume this hardware. A portability layer that costs speed is
+not welcome. See [Target hardware](#target-hardware).
+
+### 2. Speed is the product
+
+The Thor is a handheld. Frame time and thermal headroom decide whether a game
+is playable. Speed is not a feature to add later; it is the reason for the
+work.
+
+Rules that follow from this:
+
+- Reject an abstraction that costs frames. This is why libretro is rejected
+  and why the backend contract is thin.
+- Measure on the device. A number from a desktop proves nothing here.
+- State the CPU cluster in every performance claim. See
+  [Target hardware](#target-hardware).
+- Prefer work that happens once over work that happens per frame. This is why
+  texture-time upscaling beats present-time for classified art.
+
+### 3. AI-first at every level
+
+This project is built by agents, on purpose, at every stage.
+
+- **Development.** Agents read the fleet, extract the shared layer and port a
+  change across backends.
+- **QA.** Agents run the tests, capture from the device and judge the result
+  from numbers. See [Tests are mandatory](#tests-are-mandatory).
+- **Experiments.** Agents propose, build, measure and keep or revert.
+- **In the product.** Neural upscaling, and per-game tuning that a person
+  would otherwise do by hand.
+
+The point is to remove human toil, not to add novelty. If an AI feature makes
+a person do more work, it is wrong.
+
+### 4. Easy to use
+
+The app must be pleasant for somebody who wants to play a game.
+
+- Sensible defaults. A game runs well with no setup.
+- One place for every setting. No hunting across backends.
+- Nothing requires a file manager, a text editor or a wiki.
+- The hard controls stay available for somebody who wants them. They are not
+  in the way of somebody who does not.
+
+### 5. Quality of life, everywhere
+
+These are not extras. They are the reason to build a unified app rather than
+run eight separate emulators.
+
+- **Texture improvement.** Per-class routing, so sprites and 3D art get
+  different treatment. See
+  [Per-class routing](#2-per-class-routing--the-first-shared-feature).
+- **HD texture packs.** Install one without a guide.
+- **Mods and translations.** Install from inside the app.
+- **Cheats.** One library across every system.
+- **Per-game performance profiles.** Every option overridable per game. See
+  [The game library and per-game overrides](#6-the-game-library-and-per-game-overrides).
+- **Known-good settings from the community.** A game should arrive with
+  settings that are already known to work, rather than defaults a person has
+  to discover. Gather them, record where each came from, and let a person
+  override any of them.
+
+### What this rules out
+
+State the conflict rather than quietly widening the scope.
+
+- A second GPU backend, unless Vulkan cannot do the job.
+- Desktop or non-Thor targets as a first-class concern.
+- Any abstraction whose cost is paid per frame for the sake of neatness.
+- A feature that adds a step for the person using the app.
+
 ## What this repo is
 
 This repo is the control plane for a fleet of emulator forks. The forks target
