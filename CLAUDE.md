@@ -1337,6 +1337,8 @@ has:
 - A per-game override is set.
 - An HD texture pack is installed.
 - A mod or a translation patch is applied.
+- How much space the game uses in total. See
+  [Storage and cache visibility](#8-storage-and-cache-visibility).
 
 The library is one list across every backend. It is not one list per emulator.
 
@@ -1348,6 +1350,63 @@ and menu use the same input on every backend, always.
 
 A backend does not get to define its own hotkey. The app owns the hotkey layer
 and tells the backend what happened.
+
+### 8. Storage and cache visibility
+
+**Look at a game and see where its space went.** One view, every system, every
+category.
+
+Storage is finite on a handheld. Emulator caches grow without limit and hide
+in paths a person never sees. Today a person cannot answer "why is this game
+using 14 GB" without a file manager, which
+[Foundation](#foundation) point 4 forbids.
+
+### The categories
+
+The per-game view breaks space down by category:
+
+| Category | Notes |
+| --- | --- |
+| Game data | The dump or install itself. |
+| Saves and states | Small, and the only category that is irreplaceable. |
+| HD texture packs | Often the largest single item. |
+| Texture cache | Upscaled and hashed textures. Rebuildable. |
+| Shader and pipeline cache | Rebuildable, at the cost of stutter. |
+| Recompiled code cache | Translated guest code. Rebuildable. |
+| Mods and patches | Small. |
+| Cheats | Small. |
+| Screenshots and captures | Grows quietly. Often the easy win. |
+
+Recompiled code caches exist across the fleet under different names. xenia and
+Cemu translate PowerPC to ARM64. ARMSX2 translates MIPS. Each keeps a cache,
+and none of them reports its size to a person.
+
+### The rule that matters
+
+**A cache is an asset, not junk.** Deleting a shader cache frees space and
+brings the stutter back. Deleting a recompiled code cache costs the next boot.
+
+The UI must state the cost before the action:
+
+> Clear the shader cache. Frees 2.3 GB. Shader stutter returns until the cache
+> rebuilds.
+
+Never offer a "clean up" button that treats every category the same. Sort by
+what is rebuildable, and never put saves and states near a bulk action.
+
+### The contract
+
+The backend declares its storage categories, their paths and whether each is
+rebuildable. The shared layer does the accounting, the display, the sorting
+and the actions.
+
+This is a per-backend extension over the minimum contract. See
+[The contract is thin](#the-contract-is-thin-because-the-cores-differ). A
+backend that declares nothing still shows its game data and saves, because the
+app owns those paths.
+
+Also show the totals across the whole library, sorted by size. The first
+question is usually "which game should I delete", not "how big is this one".
 
 ### Vulkan is the substrate
 

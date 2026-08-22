@@ -63,6 +63,16 @@ RetroArch is also the anti-pattern for usability here: cheats are not first
 class, hotkeys are not common across cores, and it demands study before it
 gives you a game.
 
+## Storage and cache visibility
+
+Look at a game and see where its space went. One view, every system: game
+data, saves and states, HD texture packs, texture cache, shader and pipeline
+cache, recompiled code cache, mods, cheats and screenshots.
+
+A cache is an asset, not junk. Clearing a shader cache frees space and brings
+the stutter back, so the app states the cost before the action. Saves and
+states are never near a bulk action.
+
 ## Per-game patches
 
 Per-game patches are a first-class feature. They do two jobs: make a specific
