@@ -170,15 +170,38 @@ The full map, with paths and upstream sources, is in
 - Some forks ban AI attribution in commits. Read the `AGENTS.md` of a fork
   before you commit to it.
 
-## Status
+## Status: deep exploration
 
-Early. The contract is written. The first survey is complete. See
-[`research_log/`](research_log/).
+**Working out the architecture and the contracts. Not building the product
+yet.**
 
-The toolchain row is decided: NDK 29.0.14206865, `arm64-v8a` only,
-`minSdk` 33, `targetSdk` 37, `compileSdk` 37. The fleet currently spans NDK 22
-to NDK 29, so every fork needs the change.
+Decisions and findings are the deliverable in this phase. Code written now is
+a probe, not a product. This repo holds more prose than code on purpose,
+because the expensive mistakes here are architectural, and they are cheap to
+fix in a document and expensive to fix in seven forks.
 
-The next work is the shared test harness. Four forks hold automated test and
-replay tools. No fork holds more than two, and nothing is shared. Extract that
-harness before any renderer feature.
+Every decision carries its evidence. See [`research_log/`](research_log/) and
+[`capability_inventory.md`](capability_inventory.md).
+
+### Settled so far
+
+- The product is one real app, not a hub. Backends are packed into one binary
+  so shared flows can be optimised across them.
+- The app is GPL-3.0. PS3 is deferred, because every PS3 emulator is
+  GPL-2.0-only and cannot share the binary.
+- libretro is rejected. Slang shaders arrive through librashader.
+- The toolchain row: NDK 29.0.14206865, `arm64-v8a` only, `minSdk` 33,
+  `targetSdk` 37, `compileSdk` 37. The fleet currently spans NDK 22 to NDK 29.
+- The shared layer is built by extraction from the forks, and duplication is
+  prevented structurally rather than by a rule.
+- The Thor has two internal touch displays. Dual-screen routing is a
+  first-class feature.
+
+### Next
+
+Two tracks run in parallel. Track A is the Kotlin UI shell, which defines the
+backend contract and depends on nothing. Track B is the toolchain migration,
+which unblocks all native work.
+
+The phase ends when the contract is written, one backend runs behind the shell
+on both displays, and one subsystem is extracted with its fork copy deleted.

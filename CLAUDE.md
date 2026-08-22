@@ -176,6 +176,61 @@ State the conflict rather than quietly widening the scope.
 - Any abstraction whose cost is paid per frame for the sake of neatness.
 - A feature that adds a step for the person using the app.
 
+## Current phase: deep exploration
+
+**We are working out the architecture and the contracts. We are not building
+the product yet.** Stated 2026-08-22.
+
+### What this means
+
+- **Decisions and findings are the deliverable.** A recorded decision with its
+  evidence is progress. So is a survey that proves a fork already has
+  something.
+- **Code written now is a probe, not a product.** Build something to learn
+  from it, then be willing to throw it away.
+- **Reversibility beats completeness.** Prefer a decision that can be undone
+  cheaply over one that is thorough and locked in.
+- **Do not optimise yet.** There is nothing measured to optimise. Speed is the
+  goal, and a guess about speed is not.
+- **Do not start a long implementation.** A month of work built on an
+  unsettled contract is a month lost.
+
+### Why the documents are the work
+
+This repo holds more prose than code on purpose. In this phase the expensive
+mistakes are architectural, and they are cheap to fix in a document and
+expensive to fix in seven forks.
+
+Every decision here carries its evidence. See the surveys in
+[`research_log/`](research_log/) and the fleet state in
+[`capability_inventory.md`](capability_inventory.md). A decision without
+evidence is an opinion, and opinions get re-argued.
+
+### How we know this phase is ending
+
+Three tests. All three must pass:
+
+1. **The backend contract is written**, and it came out of a UI shell rather
+   than an argument. See [Track A](#track-a--the-ui-shell-defines-the-contract).
+2. **One backend runs behind the shell** on the device, on both displays.
+3. **One subsystem is extracted and owned**, with the fork's copy deleted and
+   the build guard in place. See
+   [Duplication must be structurally impossible](#duplication-must-be-structurally-impossible).
+
+Until then, treat any implementation plan longer than a week as premature.
+
+### What is still unknown
+
+Direct the exploration at these:
+
+- The open items in [Open decisions](#open-decisions).
+- The survey gaps in [`capability_inventory.md`](capability_inventory.md).
+  Cemu-thor, eden-thor and GameThor have no capability recorded at all.
+- Control overlays, save conventions, thread and cluster affinity, audio
+  latency and frame pacing are not surveyed in any fork.
+- Clean build times for every fork. Only melonDS-android has been built, and
+  that was incremental.
+
 ## What this repo is
 
 This repo is the control plane for a fleet of emulator forks. The forks target
