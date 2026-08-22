@@ -79,10 +79,20 @@ Also do not:
 This repo is the control plane for a fleet of emulator forks. The forks target
 the AYN Thor.
 
-This repo is not an emulator. It holds the shared parts. An agent starts here
-to work on any fork.
+This repo holds the shared parts. An agent starts here to work on any fork.
 
 The goal is one workspace, one MCP, one shared layer and one app.
+
+**The product is one real app. It is not a hub over other emulators.** The app
+does not install seven other apps and launch them. The emulators become
+backends inside one application, with one UI, one library and one settings
+system. This is a unified emulator.
+
+The app is not built on libretro. See
+[Upscaling and filters](#1-upscaling-and-filters).
+
+To make this possible, the toolchain must be unified first. See
+[One toolchain](#0-one-toolchain--do-this-first).
 
 ## The key idea
 
@@ -95,6 +105,20 @@ per-game profiles and control overlays. These are not per-emulator problems.
 They are Thor problems. Today the fleet solves each one a dozen times.
 
 Solve each problem once, at the correct layer. Then adapt it into each fork.
+
+**Each fork holds work that would help the others. The fleet has no way to
+move it.** That is the gap this repo closes. One fork solves a problem well.
+The other six never learn about it. Nothing today carries a good idea across a
+fork boundary.
+
+Keep a capability inventory. Record which fork has which capability, and at
+what quality. Read it before you build anything. The first question for any
+new feature is "which fork already has this?", not "how do I write this?".
+
+The survey on 2026-08-22 proved the point. ARMSX2 and melonDS-android both
+built per-class texture routing, separately, with different names for the same
+idea. Their algorithm sets overlap by nine entries. Neither fork knows the
+other exists.
 
 **Harvest and adapt. Do not only merge.** Record what you took from each
 upstream, and why. If a sibling fork does something better or faster, take it
@@ -122,6 +146,41 @@ model.
 clusters. For detail, read
 `armsx2-thor/ARMSX2/docs/arm64-optimization-review.md`. The ARM manuals are in
 that fork at `docs/reference/arm/`.
+
+## Hardware reference
+
+`hardware_ref/` holds the manuals and the hardware notes for the fleet. Put a
+manual here one time. Every fork reads it from here.
+
+| Directory | Contents |
+| --- | --- |
+| `hardware_ref/thor/soc/` | Snapdragon 8 Gen 2 documents |
+| `hardware_ref/thor/cpu/` | Cortex-X3, A715, A710, A510 manuals. ARM64 ISA. |
+| `hardware_ref/thor/gpu/` | Adreno 740, Vulkan, driver notes |
+| `hardware_ref/thor/android/` | Android 13 platform notes, NDK notes |
+| `hardware_ref/thor/device/` | Panel, thermals, controller, battery |
+| `hardware_ref/console/ps2/` | PS2 hardware. Serves ARMSX2. |
+| `hardware_ref/console/ps3/` | PS3 hardware. Serves rpcsx-ui-android-thor. |
+| `hardware_ref/console/wiiu/` | Wii U hardware. Serves Cemu-thor. |
+| `hardware_ref/console/3ds/` | 3DS hardware. Serves azahar-thor. |
+| `hardware_ref/console/nds/` | DS hardware. Serves watermelon-DS-THOR. |
+| `hardware_ref/console/vita/` | PS Vita hardware. Serves Vita3K-Thor. |
+| `hardware_ref/console/xbox360/` | Xbox 360 hardware. Serves xenia-thor. |
+| `hardware_ref/console/switch/` | Switch hardware. Serves eden-thor. |
+| `hardware_ref/console/pc/` | PC and Proton notes. Serves GameThor. |
+
+Rules:
+
+- Record the source and the date for every document you add.
+- Do not copy a manual into a fork. Link to `hardware_ref/`.
+- Keep the CPU and the GPU notes separate. They answer different questions.
+
+ARMSX2 holds ARM manuals at `armsx2-thor/ARMSX2/docs/reference/arm/`. Move
+them to `hardware_ref/thor/cpu/` when you next work in that fork. Until then,
+read them where they are.
+
+**Large binary files bloat the repo.** A manual is often a large PDF. Decide on
+git-lfs before you commit a large set. This is not decided yet.
 
 ## The fleet
 
@@ -236,6 +295,35 @@ Apply these rules to the shared layer and to each fork:
 - State the per-fork differences in one file. Do not make an agent infer them
   from a diff.
 
+### 0. One toolchain — do this first
+
+**Unify the toolchain before you extract any code.** Shared native code cannot
+exist across seven C++ runtimes.
+
+The fleet measured on 2026-08-22 uses seven NDK versions, from NDK 22 to
+NDK 29. Two native libraries built with different NDK major versions cannot be
+relied on to share a C++ runtime in one process. The libc++ ABI is not stable
+across that range. This blocks the one-app goal directly.
+
+Measured values are in
+[`research_log/20260822_1559_shared_paradigm_survey.md`](research_log/20260822_1559_shared_paradigm_survey.md),
+Finding 5.
+
+Unify these:
+
+- **NDK version.** One version. Choose the newest that every fork can build.
+- **ABI.** `arm64-v8a` only. The Thor is arm64. Drop `armeabi-v7a` and
+  `x86_64` from the shipping build. ARMSX2 already does this.
+- **`minSdk`.** One value, 33 or lower. The Thor runs Android 13, which is
+  API 33. GameThor targets API 28 today.
+- **`targetSdk` and `compileSdk`.** One value each.
+- **Gradle and AGP.** One version each. The fleet spans Gradle 7.3.3 to 9.6.1.
+- **C++ standard.** One value. melonDS-android declares `-std=c++17`.
+- **Vulkan setup.** One loader, one validation configuration, one extension
+  set.
+
+Record the chosen row in this repo. Each fork reads it. No fork sets its own.
+
 ### 1. Upscaling and filters
 
 Two paths exist. Both are already in the fleet. Neither needs a libretro core.
@@ -306,7 +394,35 @@ Existing projects: `shin_2_eng`, `smt_if_eng`, `ever_oasis_mod`,
 `radiata_stories_ending_mod`, `wild_arms_5_the_last_loop_mod` and
 `toyko_xanadu_vr_etx`.
 
-### 6. Per-game profiles, save conventions and control overlays
+### 6. The game library and per-game overrides
+
+This is a requirement, not an option.
+
+**Every game must accept a custom override for every option.** No setting is
+global only. A user opens one game and changes one setting for that game
+alone. This applies to every backend, not to a chosen few.
+
+Design consequences:
+
+- Every setting needs a stable key. A setting without a key cannot be
+  overridden.
+- The resolution order is fixed: per-game value, then Thor profile default,
+  then backend default. Resolve it in one place. Do not let a backend invent
+  its own order.
+- The in-game overlay and the settings screen read the same key. melonDS
+  `HdFilterTarget` already does this. Copy that rule.
+
+The library view shows cover art. Each entry shows badges for what the game
+has:
+
+- A cheat database entry exists.
+- A per-game override is set.
+- An HD texture pack is installed.
+- A mod or a translation patch is applied.
+
+The library is one list across every backend. It is not one list per emulator.
+
+### 7. Save conventions and control overlays
 
 ### Vulkan is the substrate
 
@@ -462,18 +578,30 @@ Device measurements run in a queue.
 
 These are not settled. Do not assume an answer. Ask, or mark the assumption.
 
-1. **The on-device app.** Deferred. Build the dev tooling and the shared layer
-   first. The open question: is the app the main launcher, or a manager behind
-   an existing frontend such as Daijisho? GameThor and GameNative are the
-   natural base for the launcher case.
-2. **The build location.** Options: local Windows or WSL, GitHub Actions, or a
+1. **The toolchain row.** Which NDK, `minSdk`, `targetSdk`, Gradle, AGP and
+   C++ standard does the fleet use? Every other decision waits on this one.
+   See [One toolchain](#0-one-toolchain--do-this-first). Decide this first.
+2. **How a backend loads.** The app is one app. The open question is whether a
+   backend is statically linked, a dynamic feature module, or a `dlopen` module
+   inside the same app. This is not the libretro question. libretro is
+   rejected. This is about packaging one app that holds several large cores.
+3. **The build location.** Options: local Windows or WSL, GitHub Actions, or a
    split. Cemu, Xenia and RPCSX are expensive to build locally. This decision
-   sets how much an agent can do unattended. Decide this one first.
-3. **The workspace layout.** The forks stay in place today. This file tracks
+   sets how much an agent can do unattended.
+4. **git-lfs for `hardware_ref/`.** Manuals are large PDFs. Decide before you
+   commit a large set.
+5. **The workspace layout.** The forks stay in place today. This file tracks
    them. Defer a move to one root, and defer submodules, until the tooling
    works.
-4. **The PlayStation fork.** Planned. Target not chosen.
+6. **The PlayStation fork.** Planned. Target not chosen.
 
-The package format for a shared feature is no longer open. Build the shared
-layer by extraction from the existing forks. See
-[How to build the shared layer](#how-to-build-the-shared-layer).
+### Settled
+
+- **The product is one real app.** It is not a hub over other emulators. See
+  [What this repo is](#what-this-repo-is).
+- **libretro is rejected.** Take slang shaders through librashader. Take
+  nothing else.
+- **Build the shared layer by extraction** from the existing forks. See
+  [How to build the shared layer](#how-to-build-the-shared-layer).
+- **Per-game override for every option** is a requirement. See
+  [The game library and per-game overrides](#6-the-game-library-and-per-game-overrides).

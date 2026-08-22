@@ -1,0 +1,73 @@
+# ayn_thor_madman
+
+The master repo for a unified emulator on the **AYN Thor**.
+
+The Thor is a Snapdragon 8 Gen 2 handheld with an Adreno 740 GPU, running
+Android 13. Every part of this project targets that one device.
+
+## What this is
+
+A fleet of emulator forks exists. Each fork solves the same problems
+separately: upscaling, filters, HD texture packs, cheat databases, mod loading,
+ARM64 tuning, per-game profiles and control overlays.
+
+Each fork also holds work that would help the others. Nothing carries a good
+idea across a fork boundary today.
+
+This repo closes that gap. It holds the shared code, the shared assets, the
+tooling and the reference material. The product is **one real app**, not a hub
+that launches other emulators.
+
+## Start here
+
+Read [`CLAUDE.md`](CLAUDE.md). It is the operating contract. It holds the
+writing rules, the logging rules, the fleet map, the shared layer design and
+the open decisions.
+
+Do not copy content out of `CLAUDE.md` into another document. Two copies of a
+map disagree.
+
+## Layout
+
+| Path | Contents |
+| --- | --- |
+| `CLAUDE.md` | The operating contract. Read it first. |
+| `research_log/` | One file for each research session. |
+| `work_log/` | One file for each work session. |
+| `hardware_ref/thor/` | Manuals for the Thor: SoC, CPU, GPU, Android, device. |
+| `hardware_ref/console/` | Manuals for each emulated console. |
+
+Name a log file `YYYYMMDD_HHMM_<slug>.md`.
+
+## The fleet
+
+The forks stay in their own directories beside this repo. This repo tracks
+them. It does not contain them.
+
+Tier 1 targets: xenia-thor, rpcsx-ui-android-thor, Cemu-thor, azahar-thor,
+watermelon-DS-THOR, Vita3K-Thor and ARMSX2.
+
+Tier 2: GameThor, eden-thor and melonds_HD_2.
+
+The full map, with paths and upstream sources, is in
+[`CLAUDE.md`](CLAUDE.md#the-fleet).
+
+## Conventions
+
+- All writing uses ASD-STE100 Simplified Technical English. Be direct. Be
+  concise.
+- Record research in `research_log/`. Record work in `work_log/`. Write the log
+  as you go.
+- Each fork keeps its own `AGENTS.md`. That file is the source of truth for
+  that fork.
+- Some forks ban AI attribution in commits. Read the `AGENTS.md` of a fork
+  before you commit to it.
+
+## Status
+
+Early. The contract is written. The first survey is complete. See
+[`research_log/`](research_log/).
+
+The next decision is the toolchain row: one NDK, one `minSdk`, one Gradle
+version for the whole fleet. The fleet currently spans NDK 22 to NDK 29.
+Shared native code cannot exist across that range.
