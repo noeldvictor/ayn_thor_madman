@@ -117,10 +117,13 @@ What this means:
   incompatible licences.
 - azahar and Vita3K grant "or later", so they can be used as GPL-3.0. They are
   safe to combine with ARMSX2, melonDS and eden.
-- **rpcsx is the risk.** No "or later" grant was found. rpcs3 upstream is
-  GPL-2.0. Its README states that each file carries its own licence, so the
-  answer may differ per file. If rpcsx is GPL-2.0-only, its code cannot go in
-  the same binary as ARMSX2, melonDS, eden or GameThor.
+- **rpcsx is GPL-2.0-only. Verified 2026-08-22.** Of 1509 tracked C and C++
+  files, 15 mention the GPL and all 15 are third-party crypto or build
+  scripts. No emulator source file carries a licence header. The repository
+  `LICENSE` is GPL Version 2 and the README grants no "or later".
+
+  **rpcsx code cannot share one binary with ARMSX2, melonDS-android,
+  eden-thor or GameThor.** Those are GPL-3.0.
 - MPL-2.0 (Cemu) and BSD (xenia) combine with GPL. Both are compatible.
 
 **This is unresolved and it constrains the packaging decision.** Verify the
@@ -142,12 +145,26 @@ still open.
 - **librashader.** Dual licensed. The vendored tree carries both `LICENSE.md`
   (MPL-2.0) and `LICENSE-GPL.md`. Either path works for this project.
 
-### Still unverified
+### What the rpcsx result forces
 
-- **rpcsx.** A per-file header scan was started and timed out. The repo has
-  thousands of files under `app/src/main/cpp/rpcsx/`. Run the scan as a
-  background job, not inline. This is Phase 0.1 in
-  [Order of work](#order-of-work).
+Private use triggers no obligation. **Distribution does.** This repo is public
+and an APK may be shared, so treat the constraint as live.
+
+Evaluate in this order:
+
+1. **Backends as separate processes.** One APK, one UI, the PS3 backend in its
+   own process through `android:process`. The open question is whether shipping
+   both in one APK is still one combined work. Get a real answer.
+2. **PS3 as a separately distributed binary.** Legally clearest.
+3. **Split the binaries by licence.** ARMSX2 is GPL-3.0, so PS2 and PS3 cannot
+   share a linked binary either way.
+4. **Drop PS3 from the unified app.** Not preferred. rpcsx is a Tier 1 target.
+
+**Do not design the loading model until this is answered.** It is no longer
+only an engineering choice.
+
+Method note for any future licence scan: use `git grep`. A per-file `head` loop
+times out on a repo this size.
 
 ### Other licence questions, not yet answered
 
@@ -859,10 +876,13 @@ feature before phase 3.
 
 ### Phase 0 — unblock and baseline
 
-**0.1 Verify the rpcsx licence.** Scan the file headers under
-`ps3-thor/rpcsx-ui-android/app/src/main/cpp/rpcsx/` for an "or later" grant.
-This costs minutes and it decides the packaging. See
+**0.1 Verify the rpcsx licence. DONE 2026-08-22.** Result: rpcsx is
+GPL-2.0-only. It cannot share a binary with the GPL-3.0 forks. See
 [Licences](#licences-constrain-the-one-app-plan).
+
+**0.1b Answer the combined-work question.** Does one APK holding a GPL-2.0-only
+backend process and GPL-3.0 backends count as one combined work? This now
+blocks the loading model. It needs a real answer, not a guess.
 
 **0.2 Decide where shared code lives.** A directory in this repo, consumed by
 each fork's build. Answer this before any extraction. It is a smaller question

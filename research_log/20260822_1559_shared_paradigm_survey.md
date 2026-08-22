@@ -266,3 +266,70 @@ harness, an agent cannot separate a good port from a regression. The fan-out
 then produces damage instead of work.
 
 Full table in [`capability_inventory.md`](../capability_inventory.md).
+
+## Finding 8: rpcsx is GPL-2.0-only. Phase 0.1 is answered.
+
+Method. `git grep` over the tracked tree. A per-file `head` loop times out on
+this repo; do not repeat that approach.
+
+```sh
+git ls-files -- 'app/src/main/cpp/rpcsx/*' | grep -cE '\.(c|cc|cpp|h|hpp|inc)$'
+git grep -lI "any later version"      -- 'app/src/main/cpp/rpcsx/*' | wc -l
+git grep -lI "General Public License" -- 'app/src/main/cpp/rpcsx/*' | wc -l
+git grep -hoI -E 'SPDX-License-Identifier:[[:space:]]*[A-Za-z0-9.+-]+'
+```
+
+Results:
+
+| Measure | Count |
+| --- | --- |
+| Tracked C and C++ files under `cpp/rpcsx/` | 1509 |
+| Files mentioning "General Public License" | 15 |
+| Files granting "any later version" | 14 |
+| SPDX `GPL-2.0` | 4 |
+| SPDX `MIT` | 2 |
+| SPDX `Apache-2.0` | 2 |
+
+**The 15 GPL-mentioning files are all third-party crypto or build scripts.**
+They are `rpcs3/Crypto/aes`, `aesni`, `md5`, `sha1`, `sha256`, the bundled
+`3rdparty/crypto` sha1, a wolfssl options header, `git-version-gen.cmd`, and
+the `LICENSE` file itself. These are mbedTLS-derived files, which carry their
+own or-later grant. The 14 "any later version" hits are those files, not the
+emulator source.
+
+**No emulator source file carries a licence header.** The licence comes from
+the repository. `LICENSE` is GNU GPL Version 2, June 1991. The README states:
+
+> GPLv2, inherited from upstream RPCSX-UI-Android, unless a specific directory
+> or file carries its own license.
+
+No "or later" grant appears for the emulator code.
+
+### Conclusion
+
+**rpcsx is GPL-2.0-only.** Its code cannot be combined into one binary with
+GPL-3.0 code. That rules out one linked binary containing rpcsx together with
+ARMSX2, melonDS-android, eden-thor or GameThor.
+
+Compare azahar and Vita3K, which both grant "or later" in their file headers
+and are therefore safe to use as GPL-3.0.
+
+### What this changes
+
+Private use triggers no licence obligation. The constraint applies to
+**distribution**. This repo is public and an APK may be shared, so treat it as
+live.
+
+Options, in the order they should be evaluated:
+
+1. **Backends as separate processes.** One APK, one UI, the PS3 backend in its
+   own process. Android supports this with `android:process`. Whether shipping
+   both in one APK still counts as one combined work is the open question, and
+   it needs a real answer.
+2. **PS3 as a separately distributed binary.** Clean, and closest to the hub
+   model that was rejected for every other reason.
+3. **Exclude the GPL-3.0 forks from the binary that holds rpcsx.** ARMSX2 is
+   GPL-3.0, so PS2 and PS3 cannot share a linked binary.
+4. **Drop PS3 from the unified app.** Not preferred. rpcsx is a Tier 1 target.
+
+This is not legal advice. Get it confirmed before distributing.
