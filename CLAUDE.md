@@ -85,14 +85,82 @@ The goal is one workspace, one MCP, one shared layer and one app.
 
 **The product is one real app. It is not a hub over other emulators.** The app
 does not install seven other apps and launch them. The emulators become
-backends inside one application, with one UI, one library and one settings
-system. This is a unified emulator.
+backends that the app fetches and drives, with one UI, one library and one
+settings system. The user sees one product. This is a unified emulator.
+
+See [The backend model](#the-backend-model) for how a backend loads and why
+the contract between the app and a backend is deliberately thin.
 
 The app is not built on libretro. See
 [Upscaling and filters](#1-upscaling-and-filters).
 
 To make this possible, the toolchain must be unified first. See
 [One toolchain](#0-one-toolchain--do-this-first).
+
+## The backend model
+
+Decided 2026-08-22. This resolves how a backend loads.
+
+**One app. Backends are separately distributed modules that the app fetches at
+run time.** The app does not link a backend at build time and does not ship
+one inside the APK.
+
+This copies the distribution pattern RetroArch uses. It does not adopt
+libretro. See
+[How RetroArch handles a GPL-2 core](#how-retroarch-handles-a-gpl-2-core-under-a-gpl-3-frontend).
+
+### This is still one app, not a hub
+
+The difference matters and is easy to lose.
+
+| Rejected hub model | This model |
+| --- | --- |
+| Installs other apps. | Fetches backend modules. |
+| Each app has its own UI. | One UI. The app owns every screen. |
+| Launches another app and leaves. | Drives the backend itself. |
+| The user sees seven products. | The user sees one product. |
+
+A user never sees a backend's own interface. There is no other interface. The
+app owns the library, the settings, the overlay, the profiles and the routing.
+
+### The contract is thin, because the cores differ
+
+**Do not force one narrow API on every backend.** The cores are widely
+different. A PS2 recompiler, a Wii U graphic pack system and a DS plane
+compositor do not fit one shape. Forcing them into one is what makes libretro
+slow and limiting.
+
+Define a **minimum** contract that every backend must meet:
+
+- Lifecycle: load, run, pause, stop, save state, load state.
+- Surface: how the backend receives a Vulkan surface and reports its size.
+- Input: how the app delivers a controller and touch state.
+- Settings: the key namespace, and the resolution order for a per-game
+  override.
+- Paths: where saves, states, packs, cheats and screenshots live.
+
+Everything past that is a **per-backend extension**. A backend declares what
+extra it supports, and the app shows the UI for the ones present. Cemu
+declares graphic packs. melonDS declares three filter planes. ARMSX2 declares
+two texture classes. None of them pretends to be the others.
+
+The shared layer sits above the contract, not inside the cores.
+
+### What this buys, besides the licence hygiene
+
+- **APK size.** Seven emulator cores in one package would be very large. The
+  user installs only the systems they use.
+- **Update rate.** Ship a backend fix without reshipping the app.
+- **Build isolation.** A broken Cemu build does not block a melonDS release.
+- **A licence escape hatch.** A GPL-2.0-only backend can be distributed
+  separately if PS3 ever returns.
+
+### PS3 is deferred, not cancelled
+
+Punted 2026-08-22, until the backend contract takes shape.
+
+The pattern above is what would let PS3 return. Do not design for it now, and
+do not let it constrain the contract. Revisit once two backends work.
 
 ## Licences constrain the one-app plan
 
@@ -1189,11 +1257,6 @@ These are not settled. Do not assume an answer. Ask, or mark the assumption.
 1. **The toolchain row.** Which NDK, `minSdk`, `targetSdk`, Gradle, AGP and
    C++ standard does the fleet use? Every other decision waits on this one.
    See [One toolchain](#0-one-toolchain--do-this-first). Decide this first.
-2. **How a backend loads.** The app is one app. The open question is whether a
-   backend is statically linked, a dynamic feature module, or a `dlopen` module
-   inside the same app. This is not the libretro question. libretro is
-   rejected. This is about packaging one app that holds several large cores.
-   It is an engineering decision only; the licences no longer constrain it.
 3. **The build location.** Options: local Windows or WSL, GitHub Actions, or a
    split. Cemu, Xenia and RPCSX are expensive to build locally. This decision
    sets how much an agent can do unattended.
@@ -1214,3 +1277,6 @@ These are not settled. Do not assume an answer. Ask, or mark the assumption.
   [How to build the shared layer](#how-to-build-the-shared-layer).
 - **Per-game override for every option** is a requirement. See
   [The game library and per-game overrides](#6-the-game-library-and-per-game-overrides).
+- **Backends are separately distributed modules**, fetched at run time. The
+  contract is thin. See [The backend model](#the-backend-model).
+- **PS3 is deferred**, not cancelled.
