@@ -33,8 +33,10 @@ Easy to use.**
   experiments. Agents also do work inside the product: neural upscaling, and
   per-game tuning a person would otherwise do by hand. The point is to remove
   human toil.
-- **Easy to use.** Sensible defaults. One place for every setting. Nothing
-  needs a file manager, a text editor or a wiki.
+- **Easy to use, for somebody with a full-time job.** Configuration is not the
+  hobby. Sensible defaults, one place for every setting, and nothing that needs
+  a file manager, a text editor or a wiki. Cheats are first class. One hotkey
+  set works on every system.
 - **Quality of life, everywhere.** Texture improvement with per-class routing,
   HD texture packs, mods and translations installed in-app, one cheat library
   across every system, a per-game override for every option, and known-good
@@ -42,6 +44,36 @@ Easy to use.**
 
 That last group is the reason to build one app instead of running eight
 separate emulators.
+
+## Why not RetroArch
+
+RetroArch shares the periphery. This project shares the hot path.
+
+RetroArch is a thin frontend over unmodified cores. It cannot make a core
+faster, because it must accept hundreds of cores as their authors wrote them.
+Its shared layer is UI, input and post-process shaders at the edges.
+
+This project supports a small number of backends on exactly one device. That
+buys the right to reach inside a core and take a responsibility away from it.
+The shared layer owns the Vulkan device, the texture upload path, the caches
+and the scheduler. Backends are modified on purpose.
+
+RetroArch is also the anti-pattern for usability here: cheats are not first
+class, hotkeys are not common across cores, and it demands study before it
+gives you a game.
+
+## The duplication problem
+
+Agentic coding accelerates duplication. A feature that used to be built once,
+because it was expensive, now gets built in three forks in a week.
+
+That already happened here. Three forks independently implemented per-class
+texture filtering. Six forks each wrote a GPU driver picker.
+
+The fix is structural, not a rule in a document. When the shared layer takes a
+subsystem, the fork loses the ability to have one: the implementation is
+deleted, the fork links the shared module, and the build fails if the
+subsystem reappears.
 
 ## What this is
 

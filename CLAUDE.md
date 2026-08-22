@@ -121,15 +121,33 @@ This project is built by agents, on purpose, at every stage.
 The point is to remove human toil, not to add novelty. If an AI feature makes
 a person do more work, it is wrong.
 
-### 4. Easy to use
+### 4. Easy to use, for somebody with a full-time job
 
-The app must be pleasant for somebody who wants to play a game.
+**The user has limited time and wants to play a game.** Configuration is not
+the hobby. Every step the app demands is taken from the time a person had to
+play.
+
+RetroArch is the anti-pattern, and these are its named failures:
+
+- **Cheats are not first class.** Finding, installing and enabling a cheat is
+  a research task. In this app, cheats are a first-class feature with a
+  library, a search and a per-game view. See
+  [Cheat databases](#4-cheat-databases).
+- **No common hotkeys.** Each core does its own thing. In this app, **one
+  hotkey set works on every system**. Save state, load state, fast forward,
+  rewind, screenshot, overlay and menu are the same everywhere, always.
+- **It demands study.** A person should not read a wiki to play a game.
+
+The rules that follow:
 
 - Sensible defaults. A game runs well with no setup.
 - One place for every setting. No hunting across backends.
 - Nothing requires a file manager, a text editor or a wiki.
+- The same control does the same thing on every system.
 - The hard controls stay available for somebody who wants them. They are not
   in the way of somebody who does not.
+
+**Judge a feature by the time it costs the person, not by its power.**
 
 ### 5. Quality of life, everywhere
 
@@ -281,6 +299,66 @@ Packing together is not free. Accept these:
   This is why [One toolchain](#0-one-toolchain--do-this-first) is Phase 1 and
   blocks everything.
 
+## Duplication must be structurally impossible
+
+**The root problem: agentic coding accelerates duplication.**
+
+Before agents, a feature was expensive, so it was built once. An agent builds
+it in an afternoon, in whichever fork it was pointed at. The same feature now
+appears in three forks in a week, each version slightly different.
+
+The evidence is in this repo. ARMSX2, melonDS-android and azahar-thor each
+built per-class texture filtering separately. Six forks each built a GPU driver
+picker. None of that is old mess. It is happening now, and it is speeding up.
+
+**A rule in a document does not stop this.** An agent skips what it does not
+read. The fix must be structural.
+
+### The mechanism
+
+When the shared layer takes a subsystem, the fork loses the ability to have
+one.
+
+1. **Extract** the subsystem into the shared layer.
+2. **Delete** the fork's implementation. Do not leave it unused. Dead code is
+   an invitation.
+3. **Depend.** The fork's build links the shared module. The fork implements
+   the contract and nothing more.
+4. **Guard.** The build fails if the subsystem reappears in the fork. A new
+   file under a deleted path, or a symbol that duplicates an owned one, is a
+   build error, not a review comment.
+
+An agent that tries to add a texture filter to a fork finds no directory for
+it, no build target, and a failing build. That is cheaper than any review.
+
+### The ownership list
+
+`shared_layer/OWNED.md` records every subsystem the shared layer owns. It is
+the input to the build guard.
+
+For each owned subsystem, record:
+
+- What it covers, precisely enough to write the guard.
+- Which forks are converted, and which are not yet.
+- The paths deleted from each converted fork.
+
+**A subsystem is either owned or not owned. There is no partly owned.** A
+half-converted subsystem is how duplication returns.
+
+### Depth is decided per subsystem
+
+There is no fixed rule for how deep the shared layer reaches. Judge each hot
+path on its own evidence:
+
+- How badly do the forks implement it now, and how many times?
+- How active is upstream in that path?
+- What does the merge cost become after we replace it?
+- What does the fork uniquely know that the shared layer cannot?
+
+Record the decision and its reasons before you extract. Add it to
+`shared_layer/OWNED.md`. A depth decision made once, in writing, stops the
+question being re-argued per fork.
+
 ## The philosophy: share the hot path, not the periphery
 
 This is the central idea. Everything else follows from it.
@@ -320,15 +398,19 @@ A backend whose upload path we replaced cannot take an upstream change to that
 path. The conflict is not textual; the code being merged no longer has a place
 to go.
 
-This is the real tension in the project. Weigh it per subsystem:
+**Accept full divergence in a hot path we own.** Decided 2026-08-22.
 
-- A hot path that every backend implements badly is worth taking, and worth
-  the merge pain.
-- A subsystem where upstream is active and better than us is worth leaving
-  alone.
+Once the shared layer owns a subsystem, that fork's version is dead and gets
+deleted. Upstream changes to that path are ignored on purpose. Do not try to
+keep it mergeable; a path kept mergeable keeps the fork's structure, and the
+fork's structure is the thing costing frames.
 
-Record the choice for each subsystem, with the reason, in
-[`capability_inventory.md`](capability_inventory.md).
+Keep harvesting everywhere else. Divergence is bought per subsystem, not
+per fork.
+
+This is a real loss. Some upstream work becomes unreachable. Weigh it before
+you take a subsystem, using the tests in
+[Depth is decided per subsystem](#depth-is-decided-per-subsystem).
 
 ## RetroArch is a source of ideas, not a model
 
@@ -786,6 +868,76 @@ Before you add a document:
 
 git-lfs is not set up. See [Open decisions](#open-decisions).
 
+## Per-game patches for speed
+
+Some games need a patch to run well. A shared optimisation cannot fix a game
+that fights the hardware in its own specific way.
+
+**The engine is shared. The patches are per-game data.**
+
+- The patch format, the parser, the applier and the UI belong to the shared
+  layer.
+- A patch itself is data. It names a game, a version and the bytes to change.
+
+Cemu already has the best implementation of the mechanism in the fleet:
+`GraphicPack2Patches`, `GraphicPack2PatchesParser` and
+`GraphicPack2PatchesApply`, with runtime ASM patching. We already wrote patches
+with it, in `bin/graphicPacks/cemuThorBuiltin/`. **Read that before designing a
+patch format.** xenia has `GamePatchManager` and eden has `patch_manager`.
+
+Rules:
+
+- A patch states the game id, the version and what it changes.
+- A patch states **why**. A patch without a measured reason is a guess.
+- A patch carries its measurement: the scene, the before number and the after
+  number, on the device.
+- A patch is a per-game override like any other. The user can turn it off.
+
+### Ghidra
+
+Use Ghidra when a game needs reverse engineering to find the hot spot.
+
+- Record the finding, not the tool session. Write the address, the function,
+  what it does and why it is slow.
+- **Do not commit a Ghidra project.** They are large and they are not
+  reviewable. Commit the finding and the patch.
+- Put the analysis in `console_lab/<console>/`, because it is specific to one
+  machine and usually to one game.
+- Link the analysis from the patch.
+
+## Skills live in this repo
+
+**Custom skills are local, in `.claude/skills/`.** They are how development
+gets faster. Write one whenever a procedure gets repeated.
+
+A skill holds a procedure that would otherwise be retyped: a build recipe, a
+flash sequence, a measurement run, an extraction checklist.
+
+Rules:
+
+- Keep the skill in this repo, not in a fork, when it applies to more than one
+  fork.
+- Keep a fork-specific skill in that fork.
+- A skill states its preconditions. Most Thor skills need the device on Wi-Fi
+  adb and the charger connected.
+- Update the skill when the procedure changes. A stale skill is worse than no
+  skill, because it is trusted.
+
+Skills worth writing first:
+
+| Skill | What it does |
+| --- | --- |
+| `capability-check` | Answer "which fork already has this?" before any feature work. |
+| `thor-connect` | Resolve the Thor by model over Wi-Fi adb, verify it, never touch the Quest. |
+| `thor-measure` | Run a scene, capture FPS, frametime, thermals and charge state. |
+| `fork-build` | Build one fork with its recipe and record the time. |
+| `extract-subsystem` | Walk the five extraction steps and update `OWNED.md`. |
+| `ghidra-finding` | Record a reverse-engineering result in the right place. |
+
+**The fleet is inconsistent about where skills live.** xenia-thor and
+Vita3K-Thor use `.agents/skills/`. melonds_HD_2 uses `.claude/skills/`. Use
+`.claude/skills/` in this repo. Leave the forks alone until a reason appears.
+
 ## Console lab
 
 `console_lab/<console>/` holds experiments and speedups that belong to one
@@ -1173,7 +1325,14 @@ has:
 
 The library is one list across every backend. It is not one list per emulator.
 
-### 7. Save conventions and control overlays
+### 7. Universal hotkeys, save conventions and control overlays
+
+**One hotkey set works on every system.** This is a requirement, not a
+convenience. Save state, load state, fast forward, rewind, screenshot, overlay
+and menu use the same input on every backend, always.
+
+A backend does not get to define its own hotkey. The app owns the hotkey layer
+and tells the backend what happened.
 
 ### Vulkan is the substrate
 
