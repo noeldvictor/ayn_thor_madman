@@ -181,6 +181,60 @@ This rule applies to the whole fleet, not only to rpcsx.
 Method note for any future licence scan: use `git grep`. A per-file `head` loop
 times out on a repo this size.
 
+### Why GPL-2.0-only and GPL-3.0 conflict
+
+Both licences contain the same defensive rule. GPL-2 section 6 and GPL-3
+section 10 each say you may not add restrictions beyond the licence itself.
+
+GPL-3 adds conditions that GPL-2 does not have:
+
+- Installation information for user products, the anti-tivoisation rule.
+- An explicit patent grant and patent retaliation terms.
+- Different termination and cure provisions.
+
+From the GPL-2 side those extra conditions are further restrictions, which
+GPL-2 forbids. From the GPL-3 side you cannot drop them. Neither licence can
+give way, so one combined work cannot satisfy both.
+
+"Or later" is what breaks the deadlock. A GPL-2.0-or-later file lets you elect
+GPL-3.0 for your copy. Both halves then sit under one licence and agree. That
+is why azahar and Vita3K are safe and rpcsx is not.
+
+### Clean room is possible and wrong here
+
+A clean-room reimplementation does escape the licence. Copyright covers
+expression, not facts. Hardware behaviour, file formats and interfaces are
+facts.
+
+It requires two separated teams:
+
+1. A team that reads the source and writes a functional specification. The
+   specification must describe behaviour only. It must carry no code, no
+   structure and no distinctive names or comments.
+2. A team that has never seen the source and implements from that
+   specification alone.
+
+Dated records of who saw what are the defence. Without the paper trail there
+is no clean room, only a claim.
+
+**Do not attempt it for rpcsx.** Four reasons:
+
+- **We are already the contaminated team.** We have read rpcs3 source in this
+  project. A contaminated reader cannot be the clean implementer.
+- **The agents make it worse.** This project is agent-driven. An agent that
+  held the source in its context is contaminated, and proving what an agent
+  saw is hard.
+- **The scale is wrong.** 874 rpcs3-derived files, covering Cell SPU
+  recompilation and RSX. That is a multi-year effort for a team.
+- **It defeats the premise.** This project harvests and adapts. A clean room
+  forbids exactly that.
+
+Cheaper routes exist if PS3 returns: run the backend as a separate process, or
+distribute it separately. Both cost far less than a clean room.
+
+Note that `aps3e` is also rpcs3-derived. It carries the same licence. It is
+not an escape.
+
 ### Other licence questions, not yet answered
 
 - **Cheat databases.** Sharkive, CTRPF-AR-CHEAT-CODES, citra-games-wiki and
