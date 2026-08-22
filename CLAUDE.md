@@ -580,6 +580,43 @@ graphics API, and now one driver.
 - xenia-thor already runs `mesa-turnip-v26.3.0-20260803-r7-vulkan-1.4.354-7`.
   This makes existing practice official.
 
+### Choosing the pin
+
+**Provisional pin: `turnip_mrpurple_T30-toasted.adpkg.zip`.** Not measured yet.
+Surveyed 2026-08-22.
+
+The Adreno 740 is an **a7xx** part. Only a7xx builds apply.
+
+Candidates, all already on the device:
+
+| Build | Date | Source | Note |
+| --- | --- | --- | --- |
+| `turnip_mrpurple_T30-toasted` | 2026-08-20 | MrPurple666 | Newest. Changelog states it fixed a7xx support and dropped a710 and a720. |
+| `mesa-turnip-v26.3.0-20260803-r7` | 2026-08-03 | Mesa build | What xenia-thor runs today. |
+| `Turnip_v26.0.0_R8` | 2026-05-10 | K11MCH1 | Widely used and community tested. |
+| `turnip_mrpurple_T29-toasted` | earlier | MrPurple666 | Superseded by T30. |
+| `Turnip_v26.0.0_R8_Sysmem` | 2026-05-10 | K11MCH1 | **Sysmem variant.** Forces system memory rendering instead of GMEM tiling. Expect it to be slower; it exists to work around bugs. See [Vulkan is the substrate](#vulkan-is-the-substrate-and-the-adreno-is-a-tiler). |
+
+**Do not pin from reading a changelog. Measure.** Three candidates and a
+measurement harness already exist. Run an A/B across T30, v26.3.0-r7 and
+v26.0.0_R8 on the same scene, and pin the winner. State watts and temperature,
+not only frames. See
+[AI-driven development, QA and experiments](#ai-driven-development-qa-and-experiments).
+
+### Wrong-target drivers present on the device
+
+`/sdcard/Android/data/dev.eden.eden_emulator.nightly/files/gpu_drivers/`
+contains `Turnip_Gen8_V33.zip` and `a8xx-gen8-V24.zip`, and
+`/storage/emulated/0/Download/` contains `Turnip_Gen8_V33.zip`.
+
+**These target a8xx, the Snapdragon 8 Elite generation. The Thor is a740,
+which is a7xx.** They are the wrong part. Do not ship them, do not test with
+them, and treat their presence as a reason for the driver manager to validate
+the target GPU before it offers a build.
+
+That validation is a concrete job for the shared driver manager, and it is
+something no fork does today.
+
 ### Three rules that make it safe
 
 1. **Pin the version. Do not track the latest.** Mesa moves quickly and a
