@@ -551,6 +551,38 @@ Work in this order for each paradigm:
 
 Do not convert every fork at once. Convert one fork and prove the contract.
 
+### The shared layer takes the licence of its most restrictive source
+
+**Check the licence before you choose where to extract from.** Extracted code
+keeps the licence of the fork it came from. The shared layer inherits the most
+restrictive licence among its sources.
+
+| Extract from | Shared layer can be |
+| --- | --- |
+| xenia-thor, BSD | anything |
+| Cemu-thor, MPL-2.0 | MPL-2.0 or GPL |
+| azahar-thor, Vita3K-Thor, GPL-2.0-or-later | GPL-2.0-or-later, or GPL-3.0 |
+| ARMSX2, melonDS-android, eden-thor, GameThor, GPL-3.0 | **GPL-3.0 only** |
+
+Consequence: a shared module built from ARMSX2 code is GPL-3.0, and only
+GPL-3.0 backends can link it.
+
+Prefer the least restrictive source when two forks have the same capability
+and the quality is close. Example: the GPU driver manager exists in six forks.
+xenia is BSD, so extracting the xenia implementation gives a shared module
+that anything can use. Extracting from eden, which is GPL-3.0, does not.
+
+This does not change the fleet decision. The app is GPL-3.0 and PS3 is out.
+It matters if you ever want a shared module reusable outside this app, or
+usable by a separately distributed PS3 backend.
+
+**Names and interfaces are not the same as implementations.** A list of
+algorithm names, a settings key or a file format is a fact, not expression.
+The implementation behind it is expression. Keep that distinction in mind when
+you copy a contract rather than a function.
+
+Not legal advice.
+
 ### AI legibility is a requirement
 
 An agent works across seven forks. Inconsistency costs more than it costs a
