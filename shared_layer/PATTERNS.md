@@ -218,20 +218,28 @@ Two patch systems already exist. Choose one:
 
 Smaller, and the easiest possible proof that extraction works.
 
-### The LRU cache, written three times
+### The LRU cache: read, and NOT duplication
 
-| Fork | Path |
-| --- | --- |
-| ARMSX2 | `common/LRUCache.h` |
-| azahar-thor | `src/common/static_lru_cache.h` |
-| eden-thor | `src/common/lru_cache.h` |
+**This entry previously claimed three forks wrote the same data structure.
+That was wrong.** Reading them on 2026-08-22 reversed it. See
+[`../research_log/20260822_1915_lru_cache_extraction_test.md`](../research_log/20260822_1915_lru_cache_extraction_test.md).
 
-**The same data structure, three times, in one fleet.** No guest hardware is
-involved and there is nothing to preserve per fork.
+| | ARMSX2 | azahar-thor | eden-thor |
+| --- | --- | --- | --- |
+| Storage | `std::map` | `std::array`, static | intrusive list plus pool |
+| Ordering | access counter | `std::list` | tick based |
+| Capacity | runtime, resizable | **compile time** | pool grows |
+| Allocation | dynamic | **none** | pooled |
+| Licence | GPL-3.0+ | **Boost** | GPL-2.0-or-later |
 
-If the extraction machinery cannot consolidate an LRU cache, it will not
-manage a texture cache. **This is the cheapest possible test of the process in
-[`../CLAUDE.md`](../CLAUDE.md), How to build the shared layer.**
+Three designs for three constraints. azahar's avoids allocation on purpose;
+eden's tracks emulated time rather than access order. Consolidating them would
+force one design onto three problems, which is a regression dressed as
+cleanup.
+
+**The lesson generalises: counting implementations is not evidence of waste.**
+Read every implementation before recording a duplication. A capability row
+that was never read is a hypothesis, not a finding.
 
 ### GPU driver negotiation
 

@@ -1385,11 +1385,18 @@ ARMSX2's `GSTextureUpscaler` with the names changed.
 
 **Order extraction by risk, not by value:**
 
-1. Support patterns with no guest-specific behaviour. The LRU cache exists
-   three times in the fleet and there is nothing to preserve per fork. If the
-   machinery cannot consolidate an LRU cache, it will not manage a texture
-   cache.
-2. The GPU driver manager. Six forks, no real variation, and xenia's is BSD.
+1. The GPU driver manager. Six forks, one GPU, and xenia's is BSD. **Read all
+   six before extracting.** The variation looks like UI rather than algorithm,
+   but that is unproven.
+
+   *The LRU cache was first here and has been removed.* Reading the three
+   implementations showed three different designs for three constraints, not
+   one structure written three times. See
+   [`research_log/20260822_1915_lru_cache_extraction_test.md`](research_log/20260822_1915_lru_cache_extraction_test.md).
+
+2. **Read every implementation before recording a duplication.** Counting
+   files with similar names is not evidence of waste. A capability row that
+   was never read is a hypothesis.
 3. The shader and pipeline cache. Measurable, user-visible, no renderer
    internals needed.
 4. Texture upload. The flagship feature lives here.

@@ -16,6 +16,11 @@ Quality values:
 | `built` | Compiles and passes a self-test. Not run on the device. |
 | `design` | A document exists. No code. |
 
+**Read status matters.** A row recorded from a file listing is a hypothesis.
+A row recorded after reading the implementation is a finding. When they were
+read, the LRU cache entries turned out to be three different designs rather
+than one duplication. Mark rows you have actually read.
+
 Surveyed 2026-08-22. **The first version of this file was wrong.** It covered
 two forks and implied the rest had nothing. Read every "not surveyed" line
 below as a gap in the survey, never as an absence in the fork.

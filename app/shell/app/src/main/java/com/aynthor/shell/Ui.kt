@@ -32,6 +32,7 @@ private sealed interface Route {
     data class Detail(val game: Game) : Route
     data object Settings : Route
     data object Drivers : Route
+    data object Systems : Route
 }
 
 @Composable
@@ -45,6 +46,7 @@ fun ShellApp(activity: MainActivity) {
                 onHome = { route = Route.Library },
                 onSettings = { route = Route.Settings },
                 onDrivers = { route = Route.Drivers },
+                onSystems = { route = Route.Systems },
             )
             Box(Modifier.weight(1f)) {
                 when (val r = route) {
@@ -52,6 +54,7 @@ fun ShellApp(activity: MainActivity) {
                     is Route.Detail -> DetailScreen(activity, r.game)
                     is Route.Settings -> SettingsScreen()
                     is Route.Drivers -> DriversScreen()
+                    is Route.Systems -> SystemsScreen()
                 }
             }
             StatusBar(activity)
@@ -60,7 +63,13 @@ fun ShellApp(activity: MainActivity) {
 }
 
 @Composable
-private fun TopBar(route: Route, onHome: () -> Unit, onSettings: () -> Unit, onDrivers: () -> Unit) {
+private fun TopBar(
+    route: Route,
+    onHome: () -> Unit,
+    onSettings: () -> Unit,
+    onDrivers: () -> Unit,
+    onSystems: () -> Unit,
+) {
     Row(
         Modifier.fillMaxWidth().background(Panel).padding(horizontal = 20.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -74,6 +83,8 @@ private fun TopBar(route: Route, onHome: () -> Unit, onSettings: () -> Unit, onD
         NavChip("Settings", route is Route.Settings, onSettings)
         Spacer(Modifier.width(8.dp))
         NavChip("Drivers", route is Route.Drivers, onDrivers)
+        Spacer(Modifier.width(8.dp))
+        NavChip("Systems", route is Route.Systems, onSystems)
     }
 }
 
@@ -372,5 +383,89 @@ private fun DriversScreen() {
                 color = Warn, fontSize = 12.sp,
             )
         }
+    }
+}
+
+
+// ---------------------------------------------------------------- systems
+
+/**
+ * What each backend declares through the contract.
+ *
+ * This screen exists to check the contract rather than to serve a user. If a
+ * backend cannot describe itself here, the contract is missing something.
+ */
+@Composable
+private fun SystemsScreen() {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) {
+        Text("Systems", color = Text, fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
+        Spacer(Modifier.height(4.dp))
+        Text(
+            "What each backend declares. The app renders extension UI only when " +
+                "the extension is present.",
+            color = Dim, fontSize = 13.sp,
+        )
+        Spacer(Modifier.height(18.dp))
+
+        Backends.all.forEach { b ->
+            Section("${b.info.name}  ·  ${b.info.version}") {
+                Row(Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
+                    b.info.systems.forEach { Badge(it.label, Accent) }
+                }
+                Kv("Lifecycle", b.supportedOps().joinToString(", ") { it.name.lowercase() })
+                Kv("Settings", "${b.settings().size} keys")
+                Kv("Counters", b.counters().joinToString(", ") { it.name.lowercase() })
+                Kv(
+                    "Cheats",
+                    b.cheats()?.let { c ->
+                        c.formats.joinToString(", ") +
+                            (if (c.liveToggle) ", live toggle" else ", restart needed")
+                    } ?: "none",
+                )
+                Kv(
+                    "Patches",
+                    b.patches()?.let { p ->
+                        p.format + (if (p.applyAtLoadOnly) ", at load only" else ", at run time")
+                    } ?: "none",
+                )
+                Kv("Storage", b.storage(TitleId("x", "x", null, null)).size.toString() + " categories")
+
+                Spacer(Modifier.height(8.dp))
+                Text("Extensions", color = Text, fontSize = 13.sp)
+                Spacer(Modifier.height(4.dp))
+                if (b.extensions().isEmpty()) {
+                    Text("none declared", color = Dim, fontSize = 12.sp)
+                }
+                b.extensions().forEach { e ->
+                    val line = when (e) {
+                        is Extension.TextureClasses ->
+                            "Texture classes: " + e.classes.joinToString(", ")
+                        is Extension.TexturePacks -> "Texture packs: " + e.format
+                        is Extension.GraphicPacks -> "Graphic packs: " + e.format
+                        is Extension.HotSettings ->
+                            "Overlay quick settings: " + e.keys.size
+                    }
+                    Text("· " + line, color = Dim, fontSize = 12.sp)
+                }
+            }
+        }
+
+        Section("PlayStation 3") {
+            Text("Deferred. Optional separate install.", color = Warn, fontSize = 13.sp)
+            Spacer(Modifier.height(6.dp))
+            Text(
+                "Every PS3 emulator is GPL-2.0-only and cannot share this binary. " +
+                    "See CLAUDE.md, Licences.",
+                color = Dim, fontSize = 12.sp,
+            )
+        }
+    }
+}
+
+@Composable
+private fun Kv(k: String, v: String) {
+    Row(Modifier.fillMaxWidth().padding(vertical = 3.dp)) {
+        Text(k, color = Dim, fontSize = 12.sp, modifier = Modifier.width(110.dp))
+        Text(v, color = Text, fontSize = 12.sp)
     }
 }
