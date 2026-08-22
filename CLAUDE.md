@@ -219,6 +219,38 @@ never close to usable. It is not a base.
 
 There is no permissive or GPL-3.0 PS3 emulator to fork.
 
+### How RetroArch handles a GPL-2 core under a GPL-3 frontend
+
+Checked 2026-08-22. This is the working precedent for the PS3 problem.
+
+RetroArch is GPL-3.0. Many of its cores are GPL-2.0-only. It uses three
+separations:
+
+1. **A stable C ABI.** A core is a shared library that implements the libretro
+   API. The frontend calls `retro_run` and passes callbacks for video, audio
+   and input. No core-internal type crosses the boundary.
+2. **`dlopen` at run time.** The frontend does not link a core at build time.
+3. **Separate distribution.** The frontend ships without cores. The user
+   fetches a core through the core downloader. The GPL-2 core and the GPL-3
+   frontend are never in one distributed package.
+
+**Item 3 is the licence-hygiene step, and it is the one that matters.** Items
+1 and 2 alone are the contested part; the Free Software Foundation treats
+dynamic linking into one address space as one combined work. Separate
+distribution avoids the argument rather than winning it.
+
+RetroArch has run this model for over a decade at scale.
+
+**We can copy the distribution pattern without adopting libretro.** libretro is
+rejected for its core system and its UI, not for this. Shipping the app with
+the PS3 backend fetched separately at run time is available to us, and it needs
+no libretro code.
+
+For PS3 specifically there are two known RetroArch routes: an alpha
+`RPCS3-Libretro` core, and "launcher" cores that spawn the standalone RPCS3
+binary and return afterwards. The launcher pattern is the cleanest legally,
+because no emulation runs in the frontend process at all.
+
 ### Do not wait for a relicence
 
 No RPCS3 relicensing effort was found. Do not plan around one.
