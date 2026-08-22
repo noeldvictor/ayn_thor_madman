@@ -1495,11 +1495,30 @@ Notes:
   ahead of that date.
 - **C++20 is not verified.** Build each fork before you commit to it. Record
   the result in a work log.
+- **AGP 9 owns Kotlin. Remove the `org.jetbrains.kotlin.android` plugin.**
+  Applying it fails the build outright:
+
+  > The 'org.jetbrains.kotlin.android' plugin is no longer required for Kotlin
+  > support since AGP 9.0.
+
+  With AGP 9.x a Compose module needs only `com.android.application` and
+  `org.jetbrains.kotlin.plugin.compose`. `rpcsx-ui-android` already runs this
+  way. Every fork that still applies `kotlin.android` will fail when it moves
+  to AGP 9, and most of the fleet still applies it.
+
+  Found while building the app shell on 2026-08-22. See
+  [`app/shell/`](app/shell/).
 
 Unify the Vulkan setup too: one loader, one validation configuration and one
 extension set.
 
 ### The device
+
+Screen-2 hosts `com.android.launcher3/.secondarydisplay.SecondaryDisplayLauncher`
+as its own resumed activity. **Screen-2 accepts real Activities, not only a
+`Presentation`.** That is a second route for the dual-screen design. Decide
+between them before the layout work goes further. See
+[`work_log/20260822_1845_shell_build_and_install.md`](work_log/20260822_1845_shell_build_and_install.md).
 
 | Property | Value |
 | --- | --- |
@@ -1529,6 +1548,22 @@ cable attached.
 bare `adb` command fails with "more than one device/emulator".
 
 **Never run a bare `adb` command. Always pass `-s`.**
+
+**Capture rules learned on 2026-08-22:**
+
+- **`screencap -d` takes the SurfaceFlinger display ID, not the Android
+  display id.** `-d 0` and `-d 4` silently write a zero-byte file and report
+  success. The Thor's IDs are `4630946441858561667` for the built-in screen
+  and `4630946482288158084` for Screen-2. **Treat a zero-byte PNG as a
+  failure.**
+- **Stream captures with `adb exec-out screencap -p > file`.** Writing to
+  `/sdcard` produces a zero-byte file, probably from scoped storage.
+- **Git-Bash mangles adb remote paths.** `/sdcard/x.png` becomes
+  `C:/Program Files/Git/sdcard/x.png`. Set
+  `MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*'`, and then the local path must
+  be Windows-style, because `adb.exe` cannot read `/c/Users/...`.
+- **Check what is running before foregrounding anything.** The Thor is a
+  device somebody uses. Starting an activity interrupts a game in progress.
 
 **Do not hardcode the address.** It was `192.168.1.3:5555` on 2026-08-22. A
 Wi-Fi address changes when the DHCP lease changes. Resolve it at run time:

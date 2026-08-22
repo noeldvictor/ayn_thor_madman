@@ -1,0 +1,183 @@
+package com.aynthor.shell
+
+/**
+ * Fake data for the shell.
+ *
+ * Everything here is invented. The point is to pin the shape of the data the
+ * app needs, so the backend contract can be written from real screens instead
+ * of from an argument. See app/SCREENS.md.
+ */
+
+/** A system the app can run. Maps to one backend. */
+enum class System(val label: String, val backend: String) {
+    PS2("PlayStation 2", "ARMSX2"),
+    XBOX360("Xbox 360", "xenia-thor"),
+    WIIU("Wii U", "Cemu-thor"),
+    N3DS("Nintendo 3DS", "azahar-thor"),
+    NDS("Nintendo DS", "melonDS-thor"),
+    VITA("PlayStation Vita", "Vita3K-thor"),
+    SWITCH("Nintendo Switch", "eden-thor"),
+    PC("PC, Proton", "GameThor"),
+}
+
+/**
+ * A guest screen a backend declares.
+ *
+ * The app owns routing. The backend only says what exists. This is the
+ * contract entry that dual-screen routing needs.
+ */
+data class GuestScreen(
+    val name: String,
+    val width: Int,
+    val height: Int,
+    val takesTouch: Boolean,
+    val requiredByTitle: Boolean,
+)
+
+/** How guest screens are placed on the two panels. Per game. */
+enum class ScreenLayout(val label: String, val detail: String) {
+    ONE_EACH("One per display", "Top on the main panel, bottom on Screen-2"),
+    BOTH_MAIN("Both on main", "Screen-2 free for the companion view"),
+    MAIN_ONLY("Main only", "Second guest screen hidden"),
+    SWAPPED("Swapped", "Bottom on the main panel, top on Screen-2"),
+}
+
+/** What Screen-2 shows when the game does not need it. */
+enum class Companion(val label: String) {
+    CHEATS("Cheat list"),
+    PERFORMANCE("Performance"),
+    STORAGE("Storage"),
+    NOTES("Notes"),
+    NOTHING("Nothing"),
+}
+
+/** One storage category for a game. Rebuildable ones are safe to clear. */
+data class StorageItem(
+    val label: String,
+    val megabytes: Int,
+    val rebuildable: Boolean,
+)
+
+data class Game(
+    val title: String,
+    val system: System,
+    val guestScreens: List<GuestScreen>,
+    val hasCheats: Boolean,
+    val hasOverride: Boolean,
+    val hasPack: Boolean,
+    val hasPatch: Boolean,
+    val storage: List<StorageItem>,
+) {
+    val totalMb: Int get() = storage.sumOf { it.megabytes }
+    val isDualScreen: Boolean get() = guestScreens.size > 1
+}
+
+private fun single(w: Int, h: Int) =
+    listOf(GuestScreen("screen", w, h, takesTouch = false, requiredByTitle = true))
+
+private fun dual(tw: Int, th: Int, bw: Int, bh: Int) = listOf(
+    GuestScreen("top", tw, th, takesTouch = false, requiredByTitle = true),
+    GuestScreen("bottom", bw, bh, takesTouch = true, requiredByTitle = true),
+)
+
+/** The fake library. Systems match the real fleet. */
+object Fake {
+
+    val games: List<Game> = listOf(
+        Game(
+            "Shadow of the Colossus", System.PS2, single(640, 448),
+            hasCheats = true, hasOverride = true, hasPack = true, hasPatch = false,
+            storage = listOf(
+                StorageItem("Game data", 4200, false),
+                StorageItem("Saves and states", 38, false),
+                StorageItem("HD texture pack", 1900, false),
+                StorageItem("Texture cache", 420, true),
+                StorageItem("Shader cache", 260, true),
+                StorageItem("Screenshots", 74, true),
+            ),
+        ),
+        Game(
+            "Blue Dragon", System.XBOX360, single(1280, 720),
+            hasCheats = false, hasOverride = true, hasPack = false, hasPatch = true,
+            storage = listOf(
+                StorageItem("Game data", 7100, false),
+                StorageItem("Saves and states", 22, false),
+                StorageItem("Shader cache", 880, true),
+                StorageItem("Recompiled code cache", 640, true),
+                StorageItem("Screenshots", 31, true),
+            ),
+        ),
+        Game(
+            "Star Fox Zero", System.WIIU, dual(854, 480, 854, 480),
+            hasCheats = true, hasOverride = true, hasPack = false, hasPatch = true,
+            storage = listOf(
+                StorageItem("Game data", 3300, false),
+                StorageItem("Saves and states", 12, false),
+                StorageItem("Shader cache", 1400, true),
+                StorageItem("Graphic packs", 6, false),
+            ),
+        ),
+        Game(
+            "Ever Oasis", System.N3DS, dual(400, 240, 320, 240),
+            hasCheats = true, hasOverride = false, hasPack = true, hasPatch = false,
+            storage = listOf(
+                StorageItem("Game data", 1700, false),
+                StorageItem("Saves and states", 9, false),
+                StorageItem("Custom textures", 740, false),
+                StorageItem("Shader cache", 130, true),
+            ),
+        ),
+        Game(
+            "The Legend of Zelda: Phantom Hourglass", System.NDS, dual(256, 192, 256, 192),
+            hasCheats = true, hasOverride = true, hasPack = true, hasPatch = false,
+            storage = listOf(
+                StorageItem("Game data", 62, false),
+                StorageItem("Saves and states", 6, false),
+                StorageItem("HD texture pack", 310, false),
+                StorageItem("Shader cache", 44, true),
+            ),
+        ),
+        Game(
+            "Gravity Rush", System.VITA, single(960, 544),
+            hasCheats = true, hasOverride = false, hasPack = false, hasPatch = false,
+            storage = listOf(
+                StorageItem("Game data", 2600, false),
+                StorageItem("Saves and states", 15, false),
+                StorageItem("Shader cache", 520, true),
+            ),
+        ),
+        Game(
+            "Tokyo Xanadu eX+", System.PC, single(1920, 1080),
+            hasCheats = false, hasOverride = true, hasPack = false, hasPatch = true,
+            storage = listOf(
+                StorageItem("Game data", 12400, false),
+                StorageItem("Saves and states", 41, false),
+                StorageItem("Shader cache", 1100, true),
+            ),
+        ),
+    )
+
+    /** Settings, grouped by intent rather than by owning subsystem. */
+    val settingGroups: List<Pair<String, List<String>>> = listOf(
+        "Display and layout" to listOf(
+            "Screen layout", "Screen-2 content", "Aspect", "Internal resolution",
+        ),
+        "Image quality" to listOf(
+            "Texture filter, sprites", "Texture filter, 3D", "Upscale factor",
+            "HD texture packs", "Present filter",
+        ),
+        "Performance and power" to listOf(
+            "Frame limit", "Frame pacing", "Performance hints", "Thermal target",
+        ),
+        "Audio" to listOf("Backend", "Latency", "Volume"),
+        "Input and hotkeys" to listOf(
+            "Controller map", "Touch overlay", "Hotkeys", "Deadzone",
+        ),
+        "Storage" to listOf("Save location", "Cache limit", "Screenshot format"),
+        "Drivers" to listOf("Graphics driver", "Driver override"),
+    )
+
+    /** The pinned driver. See CLAUDE.md, The driver baseline. */
+    const val PINNED_DRIVER = "turnip_mrpurple_T30-toasted"
+    const val DRIVER_STATUS = "loaded, matches a7xx"
+}

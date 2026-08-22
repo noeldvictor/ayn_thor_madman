@@ -1,0 +1,11 @@
+# Build outputs
+app/shell/.gradle/
+app/shell/build/
+app/shell/app/build/
+app/shell/local.properties
+*.apk
+*.iml
+.idea/
+
+# Captures and scratch
+*.png
