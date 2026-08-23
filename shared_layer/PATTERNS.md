@@ -164,10 +164,28 @@ instruction. No fork uses it.**
 and it is the only one that would land in a **shared** hot path rather than in a
 single backend's instruction lowering.
 
-**Unproven, and the next step is to read rather than to build.** The counts are
-file matches. **No fork's swizzle code has been opened** to see whether it is
-scalar bit math, a lookup table, or already vectorised by hand. **If it is a
-table, `PMULL` may lose.**
+**READ 2026-08-23, and the candidate is dead.** `PMULL` loses twice over.
+
+**azahar's per-pixel `MortonInterleave` is two 8-entry `constexpr` tables** —
+two L1 loads and an add. **And its bulk path never computes a per-pixel address
+at all**: it moves whole tiles with **`vld2q_u64`**, ARM's structured `LD2`
+load, which **de-interleaves as part of the memory operation**, plus
+**`vqtbl1q_u8`** (`TBL`) for byte fixups. **83 NEON intrinsics, 27 structured
+loads.**
+
+> **The interleave problem is solved by the load unit, not the multiplier.**
+
+**Three solutions to one problem already exist in this fleet:**
+
+| Method | Fork | Exploits |
+| --- | --- | --- |
+| **move the work to the GPU** | **xenia** | 171 `texture_load_*_cs` compute shaders |
+| **de-interleave in the load** | **azahar** | `LD2` structured loads |
+| **permute in one instruction** | azahar, xenia | `TBL` / `TBX` |
+
+**The real gap is a propagation.** **Vita3K has zero NEON in its texture path
+and Cemu has two**, while the Vita stores textures swizzled. **Read Vita3K's
+path before porting anything** — that rule is what killed `PMULL`.
 
 See [`../research_log/20260823_1755_hardware_instruction_repurposing.md`](../research_log/20260823_1755_hardware_instruction_repurposing.md).
 

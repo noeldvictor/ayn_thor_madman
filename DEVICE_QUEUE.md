@@ -429,7 +429,46 @@ controlled comparison this fleet allows.
 **There is no same-guest IR-against-no-IR pair anywhere in the fleet**, so a
 cross-fork number measures the guest as much as the IR. **Say so in any result.**
 
-## 14. Carryless multiply for texture swizzle — READ FIRST, do not build
+## 14. Carryless multiply for texture swizzle — **CLOSED 2026-08-23, no device needed**
+
+**The read happened. `PMULL` is dead, for two independent reasons.**
+
+**The per-pixel address is a lookup table.** azahar's `MortonInterleave` is two
+8-entry `constexpr` tables — **two L1 loads and an add**. A carryless multiply
+needs operands moved into a vector register and back, **and cross-file transfers
+are what the A710 stalls three cycles on.**
+
+**And the bulk path already uses a better instruction.** azahar moves whole tiles
+with **`vld2q_u64`** — ARM's structured `LD2` load, which **de-interleaves as it
+loads**, in the memory operation, before the data reaches a register. **`PMULL`
+can only act on data already loaded.** Byte fixups use **`vqtbl1q_u8`**, a `TBL`
+permute.
+
+> **The interleave problem is solved by the load unit, not the multiplier.**
+
+**xenia solves it a third way: on the GPU**, in 171 `texture_load_*_cs` compute
+shaders.
+
+**Entry 14 predicted three outcomes and said two would close this with no
+device. The outcome was "already hand-vectorised", which was one of them.** The
+read cost about twenty minutes.
+
+See [`research_log/20260823_1812_swizzle_read.md`](research_log/20260823_1812_swizzle_read.md).
+
+### What replaces it: a PROPAGATE, and it still needs a read first
+
+**Vita3K has zero NEON in its texture path. Cemu has two.** The Vita stores
+textures swizzled, so Vita3K is de-interleaving in scalar code **while azahar's
+`LD2`-plus-`TBL` technique sits in the same fleet, working and
+GPL-2.0-or-later.**
+
+**Not proven.** What is measured is the **presence of intrinsics**, not that
+Vita3K's swizzle is hot or that its textures are large enough for a vectorised
+copy to pay. **Read Vita3K's path first** — the rule that just killed `PMULL`.
+
+## The original entry, kept for the record
+
+## 14b. Carryless multiply for texture swizzle — READ FIRST, do not build
 
 **The best unexploited hardware-repurposing candidate in the fleet**, and the
 only one that would land in a **shared** hot path rather than one backend's
