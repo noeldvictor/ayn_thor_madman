@@ -2507,11 +2507,18 @@ Notes:
 
   | Fork | ABIs built | Usable |
   | --- | --- | --- |
-  | **ARMSX2**, **eden** | `arm64-v8a` | **1 of 1** |
+  | **ARMSX2**, **eden**, **azahar**, **rpcsx** | `arm64-v8a` | **1 of 1** |
   | Vita3K, xenia | `arm64-v8a`, `x86_64` | 1 of 2 |
   | GameThor | `arm64-v8a`, `armeabi-v7a` | 1 of 2 |
   | **melonDS** | three | **1 of 3** |
-  | azahar, rpcsx, Cemu | **unread** | |
+  | Cemu | **unread** | |
+
+  **Four forks already fixed this, and rpcsx measured it.** Its
+  `build.gradle.kts` records that adding x86_64 put **26 MiB compressed and
+  65 MiB uncompressed of unreachable code into a 96 MiB APK, more than half the
+  payload, and doubled the native compile** — and it keeps the old behaviour
+  behind `-PrpcsxAndroidAbis` rather than deleting it. **Copy that shape: the
+  default serves the device, the override serves whoever needs it.**
 
   **Record the ABI list beside every build time**, or Phase 0.3's numbers are
   not comparable across forks.
