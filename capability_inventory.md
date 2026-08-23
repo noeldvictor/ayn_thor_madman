@@ -1169,6 +1169,45 @@ an undo slot.**
 `PATTERNS.md` lists an undo slot as part of the shared state pipeline. It
 would be a genuinely new feature rather than an extraction.
 
+### Three save-state architectures, and two answers to thumbnails
+
+| Fork | Approach |
+| --- | --- |
+| ARMSX2 | hand-rolled versioned binary, `SaveStateBase` with `gzLoadingState` and `gzSavingState` derived classes |
+| azahar | **Boost.Serialization**, with adapters for `flat_set`, `interval_set`, `small_vector`, `std::variant`, `vector` and `atomic` |
+| melonDS | a Kotlin slot model over a native payload |
+
+**ARMSX2 versions explicitly and enforces it socially:**
+
+```cpp
+static const u32 g_SaveVersion = (0x9A59 << 16) | 0x0000;
+// NOTICE: When updating g_SaveVersion, please make sure you add the following
+// line to your commit message somewhere
+```
+
+**A process rule embedded in a header comment.** Every emulator has the
+problem that a state format change silently breaks old states, and ARMSX2
+answers it with a magic-plus-version constant and a commit convention.
+
+Its `freezeData` also carries a note that the old struct was system-dependent
+because `int` size differs between systems. **That is a portability scar worth
+inheriting the lesson from, not the struct.**
+
+### Thumbnails: embedded or sidecar
+
+| Fork | Where the screenshot lives |
+| --- | --- |
+| ARMSX2 | **inside the state**, `SaveStateScreenshotData` |
+| melonDS | **beside it**, a `screenshot: Uri` on the slot |
+
+Embedded survives a file copy and cannot desynchronise. Sidecar can be read
+without parsing the state, which matters for a library screen listing many
+slots.
+
+**The library needs the sidecar property and the integrity of the embedded
+one.** Neither fork has both, and this is a real design choice rather than a
+pick-the-winner.
+
 ### melonDS's save state model is the one to take
 
 ```kotlin

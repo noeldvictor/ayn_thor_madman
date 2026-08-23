@@ -225,11 +225,28 @@ Every fork saves and restores guest state, and every format differs.
 | eden-thor | `SerializableHelper.kt` |
 | Vita3K-Thor | roadmap only, see `reports/20260511_204953_...md` |
 
-**Shared:** slot management, naming, location, thumbnails, the undo slot, and
-the retention policy. Also **the test harness**: a savestate is the fixture
-that makes a deterministic test possible.
+**Read 2026-08-22. Three architectures:** ARMSX2 hand-rolls a versioned binary
+with `gzLoadingState` and `gzSavingState`; azahar uses **Boost.Serialization**
+with adapters for its container types; melonDS wraps a native payload in a
+Kotlin slot model.
+
+**Shared:** slot management, naming, location, thumbnails, the undo slot, the
+retention policy, and **version discipline**. Also **the test harness**: a
+savestate is the fixture that makes a deterministic test possible.
 
 **Not shared:** the serialized payload. That is the guest machine.
+
+**Version discipline is the part nobody would think to share.** ARMSX2 carries
+`g_SaveVersion = (0x9A59 << 16) | 0x0000` and a header comment requiring a
+specific line in the commit message when it changes. A format change silently
+breaking old states is a problem every fork has; only one answers it with a
+process.
+
+**Thumbnails have two valid answers.** ARMSX2 embeds a
+`SaveStateScreenshotData` inside the state; melonDS keeps a `screenshot: Uri`
+beside the slot. Embedded cannot desynchronise; sidecar can be listed without
+parsing the state. **A library screen showing many slots wants the sidecar
+property and the embedded one's integrity**, and no fork has both.
 
 ---
 
