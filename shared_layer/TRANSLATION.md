@@ -148,6 +148,84 @@ written to be portable.
 
 ---
 
+## Is Rosetta 2 the guiding star? Half of it.
+
+**Yes for this pipeline. No for the product** — and taking it as a whole-product
+star would aim at the wrong bottleneck.
+
+**What transfers:** Rosetta **AOT-translates the entire text segment up front**
+and JITs rarely; it **elides flags** overwritten before use; it targets **one
+host instruction per guest instruction** and reaches **~1.64x** size expansion on
+one binary. **All three are available to us.**
+
+**The flag elision has now been reached three times independently** — Rosetta's
+unused-flags pass, **Box64's Kildall backward propagation**, and **LATX's
+compare-and-conditional-jump fusion.** The inflation study puts `jcc` at **9.72%**
+and `cmp/test` at **8.66%**, so **~18% of inflation is compare-and-branch.**
+**This repo treats three-way convergence as its strongest signal.**
+
+**What does not transfer: hardware TSO.** Apple changed the **silicon** so x86
+ordering is free on ARM. **We cannot — and we do not need to.** No guest here is
+more strongly ordered than ARM64. **We skip Rosetta's hardest problem for free.**
+
+**Why it is the wrong star for the product:** Rosetta has **no guest hardware to
+emulate**, its guests do not self-modify or depend on cycle timing, and **the
+fleet has already measured a title where the CPU is not the constraint** —
+xenia's ledger: *"BD's gap is HLE-vs-LLE ... every incremental GPU lever is
+DEAD/FLAT because it patches the emulator instead of replacing it."*
+
+**The star that contains Rosetta is one line:**
+
+> **Translate, do not emulate — per pipeline.**
+
+| Pipeline | Emulate | **Translate** | Proof |
+| --- | --- | --- | --- |
+| **CPU** | JIT per run | **AOT once, cache forever** | **Rosetta 2** |
+| **GPU** | model the guest GPU | **translate the guest API** | **RE2 Remake on this Thor, GameNative/DXVK** |
+
+**`CLAUDE.md` already had the GPU half. This is the CPU half.**
+
+### And install-time AOT could exceed Rosetta
+
+**Rosetta AOTs at first launch. We could AOT at install and never again** — the
+console binary never changes, the device never changes. **xenia already has both
+halves**: an AOT precompiler at **~97% coverage** and `cpu_llvm_object_cache`,
+**default off**.
+
+**It also recovers the static-recompilation win without the per-game cost.**
+N64Recomp-style gains come from whole-program compiler optimisation, which needs
+per-game decompilation. **An installer has no translation-time budget**, so the
+compiler can see the whole text segment at once. **That is the one place this
+project could beat Rosetta rather than match it.**
+
+**Unpriced:** translation time, cache size on a handheld, and invalidation on a
+driver or emulator update.
+
+## What a unified "tight fast layer" actually is
+
+**Not one translator.** The guest ISAs differ, and that difference **is** the
+emulator. **What unifies is the substrate underneath**, and each item is forced:
+
+| Shared | Forced by |
+| --- | --- |
+| one **code cache**, one eviction and flush protocol | one process, one memory budget |
+| one **persistent AOT object cache**, keyed by content hash | one device, one fixed binary per game |
+| **one host register policy** — who may use which register, which is the context pointer, what is callee-saved | **generated code calls shared helpers and must agree on the ABI** |
+| one **spin and park primitive**, calibrated | `yield` is a measured no-op here |
+| one **fastmem layer** — reservation, `MAP_FIXED`, the fault handler | Android address-space limits |
+| one **flag-elision policy** | three-way convergence; ~18% of inflation |
+
+**Not shareable:** the guest decoder, the instruction lowering, the guest memory
+map, the timing model.
+
+**The host register policy is the sharpest new UNIFY candidate.** **Two backends
+in one binary cannot hold different opinions about which register is the context
+pointer** when their generated code calls the same shared helpers. **That is the
+ABI forcing unification** — the exact test [`UNIFICATION.md`](UNIFICATION.md)
+sets.
+
+See [`../research_log/20260823_1740_rosetta_as_a_star.md`](../research_log/20260823_1740_rosetta_as_a_star.md).
+
 ## What to do, in order
 
 **1. Prove residency on the backend that already has the switch.**
