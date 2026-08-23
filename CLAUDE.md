@@ -2899,6 +2899,48 @@ git-lfs is not set up. See [Open decisions](#open-decisions).
 
 **We want per-game patches. They are a first-class feature, not a fallback.**
 
+**MEASURED 2026-08-23, and this is the largest single asset in the fleet.**
+
+| Fork | Per-game files shipped | Format |
+| --- | --- | --- |
+| **rpcsx** | **2,676** | rpcs3 YAML and `.ncl` |
+| **ARMSX2** | **591** | `pnach` |
+| eden | 153 | content patches and mods |
+| melonDS | 62 | AR codes |
+| **GameThor** | 43 | **typed host-config fixes, as code** |
+| azahar | 39 | cheats |
+| Vita3K | 20 | cheats |
+| **Cemu** | 15 | graphic packs — **two are this project's own** |
+| xenia | 1 | `.patch.toml` |
+
+**About 3,600 files, community-maintained, in nine incompatible formats behind
+nine engines.**
+
+**And going into the game code is the answer to the API-boundary problem.** You
+do not reconstruct the API that PM4 erased — **you replace the guest code that
+would have called it.** xenia already does this: `SetupExtern` installs HLE
+intercepts over guest functions, and **twelve HLE cvars exist for one title.**
+
+**The lane produces wins, which is worth stating because the CPU leads do not.**
+xenia's ledger: **39 `WIN`, 33 `DEAD`, 8 `FLAT`, 5 `CONFOUNDED`**, with **77
+entries touching HLE alone.** **Per-game analysis beats manual-derived
+micro-optimisation by a wide margin in this fleet's own record**, where the
+manual-derived CPU levers are **thirteen for thirteen refuted.**
+
+**So what is missing is not the idea and not the mechanism. It is two things:**
+**one engine across eight systems** — take Cemu's symbolic assembler and xenia's
+TOML format, neither of which needs writing — and **analysis cheap enough to do
+per game**, which is exactly what [Foundation](#foundation) point 3 says agents
+are for. The lanes already exist: `thor-ghidra-static-lane`,
+`vita3k-ghidra-escalation`, and xenia's Ghidra-to-TOML emitter.
+
+**The caution is the same as everywhere else.** xenia's verdict: *if unrelated
+guest CPU work already exceeds 33.3 ms, a perfect renderer delivers nothing.*
+**Profile, then analyse the game, then patch.** The 33 `DEAD` entries are mostly
+what happens when that order is reversed.
+
+See [`research_log/20260823_2015_per_game_specialisation.md`](research_log/20260823_2015_per_game_specialisation.md).
+
 Use them for two jobs:
 
 - **Speed.** A shared optimisation cannot fix a game that fights the hardware
