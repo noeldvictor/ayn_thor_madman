@@ -84,7 +84,7 @@ sentinel`.
 - **A version mismatch evicts. It never merges.** ARMSX2 renames the stale
   directory to `<old>.stale.<ns>` and starts fresh.
 
-## What the pins buy that nobody else has
+## What the pins buy
 
 **A pipeline blob is driver-specific, so shipping one requires a fixed driver.**
 **No fork in this fleet ships or imports one**, checked by reading all seven
