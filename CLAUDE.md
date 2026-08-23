@@ -661,9 +661,34 @@ Direct the exploration at these:
   visible than a stable 30. Swappy exists to pick a stable divisor and hold it.
   **That is the emulator case on a handheld.**
 
-  **So it is the cheapest subsystem in the queue to own**: nothing to extract,
-  nothing to reconcile, no licence question. It belongs with the presenter,
-  which is already where the two-guest-screen question lands.
+  **CORRECTED 2026-08-24: it is not the cheapest subsystem to own, because it
+  has an incumbent.** The two Google-library negatives hold and were re-checked.
+  **The claim that every fork picks a present mode and stops does not.**
+
+  **Cemu has a four-part frame pacing subsystem in production, on Android:**
+  four vsync modes; **`VK_KHR_present_id` plus `VK_KHR_present_wait` queue-depth
+  limiting**, applied only on the `FIFO` path with `m_maxQueued = 1` and a 40 ms
+  timeout, which is latency control rather than vsync; **host-driven vsync**,
+  where `VsyncDriver_startThread` drives the *guest's* vsync from the host
+  display; and **dual-screen present serialisation on Android.**
+
+  **That last part answers a question `thor_backend.h` records as open.** Its
+  comment: *"Keep TV and GamePad swapchains from forcing each other to idle. A
+  single shared previous-frame marker serializes dual-screen presents on
+  Android."* **Two swapchains, one per screen, one marker each.** The Wii U's TV
+  and GamePad is structurally the Thor's two panels.
+
+  **Why the survey missed it: it searched for two library names.** Cemu spells
+  its mechanism in Vulkan core terms, and its most important part lives in
+  `LatteTiming.cpp` as guest-timing code rather than in a renderer. **A survey
+  that searches for named libraries finds adopters of those libraries, not
+  implementations of the capability.**
+
+  **One new fact from the same read:** the Thor's Turnip **does expose
+  `VK_GOOGLE_display_timing`** — xenia's only hit is a logcat dump of
+  device-supported extensions in a research file, not code.
+
+  See [`research_log/20260824_0010_frame_pacing_has_an_incumbent.md`](research_log/20260824_0010_frame_pacing_has_an_incumbent.md).
 - **Clean build times: one fork done, seven to go.** melonDS-android builds
   clean in **15 min 27 s** to a 55.5 MB APK, on **NDK 28 and Gradle 9.5.0**, so
   it is one NDK major and one Gradle minor behind the standard row. **The time
@@ -941,6 +966,27 @@ Packing together is not free. Accept these:
 | Only melonDS ships haptics | **seven of eight do; xenia is the outlier** |
 | No fork plans render passes | **xenia plans them, and patches the pass begin retroactively** |
 | Nobody resolves MSAA on-chip | **xenia does, with the multisample store elided** |
+| No fork persists translated guest code | **ARMSX2 has a persisted VU JIT, 2,576 lines, with three test files** |
+| Frame pacing has no incumbent | **Cemu has four parts of one, including host-driven vsync and dual-screen present serialisation** |
+| Eight Adreno features have zero users | **six of the eight were wrong; the device-layer file is not the whole fork** |
+
+**Three more added 2026-08-23 and 2026-08-24, and their causes differ from the
+rest.** The listing problem is now well known here. These came from **searching
+for a name instead of a mechanism**:
+
+- **"No fork persists translated code"** searched `SaveCodeCache`,
+  `code_cache.*persist` and `AotCache`. ARMSX2 calls it a **program cache** and
+  the payload a `.vuprog`.
+- **"Frame pacing has no incumbent"** searched **Swappy** and
+  `VK_GOOGLE_display_timing`, which are two library names. Cemu spells its
+  mechanism in Vulkan core terms, and its most important part is **guest-timing
+  code in `LatteTiming.cpp`**, not present code.
+- **"Eight Adreno features have zero users"** read one device-layer file per
+  fork. **The extension is often requested elsewhere.**
+
+> **A survey that searches for a named library finds adopters of that library,
+> not implementations of the capability.**
+
 
 The cause is the same every time: **the inventory was built from file listings,
 and a listing cannot tell you what a file does.**
