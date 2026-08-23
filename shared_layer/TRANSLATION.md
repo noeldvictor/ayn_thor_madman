@@ -218,6 +218,70 @@ project could beat Rosetta rather than match it.**
 **Unpriced:** translation time, cache size on a handheld, and invalidation on a
 driver or emulator update.
 
+### UPDATE 2026-08-23: ARMSX2 has already built the persisted half, with tests
+
+**This section was speculation when written. One of its two halves is now
+verified as built.**
+
+`pcsx2/arm64/microVU_ProgCache-arm64.*` and `microVU_Persist-arm64.*`, **2,576
+lines plus three test files**, persist translated PS2 vector-unit programs to
+disk and hydrate them on the next launch. Its own disk test states the outcome:
+the program **"runs with ZERO block compiles and a bit-identical post-state"**.
+
+**It solves the problem this section left unpriced**, which is that emitted code
+is position-dependent: a **constant-VA arena layout plus a placement-relative
+fixup table** make the vixl output relocatable, patching absolute `armEmitCall`
+and `armMoveAddressToReg` targets on load.
+
+**Invalidation is answered too**, by a 64-byte options sentinel covering every
+option that changes emitted code, and an ABI-version handshake that evicts a
+stale cache directory at startup.
+
+**Two things it does not answer.** It covers the **VU only**, not the EE or IOP.
+And **it is default-off**, with the fork's own reason: *"opt-in until the on-disk
+cache is validated on the target hardware"* — **the Thor**. See `DEVICE_QUEUE.md`
+entry 17.
+
+**The literature calls this persistent code caching** and it predates all of
+this. **One reported figure tempers the claim**: the USENIX ATC 2016 framework is
+summarised as 76.4% faster without helper threads and **9% with them**, so most
+of the win is translation cost that **cannot be hidden on another core**. **The
+primary source returns HTTP 403 from here and was not read**, so that split is
+recorded, not adopted. See
+[`../research_log/20260823_2205_translate_once_ship_it.md`](../research_log/20260823_2205_translate_once_ship_it.md).
+
+### The half of Rosetta that does NOT transfer: TSO
+
+**Rosetta's other pillar is hardware TSO** — Apple put x86's strong memory
+ordering into the CPU, because x86 is total-store-ordered and ARM64 is weakly
+ordered, and emulating that in software is expensive.
+
+**Measured 2026-08-23: this fleet does not have that problem.** Counting ordering
+mnemonics in each ARM64 emitter directory:
+
+| Fork | `dmb` | `ldaxr` / `stlxr` | `ldar` / `stlr` |
+| --- | --- | --- | --- |
+| xenia | 4 | 15 / 15 | **0 / 0** |
+| Cemu | 0 | 1 / 1 | **0 / 0** |
+| ARMSX2 | 0 | 0 / 0 | **0 / 0** |
+
+**No fork uses `LDAR`/`STLR`, and that is correct rather than an oversight.**
+Those are the cheap way to force ordering on ordinary loads and stores, and
+**none of these guests needs it**: PS2 is MIPS, Xbox 360 and Wii U and PS3 are
+PowerPC, and Switch, Vita, 3DS and DS are ARM. **PowerPC and ARM are both weakly
+ordered**, so the mapping is `sync` to `dmb ish` and `isync` to `isb`, which is
+what xenia's four barriers are. xenia's `ldaxr`/`stlxr` pairs are load-linked and
+store-conditional for guest atomics — the correct lowering of PowerPC
+`lwarx`/`stwcx`.
+
+**One backend does have the TSO problem: GameThor**, because its guest is x86
+Windows through Box64 and FEX. **That cost is inside Box64 and FEX, not in this
+project's code**, and GameThor is Tier 2.
+
+**So this is a "leave it alone" result**, which `CLAUDE.md` names as the row this
+repo kept skipping. **Do not go looking for a TSO win here.** Rosetta's AOT
+pillar transfers; its memory-ordering pillar does not.
+
 ## What a unified "tight fast layer" actually is
 
 **Not one translator.** The guest ISAs differ, and that difference **is** the
