@@ -320,11 +320,27 @@ Direct the exploration at these:
   `x64-android`. See
   [`work_log/20260823_0027_vita3k_build_attempt.md`](work_log/20260823_0027_vita3k_build_attempt.md).
 
-  **The pattern after two forks: build cost and build failure both live in the
-  periphery** — vendored dependencies, ABI lists, plugin versions — not in the
-  emulator code a shared layer would touch. **Encouraging for the migration,
-  discouraging for estimating it**, because the obstacles are per-fork accidents
-  rather than one systematic difference.
+  **azahar builds clean in 14 min 33 s** to a 27.7 MB APK, arm64-only, on JDK
+  **17** and Gradle **8.14.5** — the furthest fork from the standard row, and its
+  own `AGENTS.md` says to keep it there. **eden does not build**: it needs
+  `pkg-config`, and then **`glslangValidator`, which the Android NDK does not
+  ship** — NDK 28.2 provides `glslc` instead.
+
+  **After four forks, nothing has failed inside an emulator.** Every obstacle
+  has been in the periphery: a recipe, an ABI list, a plugin version, a missing
+  host tool.
+
+  **The host-tool class matters most for the agentic thesis**, because it is
+  invisible until somebody tries. **A fork that needs `pkg-config` and
+  `glslangValidator` cannot be built by an agent on a machine that has neither,
+  and nothing in the fork says so.**
+
+  **Known host tools so far:** JDK 17 **and** 21, the Android SDK and NDK, cargo
+  and rustup (melonDS), vcpkg (Vita3K), `pkg-config` and `glslangValidator`
+  (eden), and `git` with `core.longpaths` on Windows.
+
+  See [`work_log/20260823_0148_azahar_clean_build.md`](work_log/20260823_0148_azahar_clean_build.md)
+  and [`work_log/20260823_0207_eden_build_attempt.md`](work_log/20260823_0207_eden_build_attempt.md).
 
 ## What this repo is
 

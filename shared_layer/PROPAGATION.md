@@ -56,7 +56,7 @@ and found not to transfer.
 | 3 | Some settings are **process-wide** and must be promoted to global, not written per-game | ARMSX2 | GPL-3 | shared layer | **unit test — written** | **DONE** |
 | 4 | A physical controller must **hide** the touch overlay | Vita3K | GPL-2+ | shared layer, every backend | **unit test — written** | **DONE** |
 | 5 | Building non-arm64 ABIs doubles the native compile and can **break the build** | rpcsx | **GPL-2 only** | five forks | **build guard — written for the shell** | **DONE** for the shell |
-| 6 | A migration must **freeze a DTO per version**, never deserialise with the current class | melonDS | GPL-3 | shared layer | contract + test | **READY** |
+| 6 | A migration must **freeze a DTO per version**, never deserialise with the current class | melonDS | GPL-3 | shared layer | **contract — and the hazard is designed out** | **DONE** |
 | 7 | A persisted enum is **append-only forever**; group in the UI, not the numbering | ARMSX2 | GPL-3 | shared layer | contract | **READY** |
 | 8 | Validate the pipeline cache header and **log which field disagreed** | ARMSX2 | GPL-3 | shared device layer | test on a synthetic blob | **READY** |
 | 9 | A `Presentation` is **not torn down** when the activity stops; re-attach every resume | ARMSX2 | GPL-3 | app shell | **applied**, device-verify queued | **DONE**, unverified |
@@ -117,7 +117,25 @@ evidence rather than as a rule.** That is not a coincidence — it is the rankin
 `UNIFICATION.md` section 5 playing out: the cheapest durable form is a test, and
 host-side lessons are the ones a test can reach.
 
-**Seven are `READY`** and need only the work.
+**Six are `READY`** and need only the work.
+
+### Item 6 was closed by designing the hazard away rather than by defending it
+
+**Trying to write the test showed there was nothing to test.**
+
+melonDS needs frozen DTOs — `Rom21`, `RomConfigDto25`, `RomDto31` — because it
+**deserialises into typed objects**, so the shape of the current class sits in
+the read path and changing it breaks old data silently.
+
+**A flat map of stable key to string has no shape to break.** A migration
+renames a key or rewrites a value, and a key it does not recognise passes
+through untouched. The typed view is built from the map **after** migration, so
+a stale type can never be applied to old data.
+
+**So the propagation is not "copy the frozen-DTO discipline". It is "adopt the
+storage shape that makes the discipline unnecessary".** That is a better outcome
+than the lesson asked for, and it was only visible because someone tried to
+write the failing test first.
 
 ### Two landed while writing this ledger, and both improved on their source
 

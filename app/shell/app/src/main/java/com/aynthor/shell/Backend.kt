@@ -252,6 +252,21 @@ object SettingResolver {
  *    a DTO per version and read that. Otherwise the migration silently breaks
  *    when the current class changes, and only for users upgrading from an old
  *    version, which is the hardest case to test.
+ *
+ * **And a third rule, which is why rule 2 costs nothing here.**
+ *
+ * **Store settings as a flat map of stable key to string, never as a serialised
+ * object graph.** melonDS needs frozen DTOs — `Rom21`, `RomConfigDto25`,
+ * `RomDto31` — because it deserialises into typed objects, so the shape of the
+ * current class is part of the read path. **A string map has no shape to
+ * break.** A migration renames a key or rewrites a value, and a key it does not
+ * know about passes through untouched.
+ *
+ * That is the reason [SettingsMigration.migrate] takes a `MutableMap` rather
+ * than a settings object, and it is a deliberate divergence from the fork the
+ * rest of this design was taken from. **The typed view is built from the map at
+ * read time, after migration, so a stale type can never be applied to old
+ * data.**
  */
 interface SettingsMigration {
     val from: Int
