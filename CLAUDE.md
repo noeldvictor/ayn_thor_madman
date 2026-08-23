@@ -1694,6 +1694,24 @@ a third.**
 - **Cemu `GraphicPack2Patches`.** Runtime ASM patching with its own parser,
   bundled with texture and shader replacement.
 
+**Read in full 2026-08-22: 1,331 lines of parser and applier.** The parser
+already handles **two input formats**, a legacy Cemuhook one and Cemu's own,
+which is the format-and-engine split this repo proposed, already working in
+production. It supports `[group]` sections, expressions, syntax errors with
+line numbers, and **code caves** through `setOrigin` and `setOriginCodeCave`.
+
+The applier is a relocating linker: `PPCAssemblerReloc` carries a **bit
+count**, so it patches individual instruction fields rather than bytes, and it
+resolves symbols against a live module by name.
+
+**`ResolvePresetConstant` is the mechanism nobody else has.** A graphic pack
+preset feeds a constant into a patch, so **a user-selectable setting becomes a
+value the assembler substitutes before relocating.**
+
+That is the missing link between per-game settings and code patches. This repo
+specified those as separate features; **Cemu already connects them.** A
+resolution-multiplier setting can drive the value a patch writes.
+
 **Cemu's is a symbolic assembler with a linker, and it is not close.**
 `GraphicPack2Patches.h` carries a symbol table, a matched `RPLModule`, an error
 handler reporting line numbers, and multi-pass resolution: `UNKNOWN_VARIABLE`

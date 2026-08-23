@@ -285,7 +285,56 @@ right place.
 
 This is the right size for that job and it should not be made bigger.
 
-### Cemu's patcher is an assembler with a linker, 267 lines of header alone
+### Cemu's patcher, read in full: 1,331 lines of parser and applier
+
+`GraphicPack2PatchesParser.cpp` is 563 lines, `GraphicPack2PatchesApply.cpp` is
+768. Together they implement a **PowerPC assembler with a linker**.
+
+**The parser already handles two input formats:**
+
+```cpp
+void GraphicPack2::ParseCemuhookPatchesTxtInternal(MemStreamReader&);
+bool GraphicPack2::ParseCemuPatchesTxtInternal(MemStreamReader&);
+```
+
+A legacy Cemuhook format and Cemu's own. **One engine, two front ends,
+already proven inside one codebase** — which is the format-and-engine split
+this repo proposed, working in production.
+
+It also has `GetLengthWithoutComment`, `LogPatchesSyntaxError(lineNumber, msg)`
+for errors with line numbers, `CancelParsingPatches`, `[group]` sections, and
+**`setOrigin` and `setOriginCodeCave`**, so a patch can allocate a code cave
+and assemble into it.
+
+**The applier is a relocating linker:**
+
+```cpp
+bool _relocateAddress(PatchGroup*, PatchContext_t*, uint32 addr, uint32& out);
+PATCH_RESOLVE_RESULT PatchEntryInstruction::resolveReloc(
+    PatchContext_t&, PPCAssemblerReloc*);
+uint32 mask = 0xFFFFFFFF >> (32 - reloc->m_bitCount);
+```
+
+**`PPCAssemblerReloc` carries a bit count**, so it patches individual
+instruction *fields*, not bytes. It resolves symbols against a live module
+through `RPLLoader_GetHandleByModuleName`.
+
+### `ResolvePresetConstant` is the mechanism nobody else has
+
+```cpp
+bool GraphicPack2::ResolvePresetConstant(const std::string& varname,
+                                         double& value) const;
+```
+
+**A graphic pack preset feeds a constant into a patch.** A user-selectable
+option in the UI becomes a value the assembler substitutes before relocating.
+
+That is the missing link between **per-game settings** and **code patches**.
+This repo specified per-game performance patches and per-game overrides as
+separate features; Cemu already connects them. A "resolution multiplier"
+setting can drive the value a patch writes.
+
+**Nothing else in the fleet parameterises a patch from a setting.**
 
 `GraphicPack2Patches.h` carries a `PatchContext_t` with a symbol table, a
 matched `RPLModule`, an error handler that reports line numbers, and a set of
