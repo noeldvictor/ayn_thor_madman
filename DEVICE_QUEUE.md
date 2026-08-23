@@ -499,6 +499,60 @@ shared upload path, so a win would be a win for every backend at once. **That is
 a structural argument, not an instruction-level one**, and structural arguments
 are the ones with a track record here.
 
+## 15. Does a shipped pipeline cache remove first-play stutter
+
+**Gate: answerable without editing a fork.** Fossilize is MIT and is a **Vulkan
+layer**, so it records a backend without modifying that backend's source, which
+is what the standing rule requires. **A capture and replay harness still has to
+be written**, and the layer has to be installed on the device. See
+[`research_log/20260823_2110_shipped_pipeline_cache.md`](research_log/20260823_2110_shipped_pipeline_cache.md).
+
+**Why it matters.** A Vulkan pipeline cache is driver-specific, so no emulator
+can ship one to its users. **The Thor pins one driver**, which is the same
+property that lets Valve distribute precompiled shaders for the Steam Deck.
+**Nothing else in emulation has that property.**
+
+**Read this first, before anything else in this entry.** Cemu, which has the best
+pipeline cache in the fleet, **explicitly disables Valve's layer**:
+`_putenvSafe("DISABLE_VK_LAYER_VALVE_steam_fossilize_1=1")` in `src/main.cpp`.
+**The reason is not recorded anywhere.** Find it. Cemu paid for that line and it
+may invalidate this whole entry.
+
+**The run:** on one backend and one title, capture a cold first-play session and
+a second session with the cache warmed by the first. Record frame time
+percentiles, not the mean.
+
+**Expected signature if it works:** **the 99th percentile frame time falls and
+the mean does not move.** Stutter lives in the tail. **A mean improvement would
+be evidence of something else and should be treated as `CONFOUNDED`.**
+
+**Also record, because they decide feasibility and nobody has measured them:**
+cache size on disk per title, and replay time to warm it. **A cache too large to
+ship, or too slow to replay, kills the idea whatever the frame numbers say.**
+
+**Prediction: `WIN` on the tail, `FLAT` on the mean.** This is the one entry in
+this queue predicted to win, and it is predicted to win on the axis this repo has
+not been measuring.
+
+## 16. FP16 in ARMSX2's frame generation — read before running
+
+**A two-line change, named by ARMSX2's own comment**, gated on a device layer
+that never asks for the extension.
+
+`pcsx2/GS/Renderers/Vulkan/FrameGen/LsfgShaders.cpp` records that PCSX2's Vulkan
+backend never requests `VK_KHR_shader_float16_int8`, so the ported frame
+generator loads its **fp32** variant. **eden runs the fp16 path**, and xenia
+probed `shaderFloat16 = 1` on this device on 2026-06-20.
+
+**This is not runnable yet and must not be run as a fork edit.** The standing
+rule forbids modifying ARMSX2 unless asked for it by name. **The measurement
+belongs to the shared device layer**, which does not exist. Recorded here so it
+is not lost.
+
+**Expected signature: lower GPU frame time in the frame-generation pass, no
+change to anything else.** **Watch for a quality regression** — fp16 is a
+precision change, so a golden-image comparison must run beside the timing.
+
 ## Not ready to run
 
 These need a decision or a build first, not device time.

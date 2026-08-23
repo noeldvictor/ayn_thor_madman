@@ -764,6 +764,85 @@ These are the shared flows. None of them work across a module boundary.
   hot path. Inlining across it is free speed, and a module boundary blocks it.
 - **One frame pacing and present path.** Consistent pacing needs one owner.
 
+### And one nobody had stated: packing raises every backend's capability ceiling
+
+**Every argument above is about resources. This one is about what a backend is
+allowed to do at all.**
+
+**A backend's renderer can only use what its own device layer negotiated**, and
+that set is an accident of each fork's portability history rather than a property
+of the Thor. Measured 2026-08-23 with
+[`tools/vk_capability_census.py`](tools/vk_capability_census.py):
+
+| Fork | Device extensions requested |
+| --- | --- |
+| eden | 42 |
+| ARMSX2, Vita3K | 35 |
+| Cemu | 27 |
+| xenia, azahar | 13 |
+| melonDS | 9 |
+
+**Union 120. Asked for by one fork alone: 84. Asked for by four or more forks:
+5** — and four of those five are how you get a window. **Seven emulators target
+one GPU and agree on almost nothing.**
+
+**ARMSX2 states the consequence in its own source.** Its frame generation, which
+this file calls possibly the highest-value feature in the fleet, runs at **fp32
+because PCSX2's device layer never requests `VK_KHR_shader_float16_int8`** — so a
+Float16 shader module "would be invalid usage on it regardless of what the
+physical device reports". **eden runs the fp16 path. The Thor probes
+`shaderFloat16 = 1`.** The comment names the fix and its size: two lines.
+
+**So the packing argument gains a leg.** One shared device layer enables the
+Thor's real feature set once, and every backend then sits above the same ceiling.
+
+**Two limits, stated.** Packing does not make a backend *use* a feature; that is
+per-backend renderer work. And **deleting the negotiation code is not the win** —
+availability tests are only 1% to 9% of each device layer, about 500 lines
+fleet-wide. **What packing changes is the unit of the work: a capability enabled
+once reaches seven backends; one negotiated per fork reaches one.**
+
+### The pinned driver makes a pipeline cache shippable
+
+**This property was bought by a decision already made for a different reason.**
+
+**The scope of the claim, stated.** No fork in this fleet ships a pipeline cache
+to its users, checked by reading all seven device layers and cache paths. **No
+claim is made about emulators outside this fleet**, which have not been surveyed.
+What is verifiable is the mechanism: **shipping a cache requires a fixed driver,
+and this project pins one.**
+
+A Vulkan pipeline cache is driver-specific, so nobody can ship one to their
+users. **The Thor pins one Turnip build**, which is exactly the property that
+lets Valve distribute precompiled shaders for the Steam Deck — same hardware for
+every user, so one user's cache is valid for all of them.
+
+**The mechanism exists twice in the fleet already**, independently, which is the
+convergence signal this file already trusts:
+
+- **Cemu `VulkanPipelineStableCache.cpp`** stores per pipeline the active shaders
+  by hash plus "an almost-complete register state of the GPU", then compiles
+  against a **placeholder renderpass**. Its two directories,
+  `shaderCache/transferable` and `shaderCache/precompiled`, are **the same split**
+  this repo reached independently in `PipelineCache.kt`.
+- **eden `shader_environment.cpp`** serialises the guest environment per shader
+  and replays it through `FileEnvironment` with no guest running.
+
+**Valve's Fossilize is MIT and is a Vulkan layer**, so it records a backend
+without modifying that backend's source.
+
+**Read the caveat before acting.** Cemu **explicitly disables Valve's layer** —
+`DISABLE_VK_LAYER_VALVE_steam_fossilize_1=1` in `src/main.cpp` — and the reason
+is not recorded. Find it first.
+
+**This does not claim shaders can be extracted from a dump at install time.** A
+native game's pipelines are fixed; an emulator's are derived from guest state and
+are discovered by playing. **It does not claim a frame win either** — a warm
+cache removes stutter, and stutter lives in the tail, not the mean.
+
+See [`research_log/20260823_2110_shipped_pipeline_cache.md`](research_log/20260823_2110_shipped_pipeline_cache.md)
+and `DEVICE_QUEUE.md` entries 15 and 16.
+
 ### The exception: PS3
 
 `ps3-thor/rpcsx-ui-android` is GPL-2.0-only and cannot share a binary with the
