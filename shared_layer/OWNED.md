@@ -75,7 +75,7 @@ duplication before it moves.**
 | 0 | **Vulkan device layer** | **read, measured, scoped** | See below. Take xenia's; it is the only fork that already separated device from renderer, and it is BSD |
 | 1 | **Touch overlay** | **read, proven** | azahar and Vita3K ship the same four classes from the same 2013 Dolphin ancestor. Eight method names survived twelve years of independent drift |
 | 2 | **GPU driver manager** | **read** | Four concerns, not six copies. Folds into the device layer rather than standing alone |
-| 3 | Shader and pipeline cache | not read | Measurable, user-visible, no renderer internals needed |
+| 3 | **Driver pipeline cache** | **read, confirmed** | Genuine 8-for-8 duplication of a guest-agnostic mechanism. See below. **The shader translation cache is NOT included** |
 | 4 | Settings framework | **read** | azahar and eden: same design twice, **code fully diverged**. Extraction is a rewrite guided by two references |
 | 5 | Cheat engine | **read** | Three architectures on one axis: flat poke, polymorphic, bytecode VM. Take the whole axis |
 | 6 | Code patch engine | **read** | Cemu's symbolic assembler as the engine, xenia's TOML as the authoring format |
@@ -122,6 +122,44 @@ lines and owns the swapchain. The unanswered question in
 [`thor_backend.h`](thor_backend.h) — who owns the swapchains when a backend
 presents two guest screens — lands exactly here, and xenia's answer covers one
 swapchain only.
+
+### Candidate 3 splits in two, and only half is shareable
+
+Read 2026-08-22. See
+[`../research_log/20260822_2305_pipeline_cache_read.md`](../research_log/20260822_2305_pipeline_cache_read.md).
+
+**All eight forks call `vkGetPipelineCacheData`.** Unlike the LRU cache, this is
+real duplication: `VkPipelineCache` persistence has one correct shape, fixed by
+the API, with no guest semantics in it.
+
+**But the forks keep two caches in the same place, and only one is shareable.**
+
+| | Driver blob | Shader translation cache |
+| --- | --- | --- |
+| Contains | driver-internal compiled state | SPIR-V |
+| Keyed by | device and driver identity | guest source hash |
+| Survives a driver swap | **no** | **yes** |
+| Shareable across backends | **yes** | **no** |
+
+**Own the driver blob. Do not own the translation cache**, which is guest
+specific in every fork, exactly as texture cache hashing was.
+
+**The invalidation question is answered by the specification, not by us.**
+`pipelineCacheUUID` changes when a driver's caches become incompatible, and the
+blob header carries it. ARMSX2's `VKShaderCache.cpp` validates header length,
+header version, vendor ID, device ID and UUID. **Take that function.** Do not
+key on a Turnip build string: a driver can change its compiled format without
+changing its package name.
+
+**A cost of sharing that nobody had considered.** One shared cache across a
+packed binary means **one invalidation event for every backend at once**. A
+per-game driver override changes the UUID, so with eight separate caches it
+costs one game's warm cache, and with one shared cache it discards every
+backend's. **Fix: name the cache file by `pipelineCacheUUID` and keep the last
+two.** Switching back then finds the old file intact.
+
+**Not done:** xenia's `vulkan_pipeline_cache.cc` has not been compared. It is
+BSD, and the licence rule prefers it when quality is close.
 
 ### Rejected candidates
 

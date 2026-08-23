@@ -2301,8 +2301,27 @@ ARMSX2's `GSTextureUpscaler` with the names changed.
 2. **Read every implementation before recording a duplication.** Counting
    files with similar names is not evidence of waste. A capability row that
    was never read is a hypothesis.
-3. The shader and pipeline cache. Measurable, user-visible, no renderer
-   internals needed.
+3. **The driver pipeline cache.** Read 2026-08-22 and confirmed as genuine
+   duplication: **all eight forks call `vkGetPipelineCacheData`**. Unlike the
+   LRU cache, the shape is fixed by the API and has no guest semantics.
+
+   **Own the driver blob only.** The forks keep a second cache in the same
+   files — guest shader source to SPIR-V, keyed on a source hash. That one is
+   guest specific and stays with the backend, exactly like texture cache
+   hashing. The two differ in a useful way: **the driver blob dies on a driver
+   swap and the translation cache survives it**, because SPIR-V is portable.
+
+   **Invalidation is answered by the Vulkan specification**, not by us.
+   `pipelineCacheUUID` changes when a driver's caches become incompatible.
+   ARMSX2's `VKShaderCache.cpp` already validates header length, header version,
+   vendor ID, device ID and UUID. **Do not key on a Turnip build string** — a
+   driver can change its compiled format without changing its package name.
+
+   **One shared cache has a cost nobody had priced.** A per-game driver override
+   changes the UUID, and with one shared cache that discards the warm cache for
+   **every backend at once**, not just that game's. **Name the cache file by
+   `pipelineCacheUUID` and keep the last two**, so switching back finds the old
+   file intact.
 4. Texture upload. The flagship feature lives here.
 5. Code translation. Last. It is the deepest reach into a core.
 
