@@ -86,7 +86,10 @@ sentinel`.
 
 ## What the pins buy that nobody else has
 
-**A pipeline blob is driver-specific, so no emulator can ship one to its users.**
+**A pipeline blob is driver-specific, so shipping one requires a fixed driver.**
+**No fork in this fleet ships or imports one**, checked by reading all seven
+device layers and then searching again for a download or import path. **No claim
+is made about emulators outside this fleet**, which have not been surveyed.
 The Steam Deck is the exception, because every user has the same hardware — which
 is why Valve can distribute precompiled shaders through Fossilize.
 
