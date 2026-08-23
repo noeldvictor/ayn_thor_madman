@@ -2661,9 +2661,30 @@ Existing projects: `shin_2_eng`, `smt_if_eng`, `ever_oasis_mod`,
 
 This is a requirement, not an option.
 
-**Every game must accept a custom override for every option.** No setting is
-global only. A user opens one game and changes one setting for that game
-alone. This applies to every backend, not to a chosen few.
+**Every game must accept a custom override for every option that can have one.**
+A user opens one game and changes one setting for that game alone. This applies
+to every backend, not to a chosen few.
+
+**The exception is real and ARMSX2 found it the hard way.** Some settings are
+**structurally process-wide**: one server, one loaded GPU driver, one device.
+ARMSX2's PINE server is one instance for the whole process, so its per-game file
+**refuses the key**. Toggling it from the in-game menu, which saves in game
+scope, wrote it **nowhere**, and it read as enabled until the process restarted.
+
+So a setting declares a **scope**:
+
+| Scope | Behaviour |
+| --- | --- |
+| per-game | the normal case. Sparse, and sticky once set |
+| **promoted** | edited in game scope, **written to global**, because the per-game tier cannot hold it |
+| global-only | not offered per game at all |
+
+**Promote by copying the field onto global, never by saving the resolved
+object**, or every per-game value leaks into the global layer.
+
+**Settings need versioning too.** ARMSX2 carries seven one-time migration keys
+for settings that changed scope or default. A schema that ships will need
+migrations, and nothing here says how.
 
 Design consequences:
 
@@ -3356,17 +3377,47 @@ Do it in this order:
 2. **Build the shell with fake data.** Navigable, on the device, both
    displays. No emulator behind it.
 3. **Pin the settings schema.** Every setting gets a stable key, a type, a
-   default and an owner. A setting without a key cannot be overridden per
-   game, and a per-game override for every option is a requirement.
-4. **Pin the per-game override resolution.** Per-game value, then Thor
-   profile, then backend default. One resolver, in one place.
+   default, an owner and a **scope**. See the scope rule below.
+4. **Pin the per-game override resolution.** **Take ARMSX2's `ConfigStore`.**
+   It is 240 settings fields with `merge`, `diff` and two storage tiers, and it
+   already hit three bugs the naive design does not prevent:
+
+   - **Sparse is not enough; an override must be sticky.** Storing only what
+     differs from global cannot tell "the user set this and it matches global"
+     from "the user never touched it". ARMSX2's reported symptom: set cheats on
+     per game while global was also on, turn global off, **the game silently
+     lost its setting**. The fix pins a field once overridden.
+   - **Whole-object writes make a pinned value stale.** Pinning causes this, so
+     pinning needs change-tracking. ARMSX2's symptom: **a per-game FPS cap of 30
+     came back as 0 and stayed 0**, surviving even after the writers were fixed.
+     The fix passes the previous state and trusts the update only for keys it
+     proves changed.
+   - **Some settings cannot be per-game at all.** See below.
+
+   **A contract that specifies pinning without change-tracking ships the second
+   bug.**
 5. **Write the contract.** The minimum every backend implements, and the
    extensions a backend may declare. This falls out of steps 1 to 4 rather
    than being argued in advance.
 
-**Read `xenia-thor` for its feature list, not its shape.** It is the most
-complete shell in the fleet and the worst structured: 12,313 lines of Java,
-Activity-per-manager, a menu tree. Its files: `GameProfiles`, `GameOptimizationsActivity`, `GamePatchManager`,
+**CORRECTED 2026-08-22: ARMSX2's Android frontend is the most complete shell in
+the fleet, not xenia's.** Measured rather than assumed: **63,111 lines across
+153 files**, in Compose with ViewModels and a navigation graph, against xenia's
+12,313 lines of Java. **5.1x larger and modern.**
+
+It already implements most of [`app/SCREENS.md`](app/SCREENS.md): library with
+cover art, game detail, in-game overlay, the Screen-2 panel, 13 settings tabs
+with a **generated search index**, patches, drivers, input and hotkeys,
+diagnostics — plus onboarding, achievements, friends, news, BIOS and memory card
+managers, a texture pack catalogue with an online section, a shader chain editor,
+controller skins, themes and 13 languages.
+
+**Mine ARMSX2's frontend. Read xenia's only for what ARMSX2 lacks**, which is
+the cheat manager UI and the storage view.
+
+See [`research_log/20260822_2203_armsx2_frontend_is_the_shell.md`](research_log/20260822_2203_armsx2_frontend_is_the_shell.md).
+
+xenia's shell remains the worst structured: Activity-per-manager, a menu tree. Its files: `GameProfiles`, `GameOptimizationsActivity`, `GamePatchManager`,
 `ContentInstaller`, `ControllerMappingActivity`, `CrashReporter`. Start from
 what it learned. See [`capability_inventory.md`](capability_inventory.md).
 
