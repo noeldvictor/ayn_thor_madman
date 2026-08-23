@@ -23,11 +23,17 @@ toolchain. **Every pin was chosen for a different reason.**
 
 | Artifact | Pure function of | Survives a driver swap | Prior art |
 | --- | --- | --- | --- |
-| Translated guest code | guest bytes + codegen options | **yes** | **ARMSX2**, VU only |
+| Translated guest code | guest bytes + codegen options | **yes** | **rpcs3** (`ppu-<sha1>`, production), ARMSX2 (VU), xenia (off) |
 | Guest shader to SPIR-V | guest shader + translation options | **yes** | Cemu, eden, azahar |
 | Compiled pipeline blob | SPIR-V + render state + **driver** | **no** | all eight forks |
 | AOT module patches | module build ID + patch options | **yes** | **eden NCE**, not persisted |
-| Upscaled textures | source texels + filter + scale | **yes** | nobody |
+| **Upscaled textures** | source texels + filter + scale | **yes** | **melonDS, and its output is a standard pack** |
+
+**CORRECTED 2026-08-24.** The first version of this table said upscaled textures
+had no prior art and named only ARMSX2 for code. **Both were wrong**, found by
+`tools/capability_probe.py`. **PERSIST is the fleet's existing practice in four
+forks across three artifact classes**, and nothing connected them. See
+[`../research_log/20260824_0055_persist_is_everywhere.md`](../research_log/20260824_0055_persist_is_everywhere.md).
 
 **The driver row is the odd one and it decides the layout.** A pipeline blob dies
 when the driver changes; everything else survives. **Two tiers, not one**, which
@@ -48,8 +54,14 @@ address is where something happened to live in one process; it cannot be part of
 an identity that outlives that process. **The address becomes a relocation
 input**, not part of the key.
 
+- **rpcs3 keys its PPU cache directory on the module SHA-1**:
+  `ppu-<base57(sha1)>-<name>/`. **Production scale, years of users.**
 - ARMSX2 hashes the guest program and writes `<root>/<hh>/<hash>.vuprog`.
 - eden keys NCE patches on the **32-byte NSO build ID**.
+- **melonDS names filtered textures by content hash** —
+  `tex1_<W>x<H>_<texhash16>_<palhash16>_<fmt>.png` — in a layout **shared with
+  the desktop tooling**, so what one person's play session produces, another
+  person can install.
 - This repo's `GameKey`/`DumpId` split already made the same distinction for
   library metadata.
 
@@ -58,12 +70,22 @@ Taken from ARMSX2's `mVUbuildOptionsSentinel`, a 64-byte fixed-layout snapshot
 covering codegen switches, clamp modes, speedhacks, three FPCR masks, and **the
 recording flag itself** — because recording changes the emitted forms.
 
+**Three independent designs of this key exist and two of them put floating-point
+behaviour in it.** rpcs3's `enum class ppu_settings` carries `accurate_dfma`,
+`fixup_vnan`, `fixup_nj_denormals` and `accurate_fpcc`; ARMSX2 carries three FPCR
+masks. **Two teams, two guests, one conclusion.** rpcs3 also carries
+`arm64_codegen_v1`, so the ARM64 backend's codegen version is part of the key.
+
 **Three rules travel with it:**
 
 1. **Fixed layout with an asserted size.** ARMSX2 uses
    `static_assert(sizeof(Snapshot) == 64)`. Drift must fail where the layout
    changed, not on a user whose cache silently mismatches.
 2. **A reserved tail**, so a new option does not shift the fields below it.
+   **rpcs3 shows this in use**: its enum runs
+   `thor_es_async_draw_barrier_v1` through `v8` and
+   `thor_es_dispatch_provenance_v1` through `v6` — **every codegen change added a
+   new bit rather than reusing one.**
 3. **Reclaim a reserved byte only where zero means "feature off, old
    behaviour."** **This is the rule this project did not have.** It is the
    difference between shipping a feature and shipping a feature that costs every
