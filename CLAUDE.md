@@ -2495,7 +2495,25 @@ Notes:
   stable, not before. Seven emulator cores on a beta toolchain is a bad trade.
   `30.0.15729638` is installed on this box. Do not use it for a shipping build.
 - Drop `armeabi-v7a` and `x86_64` from the shipping build. The Thor is arm64.
-  ARMSX2 already ships arm64 only.
+
+  **MEASURED 2026-08-23, and this is the largest unpriced lever on build time.**
+  melonDS's 15 min 27 s clean build compiled its native code **three times** —
+  `arm64-v8a`, `armeabi-v7a`, `x86_64` — and shipped **four** ABI folders in the
+  APK. Native compilation is per-ABI, so most of that C++ work produced code the
+  device cannot execute, and it is carried in the 55.5 MB APK afterwards.
+
+  | Fork | ABIs built | Usable |
+  | --- | --- | --- |
+  | **ARMSX2**, **eden** | `arm64-v8a` | **1 of 1** |
+  | Vita3K, xenia | `arm64-v8a`, `x86_64` | 1 of 2 |
+  | GameThor | `arm64-v8a`, `armeabi-v7a` | 1 of 2 |
+  | **melonDS** | three | **1 of 3** |
+  | azahar, rpcsx, Cemu | **unread** | |
+
+  **Record the ABI list beside every build time**, or Phase 0.3's numbers are
+  not comparable across forks.
+
+  See [`research_log/20260823_0030_abi_waste.md`](research_log/20260823_0030_abi_waste.md).
 - `minSdk` 33 is exact. The app targets one device. A lower value buys nothing.
 - Google Play requires API 37 targeting from August 2027. This project is
   ahead of that date.
