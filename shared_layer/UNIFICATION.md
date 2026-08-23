@@ -315,6 +315,14 @@ functions sitting at global scope in half to two thirds of the headers of four
 forks. **Those are the ones that collide**, and they collide at link time, in a
 build that takes 15 minutes, after the toolchain migration is already done.
 
+**The proxy was checked rather than trusted.** Counting headers with no
+`namespace` only matters if those headers actually declare something. Sampling
+120 of ARMSX2's: **65 of the 68 un-namespaced ones declare a type or a free
+function at global scope, and only 3 are includes and macros alone.**
+
+**So the percentage is not inflated by empty headers.** Roughly 96% of what it
+counts is real.
+
 ### Why this is a distinct operation
 
 | Operation | Applies to | What you do |

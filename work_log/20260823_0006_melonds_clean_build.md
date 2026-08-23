@@ -82,6 +82,27 @@ than the inference.
 **The recipe worked unchanged.** It was written on 2026-07-12 and is still
 accurate, which is worth recording because a stale recipe is worse than none.
 
+## A trap that invalidated a different fork's number
+
+**`gradle clean` does not remove `.cxx/`.** It cleans `build/`, and the native
+CMake and ninja artifacts survive — so a "clean build" can silently reuse a
+previous native compile and report a time several times too fast.
+
+**Cemu was measured at 4 min 27 s and it was not a clean build.** Its log
+contains **zero** compilation lines and ninja found nothing to do. Removing
+`app/.cxx` explicitly and rebuilding is the only way to get the real figure.
+
+**This build and azahar's and ARMSX2's were checked and are genuine.** The
+evidence differs by fork because the output formats differ, so check all three
+of:
+
+- `buildCMake…[abi]` tasks actually running,
+- ninja progress lines such as `[1428/2206]`,
+- **compiler warnings** — melonDS emitted 15 and ARMSX2 77, which proves a
+  compiler ran even when no per-file lines are echoed.
+
+**A number nobody checked this way is not a clean-build number.**
+
 ## What is not done
 
 **Seven Tier 1 forks remain unbuilt**, and the expensive ones are deliberately

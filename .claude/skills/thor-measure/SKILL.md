@@ -121,6 +121,21 @@ compiled default of true. An arm that does not force it measures nothing.
 
 Also: **measure without ADPF first**, or the hint is tuned against an unknown.
 
+## Building a fork? `gradle clean` is not a clean build
+
+**`clean` removes `build/` and leaves `.cxx/`**, so the native CMake and ninja
+artifacts survive and a "clean build" can silently reuse a previous compile.
+
+**This produced a 4 min 27 s figure for a fork whose real clean build is
+several times that.** Remove `app/.cxx` explicitly.
+
+**Then prove a compiler actually ran.** Output formats differ per fork, so check
+any of: `buildCMake…[abi]` tasks running, ninja progress like `[1428/2206]`, or
+**compiler warnings** — some forks echo no per-file lines at all.
+
+**And record the ABI list and the build variant beside every time**, or the
+numbers are not comparable across forks.
+
 ## Before the run
 
 0. **Read [`DEVICE_QUEUE.md`](../../../DEVICE_QUEUE.md).** There is one physical
