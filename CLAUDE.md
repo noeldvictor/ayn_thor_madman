@@ -264,8 +264,9 @@ Direct the exploration at these:
 
 - The open items in [Open decisions](#open-decisions).
 - The survey gaps in [`capability_inventory.md`](capability_inventory.md).
-  **Updated 2026-08-22 with measured frontend and native censuses**, so the
-  worst gaps are closed. GameThor still has no capability recorded.
+  **Updated 2026-08-22 with measured frontend and native censuses, and GameThor
+  surveyed 2026-08-23**, so every fork now has a capability recorded. What
+  remains are per-subsystem gaps rather than whole forks.
 - **Audio: surveyed 2026-08-23 and answered.** Three forks already use Oboe;
   standardise on it. Latency itself is still unmeasured.
 - **Control overlays: surveyed.** See
@@ -300,7 +301,9 @@ Direct the exploration at these:
   clean in **15 min 27 s** to a 55.5 MB APK, on **NDK 28 and Gradle 9.5.0**, so
   it is one NDK major and one Gradle minor behind the standard row. **The time
   is dominated by compiling librashader from Rust source, not by the
-  emulator's C++.** See
+  emulator's C++** — and **it compiled that C++ three times**, for three ABIs,
+  of which the Thor runs one. **Record the ABI list beside every build time.**
+  See
   [`work_log/20260823_0006_melonds_clean_build.md`](work_log/20260823_0006_melonds_clean_build.md).
   ARMSX2, Cemu-thor and xenia-thor remain, and are the expensive ones.
 
