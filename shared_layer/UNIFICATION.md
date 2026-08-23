@@ -329,7 +329,101 @@ against a fork today** and it fails loudly.
 thing is not shared code, it is a structural property nobody stated, and the
 durable fix is a guard rather than a paragraph.
 
-## 8. What this does not say
+## 8. The fourth operation: PROPAGATE, and its precondition
+
+Three operations so far — **unify** the forced, **delete** the portability
+layers, **isolate** what must merely coexist. **The fourth is the one this
+project was actually founded to do**, and it is the only one that moves
+something *between* forks rather than out of them.
+
+**PROPAGATE: move a lesson or a technique from the fork that learned it to the
+forks that have not.**
+
+Section 3 lists eight of them, unmoved. It is the operation with the highest
+value and the lowest licence cost — **an idea is not expression, so it crosses
+the GPL-2.0-only wall that code cannot.**
+
+### The literature says this is hard, and names why
+
+Two recent papers describe exactly this problem.
+
+**BackportBench** (arXiv:2512.01396) benchmarks LLM agents at **backporting
+patches into divergent codebases** — which is this project's core task with the
+names changed. It identifies three failure modes:
+
+- **version divergence**, where the codebases have moved apart enough that
+  direct application is impossible
+- **dependency complexity**, where versions have incompatible APIs
+- **context sensitivity**, where a patch is scattered across files
+
+**All three describe this fleet exactly.** melonDS carries Dolphin's 2015
+emitter and has drifted 40 methods; azahar and eden share a settings design with
+**no surviving common lines**; Vita3K carries Dolphin's 2013 overlay in Java
+while Dolphin moved to Kotlin.
+
+**Environment-in-the-Loop** (arXiv:2602.09944) argues that migration with LLM
+agents changes character when the **build and test environment is in the loop**
+rather than the source alone: the agent receives concrete compiler and test
+errors instead of pattern-matching, and migration becomes interactive rather
+than one-shot.
+
+**Honest limit: neither headline number could be extracted from the PDFs, and
+none is quoted here.** The claims used are qualitative and are used only as
+framing.
+
+### The precondition this fleet does not meet
+
+**If executable feedback is what makes agent propagation work, then propagation
+in this fleet is currently blocked**, and today's build work measured how badly:
+
+| Fork | Can an agent get feedback? |
+| --- | --- |
+| melonDS-android | **yes** — builds clean in 15 min 27 s |
+| **Vita3K** | **no — it does not build at all** |
+| ARMSX2, Cemu, xenia, azahar, eden, GameThor | **unknown, never attempted** |
+
+**And almost no fork has tests that a propagation could be checked against.**
+
+**That reframes Phase 0.3.** Building every fork looked like housekeeping —
+something to finish before the interesting work. **It is the enabling condition
+for the entire agentic thesis.** An agent cannot propagate Cemu's `DONT_CARE`
+depth default into eden if it cannot build eden, and cannot know it worked if
+eden has no test.
+
+**It also reframes today's build findings.** The ABI waste, the AGP conflict and
+the wrong recipe were not incidental tidiness. **They are the difference between
+a fork an agent can work on and one it cannot.**
+
+### What follows
+
+1. **Finish Phase 0.3, and treat a fork that does not build as blocked for
+   propagation**, not merely untidy.
+2. **A propagation lands with a test, or it does not land.** The lesson suite is
+   the mechanism: propagating Vita3K's overlay rule meant writing the test that
+   fails without it. **That is the environment-in-the-loop idea at the smallest
+   possible scale.**
+3. **Prefer propagating into a fork that builds.** Order the work by whether
+   feedback is available, not by how valuable the lesson is. **An unverifiable
+   propagation is a guess wearing a commit message.**
+
+---
+
+## 9. The four operations, and how to choose
+
+**Given a candidate, ask in this order.**
+
+| # | Ask | If yes | Cost | Licence |
+| --- | --- | --- | --- | --- |
+| 1 | Can the binary, the device or the product tolerate **two** of these? | If **no** → **UNIFY** | high | inherits source |
+| 2 | Does it exist to serve **variability the Thor does not have**? | If **yes** → **DELETE** | medium, and the result is **smaller** than one fork's version | none |
+| 3 | Must these merely **coexist without colliding**? | If **yes** → **ISOLATE** | **low** — a flag and a namespace | none |
+| 4 | Has one fork **learned something** the others have not? | If **yes** → **PROPAGATE** | **low** | **none — ideas cross every wall** |
+| — | None of the above | **Leave it alone.** Two implementations are not a problem | — | — |
+
+**The last row is the one this repo kept skipping.** Nine candidates were opened
+because code looked similar; the ones that shrank all belonged in that row.
+
+## 10. What this does not say
 
 **It does not say the shared layer is unnecessary.** The forced list is real and
 the packed binary depends on all of it.

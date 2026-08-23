@@ -733,6 +733,41 @@ put it there.**
 serve?** If the answer is variability the Thor does not have, the operation is
 deletion and the estimate should be **smaller** than one fork's implementation.
 
+### Four operations, and how to choose
+
+| # | Ask | If yes | Licence cost |
+| --- | --- | --- | --- |
+| 1 | Can the binary, device or product tolerate **two** of these? | if **no** → **UNIFY** | inherits source |
+| 2 | Does it serve **variability the Thor lacks**? | if **yes** → **DELETE** | none |
+| 3 | Must these merely **coexist without colliding**? | if **yes** → **ISOLATE** | none |
+| 4 | Has one fork **learned** something the others have not? | if **yes** → **PROPAGATE** | **none** |
+| — | none of the above | **leave it alone** | — |
+
+**The last row is the one this repo kept skipping.** Every candidate that shrank
+belonged in it.
+
+### Propagation has a precondition this fleet does not meet
+
+**PROPAGATE is the operation this project was founded to do**, and recent work
+says what makes it work. **BackportBench** (arXiv:2512.01396) benchmarks agents
+at backporting patches into **divergent** codebases and names three failure
+modes — version divergence, dependency complexity, and patches scattered across
+files. **All three describe this fleet exactly.**
+**Environment-in-the-Loop** (arXiv:2602.09944) argues migration changes
+character when the **build and test environment is in the loop**: the agent gets
+concrete errors instead of pattern-matching. *Neither paper's headline number
+could be extracted from its PDF, and none is quoted here.*
+
+**So an agent needs to build and test a fork to propagate into it — and this
+fleet mostly cannot.** melonDS builds in 15 min 27 s; **Vita3K does not build at
+all**; six forks have never been attempted; and almost nothing has tests.
+
+**That reframes Phase 0.3 from housekeeping to the enabling condition for the
+whole agentic thesis**, and it reframes today's ABI, AGP and recipe findings as
+the difference between a fork an agent can work on and one it cannot.
+
+**A propagation lands with a test, or it does not land.**
+
 See [`shared_layer/UNIFICATION.md`](shared_layer/UNIFICATION.md).
 
 ### The revised position
