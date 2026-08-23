@@ -53,12 +53,36 @@ Every number here is either measured on the device or cited to its source.
 The X3, A715, A710 and A510 are all ARMv9 cores. **The SoC is not usable as
 ARMv9 here.**
 
-ARMv9.0-A mandates SVE2. **Qualcomm shipped the 8 Gen 2 without SVE at all**,
-confirmed from `/proc/cpuinfo`: the feature list is `asimddp i8mm bf16 fphp
-asimdhp atomics lrcpc ilrcpc sha3`, with **no `sve` and no `sve2`**.
+**The cores implement SVE2. The shipped SoC does not expose it.** Both halves
+matter, and an earlier version of this document flattened them into something
+wrong about the silicon.
+
+- **ARM's documentation** says the Cortex-A510 "fully support[s] the Armv9.0 ISA
+  including the Scalable Vector Extension (SVE) and SVE2", with a 128-bit vector
+  register file, and that the Cortex-A710 "SVE2 engine is 128-bits wide".
+- **The device** reports `asimddp i8mm bf16 fphp asimdhp atomics lrcpc ilrcpc
+  sha3` in `/proc/cpuinfo`, with **no `sve` and no `sve2`**. Measured three
+  times between 2026-05-25 and 2026-08-20.
+
+**No flag reaches it.** A compiler flag selects which instructions to emit; it
+cannot make a trapping instruction execute. Exposure is a **kernel** decision:
+without `CONFIG_ARM64_SVE` the hwcap is not reported even on hardware that has
+SVE, and there is no SVE register state save and restore across context
+switches. Reaching it would need a custom kernel and root.
+
+**Whether SM8550 is fused off in silicon or merely hidden by the vendor kernel
+is undetermined.** It changes nothing today, and the test that closes it is
+recorded in
+[`research_log/20260822_2147_sve2_on_the_thor.md`](../../research_log/20260822_2147_sve2_on_the_thor.md).
+
+**It would not be a throughput win in any case.** Every ARMv9 core here
+implements SVE at **128-bit vector length, the same width as NEON**, so the only
+gain would be SVE2's instruction semantics, against a second code path to test.
 
 A compiler told `-march=armv9-a` may emit SVE. **Target `armv8.2-a` and name
-the features explicitly.** That is why the forks that chose `armv8-a` were not
+the features explicitly.** The finding above **strengthens** this rather than
+softening it: whether the vector units physically exist is irrelevant when the
+OS does not enable SVE state handling, because the instruction still traps. That is why the forks that chose `armv8-a` were not
 simply being lazy, and it is the single most important line in this document.
 
 **eden already ships the hazard.** Its `CMakeLists.txt` offers

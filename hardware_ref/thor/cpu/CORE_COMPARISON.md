@@ -197,7 +197,17 @@ From `/proc/cpuinfo` on the device, recorded in
 asimddp  i8mm  bf16  fphp  asimdhp  atomics  lrcpc  ilrcpc  sha3
 ```
 
-**No SVE. No SVE2.** Qualcomm shipped the 8 Gen 2 as ARMv9 without them.
+**No SVE. No SVE2 exposed**, and the precise statement matters.
+
+**The IP implements SVE2; the shipped SoC does not expose it.** ARM documents
+the A510 as fully supporting SVE and SVE2 with a 128-bit vector register file,
+and the A710 SVE2 engine as 128 bits wide. Qualcomm disabled SVE across this
+generation of Snapdragon parts.
+
+**No flag reaches it**, because exposure is a kernel decision through
+`CONFIG_ARM64_SVE`, not a compiler one. **And it would not be a throughput win
+if it were reachable**, because 128-bit SVE is the same width as NEON. See
+[`../../../research_log/20260822_2147_sve2_on_the_thor.md`](../../../research_log/20260822_2147_sve2_on_the_thor.md).
 
 **This corrects the manual work in this directory.** The Cortex-X3 guide
 devotes sections 3.24 to 3.31 to SVE, and the A510 guide describes 128-bit SVE

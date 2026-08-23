@@ -863,9 +863,16 @@ From `/proc/cpuinfo`, recorded in xenia's research on 2026-08-05:
 asimddp  i8mm  bf16  fphp  asimdhp  atomics  lrcpc  ilrcpc  sha3
 ```
 
-**No SVE, no SVE2.** Qualcomm shipped the 8 Gen 2 as ARMv9 without them, so
-every SVE section of the Cortex-X3 and A510 optimization guides is **not
-applicable**, and so are rpcs3's SVE2 optimisations.
+**No SVE, no SVE2 exposed.** Be precise about why: **the ARM cores implement
+SVE2, and the shipped SoC does not expose it.** Qualcomm disabled SVE across
+this Snapdragon generation. **No compiler flag reaches it** — exposure is a
+kernel decision through `CONFIG_ARM64_SVE` — **and it would not be a throughput
+win if it were reachable**, because every ARMv9 core here implements SVE at
+128-bit vector length, the same width as NEON.
+
+So every SVE section of the Cortex-X3 and A510 optimization guides is **not
+applicable**, and so are rpcs3's SVE2 optimisations. See
+[`research_log/20260822_2147_sve2_on_the_thor.md`](research_log/20260822_2147_sve2_on_the_thor.md).
 
 What is present and useful: **`asimddp`** gives `SDOT` and `UDOT`; **`sha3`**
 gives `EOR3` and `BCAX`, which are nominally crypto but serve as three-input
