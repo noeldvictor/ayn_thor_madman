@@ -147,7 +147,8 @@ EXEMPT = re.compile(
     r"(was wrong|has been wrong|CORRECT(?:ED|ION)|withdrawn|refut|turned out"
     r"|claim(?:ed)? .*(?:wrong|reversed)|no fork (?:modified|was touched|has been)"
     r"|no device|not committed|do not modify a fork|stays in this repo"
-    r"|nobody is tracking|was committed|^\s*\||->|→)",
+    r"|nobody is tracking|was committed|no fork converted|no fork is converted"
+    r"|^\s*\||->|→)",
     re.IGNORECASE,
 )
 

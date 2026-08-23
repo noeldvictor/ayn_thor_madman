@@ -16,10 +16,35 @@ half-converted subsystem is how duplication returns.
 | Subsystem | State | What exists | What does not |
 | --- | --- | --- | --- |
 | **Driver pipeline cache** | **policy owned, no fork converted** | `app/shell` `PipelineCache.kt` + **14 tests**; native contract `pipeline_cache.h`, syntax-checked under NDK 29 clang at C++20 for `aarch64-linux-android33` | **no native implementation, no fork converted, no build guard** |
+| **Hotkey layer** | **owned outright; no fork converted** | `app/shell` `Hotkeys.kt` + **15 tests**. **17 shared actions, 3 binding kinds, 6 distinct denials** | **no fork converted, no build guard** |
 
 **A subsystem is either owned or not owned, and this one is not.** The row is
 here so the partial state is visible rather than assumed, which is the same
 reason the empty-list section below was written.
+
+**The hotkey layer is different from the other rows: it is owned outright.**
+There is no native half to write, because **the app owns the hotkey layer by
+requirement** — a backend never defines a hotkey, and is only told what
+happened. **The only work left is converting forks.**
+
+**It is also the input feature that matters on this device.** The Thor has real
+buttons; a virtual gamepad does not. **Take ARMSX2's action set and its capture
+interaction**, which it split out of the Pad tab so hotkeys are easy to find —
+this project's own usability complaint, fixed inside the fleet before this repo
+existed.
+
+**Four learned lessons travel with it**, each now a test:
+
+- **Binding capture may not use a modal dialog.** ARMSX2's **2.6.0 "can't remap
+  buttons" bug**: a focus-stealing `AlertDialog` has its own window, which
+  **swallowed controller keys before the Compose handler saw them.**
+- **A hotkey has a kind.** Fast forward ships as **both a hold and a toggle**,
+  and the pressure modifier is explicitly not a one-shot. A single "on press"
+  model cannot express either.
+- **An action can be conditionally unavailable, and must say why.** Slow motion
+  is banned under hardcore achievements, and ARMSX2 shows a notice rather than
+  ignoring the press. **Silence reads as a broken binding.**
+- **Screenshot is bindable because the Android system gesture interrupts play.**
 
 **Why this one, and why not the touch overlay.** The queue is ordered by **risk**,
 so the overlay ranks first because it is safe — no guest semantics, both sources
