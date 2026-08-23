@@ -4001,8 +4001,30 @@ These are not settled. Do not assume an answer. Ask, or mark the assumption.
 
 2. **Dependency unification.** Which single version of Oboe, `imgui`, `fmt`,
    `glslang` and `vulkan-headers` does the fleet use? **The packed binary
-   cannot link five copies**, and the audio half is answered — Oboe — while the
-   rest are not. Add each to the row as it is decided.
+   cannot link five copies**, and the audio half is answered — Oboe.
+
+   **First data, 2026-08-23.** Pinned commits read from each fork's git tree:
+
+   | Library | azahar | Cemu | Vita3K | xenia |
+   | --- | --- | --- | --- | --- |
+   | `fmt` | `e424e3f2` | — | `1be298e1` | `27e3c0fe` |
+   | `Vulkan-Headers` | `409c16be` | `9b9fd871` | — | `31aa7f63` |
+   | **`glslang`** | **`fc9889c8`** | — | **`fc9889c8`** | `f4f1d8a3` |
+   | `imgui` | — | `f65bcf48` | `cb16568f` | `81160fee` |
+   | **`xxHash`** | **`e626a72b`** | — | **`e626a72b`** | `4c881f79` |
+
+   **azahar and Vita3K already pin the identical commit for `glslang` and
+   `xxHash`** — the shared-ancestry effect showing up in dependency pins rather
+   than in source.
+
+   **So start there: those two cost one fork each to unify, the rest cost
+   two.** And `glslang` matters most, because **three forks need it at run
+   time** to compile GLSL text.
+
+   **Limits:** a different SHA does not mean far apart, and only four forks are
+   covered — ARMSX2 and eden vendor by copying and have no pinned commit to
+   read. See
+   [`research_log/20260823_0200_vendored_versions.md`](research_log/20260823_0200_vendored_versions.md).
 
 3. **The build location.** Options: local Windows or WSL, GitHub Actions, or a
    split. This decision sets how much an agent can do unattended.
