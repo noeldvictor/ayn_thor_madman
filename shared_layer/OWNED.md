@@ -8,7 +8,54 @@ half-converted subsystem is how duplication returns.
 
 ---
 
-## Nothing is owned yet
+## One subsystem is now partly owned
+
+**Updated 2026-08-23.** The list is no longer empty, and the honest state is
+**partly**, not fully.
+
+| Subsystem | State | What exists | What does not |
+| --- | --- | --- | --- |
+| **Driver pipeline cache** | **policy owned, no fork converted** | `app/shell` `PipelineCache.kt` + **14 tests**; native contract `pipeline_cache.h`, syntax-checked under NDK 29 clang at C++20 for `aarch64-linux-android33` | **no native implementation, no fork converted, no build guard** |
+
+**A subsystem is either owned or not owned, and this one is not.** The row is
+here so the partial state is visible rather than assumed, which is the same
+reason the empty-list section below was written.
+
+**Why this one, and why not the touch overlay.** The queue is ordered by **risk**,
+so the overlay ranks first because it is safe — no guest semantics, both sources
+GPL-2.0-or-later, eight method names agreed across twelve years of drift.
+**Low risk is not the same as high value.** **The Thor has physical buttons**, and
+this repo's own Vita3K lesson already says an overlay drawn permanently over a
+game on such a device is wrong. **A virtual gamepad is near dead weight here.**
+
+**The pipeline cache is the better first extraction on this device:**
+
+- **Genuine 8-for-8 duplication**, verified by reading, not by counting names:
+  ARMSX2 `VKShaderCache.cpp`, xenia `vulkan_pipeline_cache.cc`, Cemu
+  `VulkanRenderer.cpp`, azahar `vk_pipeline_cache.cpp`, melonDS
+  `GPU3D_Vulkan.cpp`, Vita3K `pipeline_cache.cpp`, eden `vulkan_wrapper.cpp`,
+  rpcsx `VKPipelineCompiler.cpp`.
+- **No guest semantics.** The shape is fixed by the Vulkan specification.
+- **Shader compile stutter is a Thor-wide problem**, and one cache warmed across
+  every backend is the point of the packed binary.
+- **Invalidation is answered by the specification**, not by us —
+  `pipelineCacheUUID` is what moves when a driver's compiled format changes.
+
+**And it carries a bug one fork already paid for.** ARMSX2's own comment records
+that `vendorID`, `deviceID` and `pipelineCacheUUID` are **identical across an app
+update on the same phone**, so a shader-cache version bump wiped the SPIR-V while
+keeping every pipeline built from the previous build's shaders — and since
+nothing prunes the blob and it is re-serialised in full on the render thread, the
+dead entries became **an ever-growing mid-gameplay stall that only a clean
+reinstall cleared.** Users reported "clean install improved performance".
+
+**So the policy carries four things no single fork has together**: the five
+device-header checks with **a distinct verdict each**, an **app epoch** the
+device header cannot see, a **size cap** with discard-not-trim, and **one file
+per UUID keeping the last two** so a per-game driver override does not discard
+every backend's warm cache at once.
+
+## Nothing else is owned yet
 
 **The owned list is empty on 2026-08-22.** That is the honest state, and this
 file exists so the emptiness is visible rather than assumed.
