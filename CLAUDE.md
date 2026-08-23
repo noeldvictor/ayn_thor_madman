@@ -919,6 +919,16 @@ detection problem. **If detection, it is free performance.**
 the fork that wrote the research. The rest compile for a generic ARMv8-A this
 device stopped being years ago.
 
+**This produced the fleet standard.** Five forks gave five answers to one
+question, so the answer is now written down once in
+**[`hardware_ref/thor/THOR_TARGET.md`](hardware_ref/thor/THOR_TARGET.md)**:
+`-march=armv8.2-a+crc+lse+fp16+dotprod+sha3+i8mm+bf16 -mtune=cortex-x3`.
+
+**Do not target `armv9-a`.** All four cores are ARMv9, ARMv9.0-A mandates SVE2,
+and **this device has no SVE**. A compiler told `armv9-a` may emit instructions
+that do not exist here. That is why the baseline forks were not simply being
+lazy, and it is why the target names its features explicitly.
+
 **Caveat checked, and it rescues nobody.** Searching the ARM64 backends
 themselves:
 
@@ -1769,6 +1779,7 @@ manual here one time. Every fork reads it from here.
 
 | Directory | Contents |
 | --- | --- |
+| **[`hardware_ref/thor/THOR_TARGET.md`](hardware_ref/thor/THOR_TARGET.md)** | **The north star. One compile target, one thermal budget, one thread policy for every fork. Read it before tuning anything.** |
 | `hardware_ref/thor/soc/` | Snapdragon 8 Gen 2 documents |
 | `hardware_ref/thor/cpu/` | Cortex-X3, A715, A710, A510. [`CORTEX_X3_NOTES.md`](hardware_ref/thor/cpu/CORTEX_X3_NOTES.md) for the prime core, [`CORE_COMPARISON.md`](hardware_ref/thor/cpu/CORE_COMPARISON.md) for where the four cores disagree. |
 | `hardware_ref/thor/gpu/` | Adreno 740, Vulkan, driver notes. Includes [`VULKAN_TIPS.md`](hardware_ref/thor/gpu/VULKAN_TIPS.md), the practical rules sheet for getting the most out of this GPU. |
