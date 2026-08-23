@@ -1252,6 +1252,42 @@ SPDX pass found 207 files attributed to a "yaps Dev Team" in ARMSX2 and could
 not place them. **`yaps2` is a PS2 project ARMSX2 draws from**, and the test
 harness is part of what it took.
 
+## ARM64 target features — checked fleet-wide, and most forks leave them off
+
+Surveyed 2026-08-22, following rpcs3's finding that name-based feature
+detection silently excluded every Qualcomm core.
+
+**The device has `asimddp` and `sha3`.** Build flags across the fleet:
+
+| Fork | `-march` / `-mcpu` found | Verdict |
+| --- | --- | --- |
+| **xenia-thor** | `armv8-a+crypto+sha3+crc+dotprod` | **complete.** Enables exactly what the device has |
+| Vita3K-Thor | `mcpu=cortex-x3` | tunes for the prime core by name |
+| Cemu-thor | `armv8-a+lse`, `mcpu=cortex-a710` | LSE atomics, tuned for a mid core |
+| rpcsx-ui-android | `armv8-a+lse`, `+crypto` | LSE, crypto, **no dotprod or sha3** |
+| **ARMSX2** | `armv8-a`, `armv8-a+crc` | **baseline. No dotprod, no sha3.** |
+| **azahar-thor** | `armv8-a` | **baseline** |
+| melonDS-android | `armv4`, `armv5`, `haswell` | those are **guest** targets; no ARM64 host flags found |
+| eden-thor | none found | |
+
+**xenia is the only fork enabling the device's actual feature set**, and it is
+the fork that wrote the research document. The others are compiling for a
+generic ARMv8-A that this device has not been for years.
+
+### Two caveats before acting
+
+- **Build flags are not the whole story.** A recompiler emits its own
+  instructions and an LLVM-based backend passes target attributes separately.
+  A fork can have baseline `-march` and still emit `SDOT` from its JIT.
+- **Vita3K and Cemu tune for one core each**, `cortex-x3` and `cortex-a710`.
+  On a 1+4+3 device threads land on all of them, and
+  [the core comparison](../hardware_ref/thor/cpu/CORE_COMPARISON.md) shows the
+  guides give conflicting advice. Tuning for one core is a choice, not an
+  oversight, but it should be a stated one.
+
+**This is cheap to check and cheap to fix**, which is what makes it worth doing
+before any deeper optimisation work.
+
 ## Survey gaps
 
 Partly surveyed forks:

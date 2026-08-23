@@ -902,6 +902,28 @@ xenia records its own instance: `arm64_fma_v128_fastpath` is **default-off** in
 its tree, and it does not know whether that is a correctness problem or a
 detection problem. **If detection, it is free performance.**
 
+**Checked fleet-wide 2026-08-22, and most forks leave the features off:**
+
+| Fork | Flags found | Verdict |
+| --- | --- | --- |
+| **xenia** | `armv8-a+crypto+sha3+crc+dotprod` | **complete** |
+| Vita3K | `mcpu=cortex-x3` | tuned to the prime core |
+| Cemu | `armv8-a+lse`, `mcpu=cortex-a710` | LSE, tuned to a mid core |
+| rpcsx | `armv8-a+lse`, `+crypto` | no dotprod or sha3 |
+| **ARMSX2** | `armv8-a`, `+crc` | **baseline** |
+| **azahar** | `armv8-a` | **baseline** |
+| melonDS | `armv4`, `armv5`, `haswell` | those are **guest** targets |
+| eden | none found | |
+
+**xenia is the only fork enabling what the device actually has** — and it is
+the fork that wrote the research. The rest compile for a generic ARMv8-A this
+device stopped being years ago.
+
+**Caveat:** build flags are not the whole story, since a recompiler emits its
+own instructions and an LLVM backend passes target attributes separately. A
+fork can be baseline at `-march` and still emit `SDOT` from its JIT. **Check
+both.**
+
 ### Prefer a load over arithmetic on the mid cores
 
 **The A715 and A710 have three 128-bit load ports but only two 128-bit
