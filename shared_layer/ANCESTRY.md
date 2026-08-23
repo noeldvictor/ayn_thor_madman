@@ -156,6 +156,59 @@ Every earlier candidate was one subsystem. This is a frontend.
 It was invisible to every feature-based search and took one filename
 comparison to find. **That is the method working.**
 
+## The fourth axis: vendored dependencies
+
+Applying the same method to vendored third-party trees, 2026-08-22.
+
+**Vendored by four forks each:** `stb`, `imgui`, `glad`, `fmt`, `ffmpeg`,
+`cubeb`.
+
+**By three each:** `xxhash`, `xbyak`, `vulkan-headers`, `libadrenotools`,
+`glslang`, `discord-rpc`.
+
+| Library | Vendored by |
+| --- | --- |
+| `cubeb`, audio | azahar, Vita3K, Cemu, ARMSX2 |
+| `imgui` | Vita3K, Cemu, xenia, ARMSX2 |
+| `libadrenotools` | azahar, Vita3K, Cemu |
+| `vulkan-headers` | azahar, Cemu, xenia |
+| **`dynarmic`**, an ARM JIT | **azahar, Vita3K** |
+
+`dynarmic` is the interesting pair: both the 3DS and the Vita have ARM guests,
+so both recompile ARM to ARM64 with the same library. **That is a genuine
+shared need, not an accident.**
+
+### This is a hard constraint on the packed binary, not a tidiness issue
+
+**You cannot link four copies of `cubeb` into one binary.** Duplicate symbols
+do not merge politely, and different vendored versions of the same library are
+worse than duplicates: they are the same symbol with different behaviour.
+
+So the packed-binary decision has a prerequisite nobody recorded:
+
+**Dependency unification comes before backend packing.** One `cubeb`, one
+`imgui`, one `fmt`, one `glslang`, one `vulkan-headers`, at one version each,
+before two backends share a link unit.
+
+That belongs with [the toolchain row](../CLAUDE.md#the-standard-row), which
+already unifies NDK, ABI and SDK levels but says nothing about vendored
+libraries. **The toolchain row is incomplete.**
+
+### Attribution style differs, which is why the earlier passes missed things
+
+Three forks record ancestry by vendoring rather than by header:
+
+- **Cemu** uses `dependencies/`: `libadrenotools`, `cubeb`, `imgui`, `ih264d`,
+  `ZArchive`, `metal-cpp`, `Vulkan-Headers`, `stb`.
+- **xenia** uses `third_party/`: **`FidelityFX-CAS`**, **`FidelityFX-FSR`**,
+  `VulkanMemoryAllocator`, `SPIRV-Tools`, `DirectXShaderCompiler`, `FFmpeg`,
+  `SDL2`.
+- **rpcsx** returned nothing on either pass and is still unexplained.
+
+**xenia vendoring FidelityFX-FSR is a third FSR integration.** ARMSX2 has
+`GSUpscaler::FSR1` and rpcsx has `Emu/RSX/Program/Upscalers/FSR1`. Three forks,
+three integrations of one AMD library.
+
 ## What is still unknown
 
 - **How far each copy has drifted.** Vita3K's overlay and azahar's started as

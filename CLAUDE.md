@@ -2075,6 +2075,31 @@ Notes:
 Unify the Vulkan setup too: one loader, one validation configuration and one
 extension set.
 
+### The standard row is incomplete: vendored libraries
+
+**Four forks each vendor `cubeb`, `imgui`, `glad`, `fmt` and `ffmpeg`. Three
+each vendor `xxhash`, `xbyak`, `vulkan-headers`, `libadrenotools` and
+`glslang`.**
+
+| Library | Vendored by |
+| --- | --- |
+| `cubeb`, audio | azahar, Vita3K, Cemu, ARMSX2 |
+| `imgui` | Vita3K, Cemu, xenia, ARMSX2 |
+| `libadrenotools` | azahar, Vita3K, Cemu |
+| `dynarmic`, ARM JIT | azahar, Vita3K |
+
+**This is a hard constraint on the packed binary, not a tidiness issue.** You
+cannot link four copies of `cubeb` into one binary. Duplicate symbols do not
+merge politely, and four *different versions* of one library is worse than four
+copies: the same symbol with different behaviour.
+
+**Dependency unification comes before backend packing.** One `cubeb`, one
+`imgui`, one `fmt`, one `glslang`, one `vulkan-headers`, at one version each,
+before two backends share a link unit.
+
+Add the chosen versions to the row above as they are decided. See
+[`shared_layer/ANCESTRY.md`](shared_layer/ANCESTRY.md).
+
 ### The device
 
 Screen-2 hosts `com.android.launcher3/.secondarydisplay.SecondaryDisplayLauncher`
