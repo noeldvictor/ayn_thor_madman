@@ -138,6 +138,45 @@ a cheat list; eden's is the better model for **executing** one.
 
 **Take both. They solve different halves.**
 
+### rpcsx: a flat typed poke, and a converter
+
+`util/cheat_info.h`, 33 lines:
+
+```cpp
+enum class cheat_type { unsigned_8..64, signed_8..64, float_32 };
+struct cheat_info {
+    std::string game, description;
+    cheat_type  type;
+    u32         offset;
+    std::string red_script;
+    bool from_str(const std::string&);  std::string to_str() const;
+};
+```
+
+**A single typed write at an offset**, plus serialisation both ways and a
+`red_script` escape hatch for anything more complex.
+
+Around it, in Kotlin: `CheatRepository`, `CheatSelectionRepository`,
+`PatchHashRepository`, and **`ArtemisConverter.kt`**, which converts the
+Artemis format.
+
+**rpcsx is GPL-2.0-only. Read it for ideas; never copy its code.**
+
+### Three architectures forming a ladder of expressiveness
+
+| Fork | Model | Expressiveness |
+| --- | --- | --- |
+| rpcsx | one typed write at an offset | data |
+| azahar | polymorphic cheat objects | behaviour |
+| eden | bytecode virtual machine | programmable |
+
+**Most cheats are just typed pokes.** So the shared engine should be tiered: a
+fast path for the flat case, falling back to the VM only when a cheat needs
+conditions, loops or button checks.
+
+That is not a compromise between three designs. It is the observation that they
+sit at different points on one axis, and a shared engine needs the whole axis.
+
 ### The format problem is separate from the execution problem
 
 At least six formats are in the fleet: `mch` (melonDS), `pnach` (ARMSX2),
@@ -148,8 +187,14 @@ AR-code sources azahar bundles.
 into one VM's bytecode, which turns six formats into six small parsers rather
 than six engines.
 
-**Unverified.** Whether `pnach` and AR codes map cleanly onto `dmnt` bytecode
-has not been checked, and that check decides whether this works.
+**Two forks already convert cheat formats**, which is evidence the idea works
+in practice: rpcsx `ArtemisConverter.kt` and Vita3K `convert_vitacheat.py`,
+with `sync_vitacheat_db.ps1` keeping a database in step and `cheat_paths.cpp`
+owning where they live.
+
+**Still unverified:** whether `pnach` and AR codes map cleanly onto `dmnt`
+bytecode. That check decides whether one VM can serve everything, or whether
+the tiered design above is required rather than merely nicer.
 
 ### The five cheat implementations
 

@@ -2101,13 +2101,31 @@ azahar solves the **other** half: `CheatEngine` with `CheatBase`, add, remove,
 update and a `shared_mutex`. That is the better model for **managing** a cheat
 list; eden's is the better model for **executing** one. **Take both.**
 
-**The format problem is separate from the execution problem.** At least six
-formats exist in the fleet: `mch`, `pnach`, `ncl`, Cemu graphic packs,
-Atmosphere `dmnt` and 3DS AR codes. A VM does not care — a per-format front end
-compiles them to one bytecode, turning six engines into six small parsers.
+**Three architectures, forming a ladder of expressiveness:**
 
-**Unverified, and it decides the design:** whether `pnach` and AR codes map
-cleanly onto `dmnt` bytecode has not been checked.
+| Fork | Model | Expressiveness |
+| --- | --- | --- |
+| rpcsx | one typed write at an offset, `cheat_info` | data |
+| azahar | polymorphic cheat objects | behaviour |
+| eden | bytecode virtual machine | programmable |
+
+**Most cheats are just typed pokes.** So the shared engine is **tiered**: a
+fast path for the flat case, falling back to the VM only when a cheat needs
+conditions, loops or button state. These are not three competing designs; they
+sit at different points on one axis and a shared engine needs the whole axis.
+
+**The format problem is separate from the execution problem.** At least six
+formats exist: `mch`, `pnach`, `ncl`, Cemu graphic packs, Atmosphere `dmnt` and
+3DS AR codes. A VM does not care — a per-format front end compiles them to one
+bytecode, turning six engines into six small parsers.
+
+**Two forks already convert formats**, so this works in practice: rpcsx
+`ArtemisConverter.kt` and Vita3K `convert_vitacheat.py`.
+
+**Still unverified, and it decides the design:** whether `pnach` and AR codes
+map cleanly onto `dmnt` bytecode.
+
+**rpcsx is GPL-2.0-only.** Take the idea, never the code.
 
 ### 5. Mod and translation loading
 
