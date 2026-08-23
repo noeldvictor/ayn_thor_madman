@@ -193,6 +193,19 @@ run eight separate emulators.
   to discover. Gather them, record where each came from, and let a person
   override any of them.
 
+  **GameThor already has two thirds of this.** `app/gamenative/gamefixes/` holds
+  **29 per-game fixes** keyed by store ID, behind six typed kinds —
+  `WineEnvVarFix`, `RegistryKeyFix`, `IniFileFix`, `LaunchArgFix`,
+  `GOGDependencyFix` and `KeyedCompositeGameFix` — dispatched by a
+  `GameFixesRegistry`. **Take the shape: a stable game key, a small set of typed
+  kinds, composition, one readable file per game.**
+
+  **Change two things.** GameThor's fixes are **code**, so adding one needs a
+  rebuild, and [Foundation](#foundation) point 4 requires installing a fix to
+  take one action in the app — so ship them as **data**. And **add the
+  provenance field GameThor lacks**: a fix with no recorded source cannot be
+  re-derived when it stops working.
+
 ### What this rules out
 
 State the conflict rather than quietly widening the scope.
@@ -1966,6 +1979,14 @@ them twice.**
 | **Content patch** | updates, DLC, mods the guest filesystem serves | eden `patch_manager` |
 | **Code patch** | modify guest instructions at run time | Cemu `GraphicPack2Patches`, xenia `patcher` |
 | **File mod** | replace game assets | eden `mod_manager` |
+| **Host config fix** | **change the host's setup for one game, no guest bytes touched** | **GameThor `gamefixes/`** |
+
+**The fourth was found on 2026-08-23 and it unifies something.** A host config
+fix changes an environment variable, a registry key, a launch argument or an INI
+value — never guest memory. **A per-game driver override is exactly this kind**,
+and so is a per-game thread policy or present mode. This repo was treating those
+as settings and treating fixes as patches; **they are the same thing**, and
+naming it removes a category from the design.
 
 eden's `patch_manager` has `PatchType { Update, DLC, Mod }` and belongs with
 file mods. Cemu's `GamePatch.h` is two function declarations about HLE
