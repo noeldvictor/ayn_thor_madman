@@ -3789,12 +3789,38 @@ See [`research_log/20260822_2350_upscale_algorithm_sets.md`](research_log/202608
 
 These are not settled. Do not assume an answer. Ask, or mark the assumption.
 
-1. **The toolchain row.** Which NDK, `minSdk`, `targetSdk`, Gradle, AGP and
-   C++ standard does the fleet use? Every other decision waits on this one.
-   See [One toolchain](#0-one-toolchain--do-this-first). Decide this first.
+1. **The toolchain row: chosen, not verified.** The values are written in
+   [One toolchain](#0-one-toolchain--do-this-first) and Oboe was added
+   2026-08-23. **No fork has been migrated to them, and C++20 is verified for
+   exactly one file** — `shared_layer/thor_backend.h` compiles under NDK 29
+   clang++ at C++20 for `aarch64-linux-android33`. **That is not evidence about
+   any fork.**
+
+   **The gap is now measured for one fork.** melonDS-android builds today on
+   **NDK 28 and Gradle 9.5.0**, so it is one NDK major and one Gradle minor
+   behind the row. Seven forks unmeasured.
+
+2. **Dependency unification.** Which single version of Oboe, `imgui`, `fmt`,
+   `glslang` and `vulkan-headers` does the fleet use? **The packed binary
+   cannot link five copies**, and the audio half is answered — Oboe — while the
+   rest are not. Add each to the row as it is decided.
+
 3. **The build location.** Options: local Windows or WSL, GitHub Actions, or a
-   split. Cemu, Xenia and RPCSX are expensive to build locally. This decision
-   sets how much an agent can do unattended.
+   split. This decision sets how much an agent can do unattended.
+
+   **First real number, 2026-08-23: melonDS-android is 15 min 27 s clean,
+   locally.** That is comfortably inside an unattended loop, so the assumption
+   that local builds are too slow to automate **is wrong for the cheap forks**.
+
+   **And the shape of the cost is the useful part.** The time is dominated by
+   compiling `librashader`'s Rust dependency graph, not the emulator's C++, so
+   it is **cacheable across builds and across forks** — a shared Cargo and
+   Gradle cache attacks the dominant cost directly. **Measure incremental
+   separately before choosing**, because a clean-checkout figure is the wrong
+   input for a decision about routine agent work.
+
+   ARMSX2, Cemu-thor and xenia-thor remain unmeasured and are the ones the
+   worry was really about.
 4. **git-lfs for `hardware_ref/`.** Manuals are large PDFs. Decide before you
    commit a large set.
 5. **The workspace layout.** The forks stay in place today. This file tracks
