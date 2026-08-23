@@ -636,6 +636,16 @@ Direct the exploration at these:
   remains are per-subsystem gaps rather than whole forks.
 - **Audio: surveyed 2026-08-23 and answered.** Three forks already use Oboe;
   standardise on it. Latency itself is still unmeasured.
+- **ADPF: surveyed 2026-08-24 and answered.** Counted the four real entry points
+  per fork, because counting the word "thermal" matches everything. **melonDS has
+  the only complete implementation** — ten files, a factory choosing NDK at API
+  33+, JNI at 31+, and a no-op tier, plus a **thread-safe hint session** because
+  it reports from nine sites. **azahar, Vita3K, eden and GameThor have none.**
+  **Only xenia and rpcsx read `getThermalHeadroom`**, so everything else is open
+  loop. **Take melonDS's interface and delete two of its three tiers** — the Thor
+  is API 33, so the JNI and Dummy tiers serve variability this device does not
+  have. See
+  [`research_log/20260824_0330_adpf_survey.md`](research_log/20260824_0330_adpf_survey.md).
 - **Control overlays: surveyed.** See
   [How to build the shared layer](#how-to-build-the-shared-layer), item 0.
 - **Save conventions: surveyed 2026-08-23, partially.** The format is
@@ -1756,6 +1766,9 @@ Every item is already written somewhere in the fleet. None needs invention.
 | **Whole-text AOT patching keyed by build ID** | **eden NCE** | anything with a same-ISA or near-ISA guest |
 | **Merging another user's cache into yours** | **Cemu `ShaderCacheMerger`** | everyone |
 | **Requesting `VK_KHR_shader_float16_int8`** | eden | **ARMSX2, whose frame generator is forced to fp32 without it** |
+| **The ADPF hint-manager interface, with its no-op tier** | **melonDS** | **azahar, Vita3K, eden and GameThor, which have none** |
+| **Reading `getThermalHeadroom` to close the loop** | xenia, rpcsx | everyone reporting work duration open-loop |
+| **Storing the guest's declared activity state** | — | **eden, Vita3K and azahar all receive it and discard it** |
 | `COLOR_ATTACHMENT_OPTIMAL` instead of `GENERAL` | — | Cemu |
 
 **Two of those rows are the same missing piece seen from both ends, found
