@@ -988,6 +988,32 @@ gave up.** Measured here: **xenia carries a full HIR and eden's dynarmic carries
 an IR; ARMSX2, Cemu and melonDS do not.** xenia's exists because xenia also
 targets x86_64.
 
+**CORRECTED 2026-08-23: Cemu has an IR too.** `src/Cafe/HW/Espresso/Recompiler/
+IML/` is **12 files and 6,327 lines** — `IMLInstruction`, `IMLOptimizer`,
+`IMLRegisterAllocator`, `IMLRegisterAllocatorRanges`, `IMLSegment`,
+`IMLAnalyzer`, `IMLDebug`. **That is the same scale as xenia's HIR at 6,605
+lines**, and it is a full intermediate language with its own optimiser and
+register allocator, not a helper layer.
+
+**The corrected census is three of five, not two of five:**
+
+| Fork | Guest | IR | Size |
+| --- | --- | --- | --- |
+| **eden** | ARM64 | dynarmic IR | **7,382 lines**, 19 files |
+| **xenia** | PowerPC | HIR | **6,605 lines**, 12 files |
+| **Cemu** | PowerPC | **IML** | **6,327 lines**, 12 files |
+| ARMSX2 | MIPS | **none** — direct emitters | — |
+| melonDS | ARM | **none** — direct `ARMJIT_A64` emitters | — |
+
+**And the split is not arbitrary.** **Both PowerPC recompilers chose an IR
+independently.** The two without one translate the simpler guests — MIPS, and
+ARM onto ARM64, which is nearly the host ISA. **Guest complexity looks like the
+driver, not fashion.**
+
+**Consequence for any IR experiment here: there is no same-guest IR-against-no-IR
+pair in this fleet.** Both PowerPC forks have one. **A cross-fork inflation
+comparison therefore measures the guest as much as the IR**, and must say so.
+
 **THE 35x FIGURE IS WITHDRAWN, 2026-08-23.** Read in full: the proof of concept
 `riscv-um` is a **Rust simulator, not a binary translator** — direct translation
 is the paper's *future work*. Its benchmark is `benchgen`, **2 million
