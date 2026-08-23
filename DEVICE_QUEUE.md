@@ -553,6 +553,49 @@ is not lost.
 change to anything else.** **Watch for a quality regression** — fp16 is a
 precision change, so a golden-image comparison must run beside the timing.
 
+## 17. ARMSX2's persisted VU program cache — the fork wrote this entry itself
+
+**This is the only queued experiment whose gate was stated by the code under
+test.** `pcsx2/Pcsx2Config.cpp:463`:
+
+```cpp
+EnableVUProgramCache = false; // default off; opt-in until the on-disk cache
+                              // is validated on the target hardware
+```
+
+**The target hardware is the Thor.**
+
+**What it is.** A persisted JIT cache for the PS2 vector unit, 2,576 lines with
+three test files, content-addressed `.vuprog` payloads, and a placement-relative
+fixup table that makes the emitted vixl output relocatable. See
+[`research_log/20260823_2205_translate_once_ship_it.md`](research_log/20260823_2205_translate_once_ship_it.md).
+
+**Why it matters beyond ARMSX2.** It is the CPU half of the persist rule. **If it
+holds on this device, a translated-code cache is shippable between users**, the
+same way the pinned driver makes a pipeline cache shippable. Entry 15 is the GPU
+half of the same question.
+
+**Do not enable it by editing the fork.** It is a config bool, so it is set
+through settings, not through a source change. **The standing rule forbids
+modifying ARMSX2 unless it is asked for by name.**
+
+**The run:** one title, cold launch with the cache off, cold launch with it on
+and empty, then a third launch with it warm. Record time to first frame, VU block
+compile count, and cache size on disk.
+
+**Expected signature: the third launch compiles far fewer VU blocks than the
+second, and time to first frame falls.** **Correctness is the real gate, not
+speed** — the test suite already asserts a bit-identical post-state in-process,
+so **any guest-visible difference on device is a stop, not a regression to
+tune.**
+
+**Prediction: `WIN` on block compile count, `OPEN` on time to first frame.** VU
+recompilation is not obviously the dominant cost of a PS2 launch, and nothing
+here has measured what is.
+
+**Also read before running:** how the cache handles self-modifying guest code.
+It was searched for and not found, which means unread rather than absent.
+
 ## Not ready to run
 
 These need a decision or a build first, not device time.

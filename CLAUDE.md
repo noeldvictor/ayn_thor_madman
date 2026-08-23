@@ -1326,7 +1326,7 @@ put it there.**
 serve?** If the answer is variability the Thor does not have, the operation is
 deletion and the estimate should be **smaller** than one fork's implementation.
 
-### Four operations, and how to choose
+### Five operations, and how to choose
 
 | # | Ask | If yes | Licence cost |
 | --- | --- | --- | --- |
@@ -1334,7 +1334,47 @@ deletion and the estimate should be **smaller** than one fork's implementation.
 | 2 | Does it serve **variability the Thor lacks**? | if **yes** → **DELETE** | none |
 | 3 | Must these merely **coexist without colliding**? | if **yes** → **ISOLATE** | none |
 | 4 | Has one fork **learned** something the others have not? | if **yes** → **PROPAGATE** | **none** |
+| **5** | **Is its output a pure function of guest content and host configuration?** | if **yes** → **PERSIST** | **none** |
 | — | none of the above | **leave it alone** | — |
+
+**Row 5 was added 2026-08-23 and it is the one that does not shrink on reading.**
+Every other operation moves source around; this one moves **computed results**.
+Ask it of any hot path: if the answer is yes, that work should be done **once for
+everybody**, not once per launch per user.
+
+**It is already proven twice inside the fleet, on both sides, and neither half
+knows the other exists.**
+
+- **CPU. ARMSX2 has a persisted JIT for the PS2 vector unit** —
+  `pcsx2/arm64/microVU_ProgCache-arm64.*`, 2,576 lines, three test files,
+  content-addressed `.vuprog` payloads, and a **placement-relative fixup table
+  that makes the emitted vixl output relocatable.** Its own test states the
+  result: the program "runs with **ZERO block compiles and a bit-identical
+  post-state**".
+- **GPU. Cemu ships a cache merger** — `src/tools/ShaderCacheMerger.cpp` folds
+  another user's `shaderCache/transferable` into yours. **That is community cache
+  pooling, shipped**, and it is why Wii U shader caches circulated for years.
+
+**Take ARMSX2's validity key wholesale.** `mVUbuildOptionsSentinel` is a 64-byte
+fixed-layout snapshot of every option that changes emitted code, including three
+FPCR masks and the recording flag itself. Three rules travel with it: a
+`static_assert` on the size so layout drift is a compile error, a reserved tail
+so a new option does not shift the fields below it, and **reclaim a reserved byte
+only where zero means "feature off"**, so enabling a feature does not evict the
+cache of every user who never turns it on.
+
+**That last rule is the one `app/shell/.../BlockCacheKey.kt` does not have.**
+
+**And ARMSX2 queued its own device experiment.** `Pcsx2Config.cpp:463` sets the
+cache default-off "until the on-disk cache is validated on the target hardware".
+**The target hardware is the Thor.** See `DEVICE_QUEUE.md` entry 17.
+
+**The limit, stated.** Nothing here is measured — no boot time, no cache size, no
+hit rate. And **the persist rule does not apply to everything**: an artifact
+whose output depends on live guest state is not a pure function of content and
+configuration.
+
+See [`research_log/20260823_2205_translate_once_ship_it.md`](research_log/20260823_2205_translate_once_ship_it.md).
 
 **The last row is the one this repo kept skipping.** Every candidate that shrank
 belonged in it.
