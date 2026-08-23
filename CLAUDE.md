@@ -3896,6 +3896,49 @@ each one time. Each fork reads the profile. No fork hardcodes these values.
 
 ### 4. Cheats
 
+#### An analyser can find them by itself, and the corpus proves it is mechanical
+
+**Assessed 2026-08-23. See [`shared_layer/AUTO_PATCH.md`](shared_layer/AUTO_PATCH.md).**
+
+**The labelled corpus is dominated by one shape.** Of rpcsx's 2,676 files:
+**infinite health 59, infinite ammo 26, invincibility 20, infinite HP 12, health
+never decreases 12** — almost all "X never decreases".
+
+**And the values give the implementation.** Of the parsed `be32` entries,
+**`0x60000000` — PowerPC `nop` — appears 67 times**, `blr` 9, a skip-branch 6,
+`li r0, 999` 3.
+
+> **The dominant patch is "stop this instruction from happening". Authoring was
+> never the hard part; finding the address was.**
+
+**Every step of finding it already exists, in a different fork each time:** the
+**typed memory scanner** is azahar's `cheats/memory_search.cpp`; the **write
+watchpoint** is in xenia, ARMSX2 and Cemu; the patch is a `nop`; verification is
+the scanner again. **The step that was missing is changing the value in-game
+between passes — and that is the paused agent loop.**
+
+**A first version is a cheat finder, and it is a product feature.** The person
+says "stop losing health"; the agent drives to a scene, scans, takes damage,
+rescans, narrows to one address, watchpoints it, emits a `nop` keyed to the
+`DumpId`, and verifies by taking damage again. **Foundation point 4 calls
+cheat-hunting a named RetroArch failure — a cheat the app finds for you is the
+strongest answer to it.**
+
+**Do not point the same loop at performance.** That corpus is cheats, not frame
+rate. **The target is not a value**, "the frame is 100 ms" has no address; **the
+intent is not observable**, where a scan can prove health stopped decreasing;
+and per-game HLE work stands at **39 `WIN` against 33 `DEAD`**, so an automated
+generator would produce dead ends at the same rate and **each one costs a device
+run to reject.**
+
+> **Automate the class where verification is cheap.**
+
+**And `nop` is not always safe.** Removing a store can desynchronise game state
+as easily as it can grant invincibility. **The corpus records the patches that
+worked, not the ones that broke a save.**
+
+
+
 `azahar-thor/cheat_sources/` holds Sharkive, CTRPF-AR-CHEAT-CODES and
 citra-games-wiki. `ai_cheat_helper_switch` is a separate AI-driven method.
 Unify the format. Do not unify the sources.
