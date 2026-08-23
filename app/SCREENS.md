@@ -19,10 +19,24 @@ Written 2026-08-22. This is a specification, not a mockup.
 screen for a capability no backend has. Do not omit one that four backends
 already ship.
 
-**Mine `xenia-thor` for features. Do not copy its structure.**
+**CORRECTED 2026-08-22, from a measured census.** This file said xenia has the
+most complete shell in the fleet. **It has the smallest Tier 1 frontend**, at
+12,334 lines against melonDS-android's 78,033 and ARMSX2's 63,111.
 
-It has the most **complete** Android shell in the fleet, 12,313 lines of Java.
-It also has the **worst** structure, and the two facts are related.
+**Mine three forks, for three different things:**
+
+| Fork | Take | Why |
+| --- | --- | --- |
+| **melonDS-android** | **structure** | 78,033 lines, the only layered one: `domain`, `impl`, Hilt, a database, 37 migration files |
+| **ARMSX2** | **features** | 63,111 lines; per-game overrides, the hotkey enum, the Screen-2 `Presentation`, settings search |
+| xenia-thor | the feature **list** only | the hard-won inventory of what a shell needs |
+
+**Almost every screen below already exists somewhere in the fleet.** That
+changes Track A from design to harvest and reconcile. The exception is screen 9,
+storage, which has no prior art anywhere and was therefore built here.
+
+**Do not copy xenia's structure.** It has the **worst** structure in the fleet,
+and being smallest and worst-structured are related facts.
 
 Its shape is Activity-per-manager: `SettingsActivity`,
 `GpuDriverManagerActivity`, `GamePatchManagerActivity`,
@@ -46,6 +60,44 @@ Do not take:
 - The navigation model. Activity-per-feature is what this app exists to
   replace.
 - The code. It is Java and Activities; the shell is Kotlin and Compose.
+
+---
+
+## Prior art, per screen
+
+Surveyed 2026-08-22 and 2026-08-23. **Check here before designing a screen.**
+
+| # | Screen | Already built by |
+| --- | --- | --- |
+| 1 | Library | ARMSX2 `HomeScreen`, `CoverRegionIndex` |
+| 2 | Game detail | ARMSX2 `GameInfo`, `PlayTime` |
+| 3 | In-game overlay | ARMSX2 `EmulationMenuScreen`; **rpcsx `HomeMenu`, a page-and-component framework** |
+| 4 | Screen-2 companion | **ARMSX2 `SecondScreen`, 707 lines, names the Thor** |
+| 5 | Settings, global | ARMSX2, 13 tabs **plus a generated search index** |
+| 6 | Settings, per game | **ARMSX2 `ConfigStore`, with three fixed bugs** |
+| 7 | Cheats | **melonDS `ui/cheats`, 2,119 lines, Room + SAX + import progress** |
+| 8 | Patches | ARMSX2 `ui/patches`; Cemu's symbolic assembler; xenia's TOML |
+| **9** | **Storage** | **nobody. Built in `app/shell` instead** |
+| 10 | Drivers | ARMSX2 `DriverManagerSection`; rpcsx `GpuDriverAdvisor` |
+| 11 | Display and layout | **melonDS `ui/layouteditor`, 2,925 lines**; azahar's 8 layout modes |
+| 12 | Input and hotkeys | **ARMSX2 `SysHotkey` enum + tap-to-arm binding** |
+| 13 | Guest accounts | **six of eight forks** |
+| 14 | Guest system UI | azahar applets; rpcsx `overlay_user_list_dialog` |
+| 15 | Systems | — |
+| 16 | Diagnostics | ARMSX2 `InfoTab`, `GpuInfo`, `BiosInfo`, `DeviceTier` |
+
+### A screen this list was missing
+
+**17. Per-game fixes.** GameThor's `gamefixes/` holds 29 per-game fixes keyed by
+store ID behind six typed kinds, applied at launch.
+
+These are **host config fixes**: they change an environment variable, a launch
+argument or an INI value and touch **no guest bytes**. That makes them a fourth
+kind of patch, distinct from content patches, code patches and file mods.
+
+**A per-game driver override is this kind too**, which means screen 10 and this
+one are the same mechanism seen twice. Decide whether they are one screen before
+building either.
 
 ---
 
