@@ -44,8 +44,28 @@ FLEET = {
                  "app/build.gradle.kts", "app/src/main/cpp/rpcsx"),
 }
 
+# Host tools each fork needs, learned the hard way by attempting the builds on
+# 2026-08-22 and 2026-08-23. Nothing in any fork declares these, so an agent
+# discovers them one failed build at a time. See
+# work_log/20260823_0207_eden_build_attempt.md
+HOST_TOOLS = {
+    "melonDS": ["cargo", "rustup"],          # librashader is Rust
+    "Vita3K": ["vcpkg"],                     # boost, openssl, zlib via vcpkg
+    "eden": ["pkg-config", "glslangValidator"],  # ffmpeg; host_shaders
+}
+
+# Tools the Android NDK ships, so they are never "missing" if an NDK is present.
+# NOTE: the NDK ships glslc, NOT glslangValidator. eden requires the latter by
+# name and fails fatally without it.
+NDK_PROVIDES = {"glslc", "spirv-opt", "spirv-val", "spirv-as", "spirv-dis"}
+
+# Vendored code arrives under many names, and missing one produces a confident
+# false positive. eden downloads dependencies into .cache/cpm/, and without that
+# entry this lint reported eden as pacing frames explicitly -- the hit was the
+# Vulkan headers DECLARING VK_GOOGLE_display_timing exists, not eden using it.
 VENDOR_RE = re.compile(
-    r"3rdparty|third_party|externals|/deps/|dependencies|vendor/|\.cxx|vcpkg|/build/",
+    r"3rdparty|third_party|externals|/deps/|dependencies|vendor/|\.cxx|vcpkg"
+    r"|/build/|\.cache|/cpm/|/_deps/|/subprojects/|/extern/",
     re.I,
 )
 
@@ -281,7 +301,37 @@ def check_frame_pacing(_fork, root, _build_file, _native):
     return WARN, "no Swappy, no display timing — present mode only"
 
 
+def check_host_tools(fork, _root, _build_file, _native):
+    """Does this box have what the fork's build needs?
+
+    Every obstacle in Phase 0.3 so far has been in the periphery rather than in
+    an emulator, and the host-tool class is the worst of them because it is
+    invisible until somebody tries. A fork that needs pkg-config and
+    glslangValidator cannot be built by an agent on a machine that has neither,
+    and nothing in the fork says so.
+    """
+    needed = HOST_TOOLS.get(fork)
+    if not needed:
+        return SKIP, "no tool requirements recorded (may simply be unattempted)"
+    missing = []
+    for tool in needed:
+        found = any(
+            os.path.isfile(os.path.join(d, tool + ext))
+            for d in os.environ.get("PATH", "").split(os.pathsep) if d
+            for ext in ("", ".exe", ".bat", ".cmd")
+        )
+        if not found:
+            missing.append(tool)
+    if not missing:
+        return PASS, f"all present: {', '.join(needed)}"
+    hint = ""
+    if "glslangValidator" in missing:
+        hint = " — the NDK ships glslc, NOT glslangValidator"
+    return FAIL, f"missing from PATH: {', '.join(missing)}{hint}"
+
+
 CHECKS = [
+    ("host-tools", check_host_tools),
     ("abi", check_abi),
     ("target-features", check_target_features),
     ("namespaces", check_namespaces),
