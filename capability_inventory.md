@@ -819,7 +819,38 @@ was a narrow search.**
 
 **rpcsx is GPL-2.0-only. Take the shape, not the code.**
 
-Still not found in xenia-thor or Vita3K-Thor, with the same caveat.
+**CORRECTIONS: both of those were wrong too. Guest accounts exist in six of
+eight forks.**
+
+A broader search on 2026-08-22 found what `profile|account|gamertag|mii|nnid`
+missed:
+
+| Fork | Implementation |
+| --- | --- |
+| Cemu-thor | `src/Cafe/Account/Account.cpp`, `AccountError.h` |
+| azahar-thor | `MiiSelector.kt`, `mii_selector.cpp` |
+| eden-thor | `ProfileAdapter.kt` |
+| rpcsx-ui-android | `overlay_user_list_dialog.h` |
+| **xenia-thor** | **`kernel/xam/profile_manager.{cc,h}`, `kernel/xam/ui/create_profile_ui.cc`, `kernel/user_module.{cc,h}`** |
+| **Vita3K-Thor** | **`data/NativeUser.kt`, `data/UserRepository.kt`, `ui/screens/UserManagementScreen.kt`, `ui/viewmodel/UserManagementViewModel.kt`** |
+
+xenia's sits in `kernel/xam/`, the Xbox 360 system API layer, and includes a
+**profile creation UI**. Vita3K's is a full Android MVVM stack: a native user
+type, a repository, a Compose screen and a view model.
+
+**Six of eight forks. Guest accounts are a core feature, not an edge case**,
+and this repo recorded them as a minority one for two days.
+
+**That is the fifth and sixth time a negative result was a narrow search.**
+
+### The one negative that held
+
+**xenia has no touch overlay.** Searched twice, the second time with `touch`,
+`virtual pad`, `virtual control`, `onscreen`, `screen control`, `softkey` and
+`gamepad view`. Nothing outside documentation.
+
+**A negative is only worth recording after a second search with different
+words.** One of seven has now survived that test.
 
 ## rpcsx has a complete in-game menu framework
 
