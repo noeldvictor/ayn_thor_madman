@@ -307,6 +307,25 @@ Direct the exploration at these:
   [`work_log/20260823_0006_melonds_clean_build.md`](work_log/20260823_0006_melonds_clean_build.md).
   ARMSX2, Cemu-thor and xenia-thor remain, and are the expensive ones.
 
+  **Vita3K attempted 2026-08-23 and does not build.** Two obstacles, neither in
+  its code. Its own `AGENTS.md` recipe runs gradle from the fork root, where
+  `./build.gradle` pins AGP 8.13.0 while `./android/build.gradle` asks for
+  9.2.1 — **`android/` is a standalone Gradle project and must be built from
+  inside itself.** Then, from there, it **fails on `x86_64`** because the fork
+  ships a prebuilt FFmpeg matched to a commit SHA and there is none for that
+  ABI.
+
+  **`arm64-v8a` configured and compiled cleanly. Only the ABI the Thor cannot
+  run failed** — after consuming most of the 12 min 52 s building Boost for
+  `x64-android`. See
+  [`work_log/20260823_0027_vita3k_build_attempt.md`](work_log/20260823_0027_vita3k_build_attempt.md).
+
+  **The pattern after two forks: build cost and build failure both live in the
+  periphery** — vendored dependencies, ABI lists, plugin versions — not in the
+  emulator code a shared layer would touch. **Encouraging for the migration,
+  discouraging for estimating it**, because the obstacles are per-fork accidents
+  rather than one systematic difference.
+
 ## What this repo is
 
 This repo is the control plane for a fleet of emulator forks. The forks target
