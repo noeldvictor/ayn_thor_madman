@@ -2692,13 +2692,20 @@ Notes:
 
   | Fork | ABIs built | Usable |
   | --- | --- | --- |
-  | **ARMSX2**, **eden**, **azahar**, **rpcsx** | `arm64-v8a` | **1 of 1** |
+  | **ARMSX2**, **eden**, **azahar**, **rpcsx**, **Cemu** | `arm64-v8a` | **1 of 1** |
   | Vita3K, xenia | `arm64-v8a`, `x86_64` | 1 of 2 |
   | GameThor | `arm64-v8a`, `armeabi-v7a` | 1 of 2 |
-  | Cemu | `arm64-v8a`, `x86_64` | 1 of 2 |
   | **melonDS** | three | **1 of 3** |
 
-  **Four correct, five not. No unread entries remain.**
+  **Five correct, four not.** Cemu was recorded as a failure and is not: its
+  build file has a **disabled** `// abiFilters("arm64-v8a", "x86_64")` directly
+  above the live arm64-only line, and the lint took the first match without
+  skipping comments. **Its own `AGENTS.md` said so correctly and was
+  disbelieved because a tool disagreed.**
+
+  **The rule is not "trust the docs".** It is **when a tool and a document
+  disagree, read the actual line** — today the document was right, and twice
+  earlier today it was wrong.
 
   **Four forks already fixed this, and rpcsx measured it.** Its
   `build.gradle.kts` records that adding x86_64 put **26 MiB compressed and

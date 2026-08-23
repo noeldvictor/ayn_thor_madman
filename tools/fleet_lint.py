@@ -96,9 +96,19 @@ def check_abi(_fork, root, build_file, _native):
     if text is None:
         return SKIP, f"{build_file} not found"
     line = None
-    for m in re.finditer(r"abiFilters[^\n]*", text):
-        line = m.group(0)
-        break
+    # Skip commented-out lines. Cemu has a disabled
+    #   // abiFilters("arm64-v8a", "x86_64")
+    # sitting directly above the live arm64-only one, and taking the first
+    # match reported the fork as building an ABI it does not build -- while its
+    # own AGENTS.md said so correctly. When a tool and a document disagree,
+    # read the actual line.
+    for raw in text.splitlines():
+        stripped = raw.strip()
+        if stripped.startswith(("//", "#", "*", "/*")):
+            continue
+        if "abiFilters" in raw:
+            line = raw
+            break
     if line is None:
         return WARN, "no abiFilters — inherits every ABI the NDK supports"
 
