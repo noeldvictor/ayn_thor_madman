@@ -378,7 +378,24 @@ None of this is emulation. All of it is written more than once.
 
 ## Gaps in this catalogue
 
-- Memory mapping is **still** barely surveyed.
+- **Memory mapping: surveyed 2026-08-23.** **`fastmem` is the shared concept**,
+  named across eden (50 files), ARMSX2 (48), Vita3K (32) and melonDS (29).
+  **xenia and Cemu use neither the term nor the technique.**
+
+  Host-side mapping code — `MAP_FIXED`, `memfd_create`, `shm_open` — sits in
+  ARMSX2 `Memory.cpp`, eden `common/host_memory.cpp`, xenia
+  `base/memory_posix.cc` and melonDS `ARMJIT_Memory.cpp`.
+
+  **Shared:** reserving a large host virtual range, the `MAP_FIXED` sub-mappings,
+  the fault handler that catches a miss, and the Android constraints — address
+  space limits and whether `memfd_create` is usable on this API level.
+
+  **Not shared:** the guest address space layout, what each region means, and
+  what the slow path does when the fast path misses.
+
+  **A caution for whoever takes it.** The naive search for this pipeline returns
+  **guest kernel emulation** — rpcsx's `kernel/orbis/sys_uipc_shm.cpp` is the
+  PS4 kernel's shared memory, not the host's. Same trap as thread affinity.
 - **Audio: closed 2026-08-23.** It is now pipeline 9.
 - **Pipelines 3 to 7 are partly read now, not listed.** Read since this was
   written: the pipeline cache, the code cache, thread affinity, save
