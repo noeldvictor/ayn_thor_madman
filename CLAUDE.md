@@ -4684,6 +4684,45 @@ Ranked by value. The fleet already has most of them, in one fork each.
    record how far each reaches. This catches an upstream harvest that broke a
    console without anybody playing it.
 
+   **AND A STATIC ONE THAT NEEDS NO DEVICE, added 2026-08-23.** See
+   [`shared_layer/STATIC_TRIAGE.md`](shared_layer/STATIC_TRIAGE.md).
+
+   **Every console executable declares what it needs** — XEX, RPL, SELF, NSO,
+   NCCH and PRX all carry an **import table**. **Every emulator's HLE layer is a
+   list of what it provides.** The difference is a risk score, computable from
+   the dump with no boot.
+
+   **Measured on Vita3K: 7,377 HLE functions, 6,285 stubbed — 85%.** The
+   aggregate is not the useful number; **the distribution is**:
+
+   | Module | Functions | Stubbed |
+   | --- | --- | --- |
+   | **`SceGxm`** — graphics | 292 | **23%** |
+   | `SceLibKernel` | 371 | 61% |
+   | `SceLibc` | 1,071 | 98% |
+   | **`SceLibMonoBridge`** | 296 | **100%** |
+   | **`SceLibXml`** | 186 | **100%** |
+
+   **A title using `SceGxm` and the thread manager sits in the best-covered part
+   of the emulator. One using `SceLibMonoBridge` is asking for 296 functions of
+   which none is implemented.** That is knowable before it boots.
+
+   **And inverting the query gives a development priority list that is computed
+   rather than argued**: which stubbed function is imported by the most titles
+   in the library.
+
+   **The same split as API translation applies.** A console that shipped its
+   system software as separate modules leaves an import table — **Vita3K, eden,
+   Cemu**. One that linked everything into the game does not, so **PS2 and DS
+   are bare metal and need a signature scan instead**, which is what xenia's
+   `SetupExtern` already is.
+
+   **Calibrate before trusting it.** A `STUBBED` marker does not mean broken —
+   many stubs correctly return success, and `SceLibc` at 98% is not 98% broken
+   because most of libc is forwarded to the host. **Run the count over titles
+   known to work: the stubs they import are proven harmless, and what remains is
+   the real signal.**
+
 ### The gap
 
 Items 1 to 5 exist in the fleet **today**, spread across four forks. No fork

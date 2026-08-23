@@ -334,6 +334,7 @@ map disagree.
 | **`shared_layer/TRANSLATION.md`** | **Where CPU speed actually is: inflation, and the register mapping that causes it.** |
 | **`shared_layer/AGENT_LOOP.md`** | **Pause the guest, ask a model which button, resume. Model latency costs the guest nothing.** |
 | **`shared_layer/AUTO_PATCH.md`** | **Can an analyser write patches by itself? Yes for cheats, and the corpus shows why.** |
+| **`shared_layer/STATIC_TRIAGE.md`** | **Read a dump's import table against the backend's HLE table. A compatibility score with no boot.** |
 | `shared_layer/HOST_SIDE.md` | Every host-side service a core hands over. |
 | **`shared_layer/HOST_SIDE.md`** | **Every host-side service a core hands over, and who owns it instead.** |
 | `shared_layer/PROPAGATION.md` | Lessons one fork learned that the others have not received. |
