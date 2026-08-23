@@ -80,6 +80,60 @@ GPU model, the guest memory map and the timing.
 Every collision is a vendored dependency. **Seven cores in one binary is not the
 risk; seven dependency sets are.**
 
+## Translate the console to ARM64. Never inherit the x86 detour.
+
+**The CPU half of the guiding idea, and the reason this project can be faster
+than a desktop emulator recompiled for ARM.**
+
+**Rosetta 2's core idea is not "be a fast JIT". It is: translate a fixed guest to
+a fixed host, ahead of time, once.** We take that idea and point it at a
+different pair. **We translate a console's CPU and GPU straight to ARM64. There
+is no third machine in the middle.**
+
+**Every emulator in the fleet has one, and it is x86-64.** They are desktop
+emulators with an ARM64 backend added later:
+
+| Fork | Backends | Written first |
+| --- | --- | --- |
+| xenia | `x64`, `a64`, `arm64`, `llvm` | **`x64`** |
+| Cemu | `BackendX64`, `BackendAArch64` | **`BackendX64`** |
+| ARMSX2 | x86 emitter, `pcsx2/arm64/` | **the x86 emitter** |
+
+So the real path today is **console CPU → an x86-shaped waypoint → ARM64**, and
+that waypoint costs real instructions:
+
+| x86-shaped choice | Free on x86-64 | **Costly on ARM64** |
+| --- | --- | --- |
+| guest state in memory, loaded per operand | memory operands **fold into the instruction** | **load/store** — every access is its own instruction |
+| assume few host registers | **16** GPRs | **31** GPRs, enough to keep guest state resident |
+| compute flags eagerly | almost everything sets flags implicitly | flags are **opt-in**, so eager flags are waste |
+
+**Measured, 2026-08-23, without the device.** IR operations emitted per guest
+instruction:
+
+| Frontend | Guest → host | Median | Register model |
+| --- | --- | --- | --- |
+| **Cemu IML** | PowerPC → ARM64 | **2.0** | virtual registers |
+| **dynarmic A64** | **ARM64 → ARM64** | **4.0** | SSA over a context |
+| **xenia HIR** | PowerPC → ARM64 | **5.0** | SSA over a context |
+
+**dynarmic expands 4× translating ARM64 to ARM64** — the easiest translation
+problem there is. **Expansion tracks the register model, not the distance between
+guest and host.**
+
+**The GPU half is the same rule**, and it has an existence proof on this exact
+device: RE2 Remake runs on the Thor through GameNative and DXVK, which
+**translates the guest graphics API** rather than modelling the guest GPU.
+
+> **Two pipelines, one instruction: translate, do not emulate — and translate to
+> ARM64 directly.**
+
+See [`shared_layer/TRANSLATION.md`](shared_layer/TRANSLATION.md).
+
+**Not yet claimed:** nothing here is timed on the Thor, the measurement covers
+only the first stage of translation, and rewriting a register model is the
+deepest possible reach into a core.
+
 ## Storage and cache visibility
 
 Look at a game and see where its space went. One view, every system: game

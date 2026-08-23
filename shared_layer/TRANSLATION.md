@@ -10,6 +10,23 @@ pipelines.
 
 ---
 
+## The rule, in one line
+
+> **Translate the console's CPU and GPU straight to ARM64. Never inherit the
+> x86 detour.**
+
+**Every recompiler here is a desktop emulator with an ARM64 backend added** —
+xenia wrote `x64` before `a64`, Cemu wrote `BackendX64` before
+`BackendAArch64`, ARMSX2's `common/emitter/` is the x86 emitter. **So the real
+path is console CPU -> an x86-shaped waypoint -> ARM64.**
+
+**That waypoint has a price, and the measurement below is it.** An
+SSA-over-a-context IR is nearly free on x86-64, where **memory operands fold
+into the consuming instruction** and you only have **16** GPRs so guest state
+belongs in memory anyway. **On ARM64 every one of those accesses is its own
+instruction, and there are 31 GPRs to hold state in.** Same for flags: implicit
+on x86, **opt-in on ARM64**, so eager flag computation is pure waste.
+
 ## The chain, in four links
 
 **Each link is measured, and each cites its source.**

@@ -279,6 +279,59 @@ not welcome. See [Target hardware](#target-hardware).
 
 ### 2. Speed is the product
 
+### Translate the console to ARM64. Never inherit the x86 detour.
+
+**Stated 2026-08-23. This is the CPU half of the product's guiding idea.**
+
+**Rosetta 2's core idea is not "be a fast JIT". It is: translate a fixed guest to
+a fixed host, ahead of time, once.** Take that. **What we translate is a console
+CPU and GPU. What we translate to is ARM64. There is no third machine in the
+middle.**
+
+**But every recompiler in this fleet has one, and it is x86-64.** Verified:
+
+| Fork | Backends present | Written first |
+| --- | --- | --- |
+| xenia | `x64`, `a64`, `arm64`, `llvm` | **`x64`** |
+| Cemu | `BackendX64`, `BackendAArch64` | **`BackendX64`** |
+| ARMSX2 | `common/emitter/` (x86), `pcsx2/arm64/` | **the x86 emitter** |
+
+**These are desktop emulators with an ARM64 backend added.** The guest decoder,
+the IR and the idioms were all shaped against x86-64 first, so the real path
+today is **console CPU -> an x86-shaped waypoint -> ARM64.**
+
+**That waypoint is not free, and it is measurable.** Three x86-era choices cost
+real instructions on ARM64:
+
+| x86-shaped choice | Free on x86-64 | **Costly on ARM64** |
+| --- | --- | --- |
+| **Guest state in memory, loaded per operand** | memory operands **fold into the instruction** — `add eax, [ctx+8]` is one instruction | **load/store architecture** — every access is **its own instruction** |
+| **Assume few host registers** | **16** GPRs, so spilling is normal | **31** GPRs — nearly twice as many, enough to keep guest registers resident |
+| **Compute flags eagerly** | almost every instruction sets flags implicitly | flags are **opt-in** (`ADD` against `ADDS`), so eager flags are pure waste |
+
+**The first row is the whole measurement.** An SSA-over-a-context IR costs
+roughly nothing extra on x86 because the loads disappear into the consuming
+instruction. **On ARM64 each one is a real instruction.** That is why the two
+SSA-over-context IRs — **xenia's HIR and dynarmic's**, both from x86-first
+projects — expand **4x to 5x**, while **Cemu's virtual-register IML expands 2x.**
+
+**And it is why dynarmic still expands 4x translating ARM64 to ARM64**, where a
+fixed mapping would be nearly the identity function.
+
+> **The rule: translate the console's CPU and GPU straight to ARM64. Do not
+> carry a design that was correct for a 16-register machine with folded memory
+> operands onto a 31-register load/store machine.**
+
+**The GPU half is the same rule and this repo already had it** — translate the
+guest graphics API rather than model the guest GPU, proven by RE2 Remake running
+on this Thor through GameNative and DXVK. **Two pipelines, one instruction:
+translate, do not emulate, and translate to ARM64 directly.**
+
+**What this does not license.** Rewriting a register model is the deepest reach
+into a core, and [`shared_layer/PATTERNS.md`](shared_layer/PATTERNS.md) says do
+not attempt code translation before pipelines 2 and 3 are proven. **That still
+holds.** Nothing here is timed on the Thor. The measurement is stage A only.
+
 **The north star for CPU speed is now specific, 2026-08-23:
 [`shared_layer/TRANSLATION.md`](shared_layer/TRANSLATION.md).**
 
