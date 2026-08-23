@@ -37,6 +37,8 @@ FLEET = {
                  "android/app/build.gradle", "vita3k"),
     "xenia":    ("xenia-thor-workspace/xenia-thor",
                  "android/android_studio_project/app/build.gradle", "src/xenia"),
+    # NOTE: xenia's Android project is a thin wrapper over a premake-built
+    # native library, so its compiler flags live in premake5.lua, not here.
     "melonDS":  ("melonds_HD/melonDS-android",
                  "app/build.gradle.kts", "melonDS-android-lib/src"),
     "GameThor": ("gamethor", "app/build.gradle.kts", None),
@@ -360,11 +362,51 @@ def check_sdk_levels(_fork, root, build_file, _native):
     if text is None:
         return SKIP, f"{build_file} not found"
 
+    # Forks write these four different ways, and a reader that knows only one
+    # of them reports SKIP on a fork that is perfectly compliant:
+    #   compileSdk = 37                     Kotlin DSL
+    #   compileSdkVersion 33                Groovy
+    #   compileSdkVersion = "android-37"    string form (azahar, eden)
+    #   compileSdk = AppConfig.compileSdkVersion   indirection (melonDS)
+    def level_in(blob, name):
+        for pat in (name + r'\w*\s*=?\s*\(?\s*"?(?:android-)?(\d{2})',):
+            m = re.search(pat, blob)
+            if m:
+                return int(m.group(1))
+        return None
+
     def level(name):
-        m = re.search(name + r"\s*=?\s*\(?\s*(\d{2})", text)
-        return int(m.group(1)) if m else None
+        v = level_in(text, name)
+        if v is not None:
+            return v
+        # A gradle property with a default: ARMSX2 writes
+        #   providers.gradleProperty("armsx2.minSdk").orElse("26")
+        # so the compliant value is the default, and the override is a feature
+        # the fork deliberately keeps.
+        m = re.search(r'gradleProperty\("[^"]*' + name + r'"\)\.orElse\("(\d{2})"\)',
+                      text, re.I)
+        if m:
+            return int(m.group(1))
+        # Indirection: melonDS keeps the values in buildSrc/AppConfig.kt.
+        if re.search(name + r"\w*\s*=\s*[A-Za-z_][\w.]*", text):
+            for dirpath, _dirs, files in os.walk(os.path.join(root, "buildSrc")):
+                for fn in files:
+                    if fn.endswith((".kt", ".kts")):
+                        blob = _read(os.path.join(dirpath, fn)) or ""
+                        v = level_in(blob, name)
+                        if v is not None:
+                            return v
+        return None
 
     mn, tg, cp = level("minSdk"), level("targetSdk"), level("compileSdk")
+    # melonDS defines targetSdkVersion = compileSdkVersion, so a missing
+    # targetSdk with a present compileSdk means they are the same.
+    if tg is None and cp is not None and re.search(
+            r"targetSdk\w*\s*=\s*compileSdk", (text + "".join(
+                _read(os.path.join(dp, f)) or ""
+                for dp, _d, fs in os.walk(os.path.join(root, "buildSrc"))
+                for f in fs if f.endswith((".kt", ".kts"))))):
+        tg = cp
     if mn is None and tg is None and cp is None:
         return SKIP, "no SDK levels found in this file"
 

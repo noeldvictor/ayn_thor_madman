@@ -106,7 +106,28 @@ neither today, so this measures the compiler's own use of them and little else.
 **Expect `FLAT`.** Record it as such; a flat result stops the question being
 re-argued.
 
-## 5. Thread placement
+## 5. Verify the targetSdk raise — a build passing does not test it
+
+**Every fork moved to `targetSdk = 37` on 2026-08-23**, and `targetSdk` is the
+**behavioural** level: each step opts the app into new Android restrictions.
+**A successful build verifies none of that.**
+
+**azahar and ARMSX2 were already on 37 and azahar recorded what it cost:** a
+black emulation root, the named `coordinator_layout`, and one null-safe
+display-cutout margin listener attached to **both** the coordinator and the
+in-game menu — plus not restoring the deleted `values-v35` opt-out theme.
+
+**Prediction: the forks that just jumped will show edge-to-edge and
+display-cutout problems, not build failures.** Watch for content drawn under the
+status bar or the cutout, and for a crash casting a null `layoutParams`.
+
+**Worst on this device**, because the Thor has two panels with different
+geometry and Screen-2 carries `FLAG_PRESENTATION`.
+
+**Check per fork:** launch, rotate, enter and leave the in-game menu, and move
+the app between the two displays.
+
+## 6. Thread placement
 
 Two forks set no host affinity at all: **melonDS and Vita3K**. melonDS tunes its
 codegen for the X3 and never asks for the X3.
@@ -120,7 +141,7 @@ while the 3.2 GHz X3 idled. **This is the most likely win in the queue.**
 Watch for the opposite on a fork that already places threads — a second opinion
 about placement is worse than one.
 
-## 6. Frame pacing
+## 7. Frame pacing
 
 **No fork uses Swappy or `VK_GOOGLE_display_timing`.** Every one selects a
 present mode and stops.
@@ -134,7 +155,7 @@ judder, and a stable 33.3 looks better than a faster average.
 **So average fps is the wrong metric here.** Record 1% low and frame-time
 standard deviation, or the run will read as `FLAT` while being a win.
 
-## 7. Render pass attachment ops
+## 8. Render pass attachment ops
 
 Four forks give four answers, and the best is not in the newest fork. Vita3K
 tracks transient attachments and uses `DontCare` both ways; eden loads and
@@ -147,7 +168,7 @@ Cemu already does.
 nothing in frame time**, because the win is memory traffic and thermal headroom
 rather than throughput. **Measure watts.**
 
-## 8. Anime4K's two dedicated passes
+## 9. Anime4K's two dedicated passes
 
 azahar gives Anime4K two full-screen render passes, `anime4k_xy_renderpass` and
 `anime4k_luma_renderpass`. **On a tiler each is a load and a store of the whole
@@ -157,7 +178,7 @@ target unless carefully arranged, and nobody has priced it.**
 which would make the flagship feature more expensive on the larger panel than
 anybody has assumed.
 
-## 9. Native game reference capture
+## 10. Native game reference capture
 
 Capture a well-optimised native game with Perfetto and Snapdragon Profiler:
 pass count, resolves, GMEM residency, vertex against fragment split, bandwidth,
