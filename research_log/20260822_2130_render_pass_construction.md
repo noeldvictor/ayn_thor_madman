@@ -209,3 +209,95 @@ to `DONT_CARE`.**
 3. **Read Cemu's dynamic rendering path.** It is the only one, and dynamic
    rendering changes what a shared graph would even look like.
 4. Read Vita3K and azahar load and store ops, still unknown.
+
+## All four read. Vita3K is the best, eden the worst.
+
+Completed 2026-08-22. Ranked by how tiler-correct the attachment operations
+are.
+
+### 1. Vita3K — the only one that tracks transient attachments
+
+`vita3k/renderer/src/vulkan/pipeline_cache.cpp`:
+
+```cpp
+.loadOp  = is_color_transient ? eDontCare : eLoad,
+.storeOp = is_color_transient ? eDontCare : eStore,
+...
+load_op  = force_load  ? eLoad  : eClear;
+store_op = force_store ? eStore : eDontCare;
+```
+
+**A colour attachment that does not need to persist gets `DontCare` on both
+load and store.** Depth defaults to `eClear` and `eDontCare` unless something
+forces otherwise.
+
+This is the correct tiler behaviour and **no other fork does it.** It is also
+the design that pairs with `LAZILY_ALLOCATED` memory, since a transient
+attachment that never leaves tile memory needs no backing allocation at all.
+
+### 2. Cemu — right on depth, wrong on layout
+
+Depth and stencil default to `DONT_CARE` and are promoted only when needed.
+Colour is always `LOAD` and `STORE`.
+
+Its dynamic rendering path carries a separate cost:
+
+```cpp
+m_vkColorAttachments[i].imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+m_vkColorAttachments[i].resolveMode = VK_RESOLVE_MODE_NONE;
+```
+
+**`VK_IMAGE_LAYOUT_GENERAL` works for everything and is optimal for nothing.**
+On Adreno it can disable framebuffer compression, where
+`COLOR_ATTACHMENT_OPTIMAL` would not. `RESOLVE_MODE_NONE` means no on-chip MSAA
+resolve either.
+
+So Cemu is ahead on depth and possibly behind on layout. **Both need
+measuring; neither is obvious from reading alone.**
+
+### 3. azahar — clears when clearing, always stores
+
+`src/video_core/renderer_vulkan/vk_render_manager.cpp`:
+
+```cpp
+const vk::AttachmentLoadOp load_op = is_clear ? eClear : eLoad;
+.loadOp = load_op, .storeOp = eStore,                    // colour
+.stencilLoadOp = eDontCare, .stencilStoreOp = eDontCare, // colour's stencil
+...
+.loadOp = load_op, .storeOp = eStore,                    // depth
+.stencilLoadOp = load_op, .stencilStoreOp = eStore,      // depth's stencil
+.pInputAttachments = nullptr,
+```
+
+Using `eClear` when the pass clears is correct and eden does not do it.
+Everything is stored unconditionally.
+
+### 4. eden — unconditional load and store on everything
+
+Already recorded above. `LOAD_OP_LOAD` and `STORE_OP_STORE` as constants, one
+subpass, no input attachments, no resolve attachments.
+
+## The propagation list, in order of expected value
+
+Every item is already written somewhere in the fleet. None needs invention.
+
+| Take | From | Give to | Why |
+| --- | --- | --- | --- |
+| Transient colour attachments, `DontCare` both ways | Vita3K | everyone | The only correct answer, and it pairs with `LAZILY_ALLOCATED` memory |
+| Depth and stencil `DontCare` by default | Cemu | eden, azahar | Depth is very often stored when nothing reads it |
+| `eClear` instead of `eLoad` when the pass clears | azahar | eden | A clear is a tile operation; a load is an external read |
+| `COLOR_ATTACHMENT_OPTIMAL` instead of `GENERAL` | — | Cemu | `GENERAL` can disable framebuffer compression |
+
+**Nobody merges passes. Nobody uses input attachments. Nobody resolves MSAA
+on-chip.** Those three remain genuinely unbuilt, and they are what a shared
+render graph would add.
+
+## What this settles for the architecture
+
+1. **The shared layer's attachment policy is already designed**, by Vita3K. Do
+   not invent one. Take `is_color_transient` and generalise it.
+2. **A shared render graph adds three things nobody has**: pass merging, input
+   attachments, on-chip resolve. That is a clean scope.
+3. **The four-way spread is itself the argument for the shared layer.** Four
+   forks, four different answers to the same question, and the best answer is
+   not the newest fork or the most active one.

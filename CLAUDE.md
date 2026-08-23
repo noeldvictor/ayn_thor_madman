@@ -723,15 +723,42 @@ load and store when the case needs it. **eden loads and stores depth
 unconditionally.** That is the exact optimisation, already written, in one
 fork, unknown to the others.
 
-| Fork | Colour ops | Depth ops | Subpasses | Dynamic rendering |
-| --- | --- | --- | --- | --- |
-| eden-thor | LOAD / STORE | LOAD / STORE | 1, fixed | no |
-| Cemu-thor | LOAD / STORE | **DONT_CARE default** | — | **yes** |
-| Vita3K-Thor | not read | not read | not read | no |
-| azahar-thor | not read | not read | plus 2 Anime4K passes | no |
+All four read. Ranked by how tiler-correct the attachment operations are:
 
-**Nobody merges passes. Nobody uses input attachments. Only Cemu defaults depth
-to `DONT_CARE`.**
+| Rank | Fork | Colour ops | Depth ops | Notable |
+| --- | --- | --- | --- | --- |
+| 1 | **Vita3K** | **transient-aware, `DontCare` both ways** | `eClear` / `eDontCare` unless forced | the only correct answer |
+| 2 | Cemu | LOAD / STORE | **`DONT_CARE` default** | `GENERAL` layout in its dynamic-rendering path |
+| 3 | azahar | `eClear` when clearing, always `eStore` | always stores | 2 dedicated Anime4K passes |
+| 4 | eden | LOAD / STORE, unconditional | LOAD / STORE, unconditional | one subpass, fixed |
+
+**Vita3K tracks transient attachments** and nothing else does:
+
+```cpp
+.loadOp  = is_color_transient ? eDontCare : eLoad,
+.storeOp = is_color_transient ? eDontCare : eStore,
+```
+
+That is the design that pairs with `LAZILY_ALLOCATED` memory, since a transient
+attachment that never leaves tile memory needs no backing allocation.
+
+**Nobody merges passes. Nobody uses input attachments. Nobody resolves MSAA
+on-chip.**
+
+### The propagation list
+
+Every item is already written somewhere in the fleet. None needs invention.
+
+| Take | From | Give to |
+| --- | --- | --- |
+| Transient colour attachments | Vita3K | everyone |
+| Depth and stencil `DontCare` by default | Cemu | eden, azahar |
+| `eClear` instead of `eLoad` when the pass clears | azahar | eden |
+| `COLOR_ATTACHMENT_OPTIMAL` instead of `GENERAL` | — | Cemu |
+
+**The four-way spread is itself the argument for the shared layer.** Four forks
+gave four answers to one question, and the best answer is not in the newest or
+most active fork.
 
 Two more findings:
 
