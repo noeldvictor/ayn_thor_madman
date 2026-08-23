@@ -4077,9 +4077,33 @@ These are not settled. Do not assume an answer. Ask, or mark the assumption.
 3. **The build location.** Options: local Windows or WSL, GitHub Actions, or a
    split. This decision sets how much an agent can do unattended.
 
-   **First real number, 2026-08-23: melonDS-android is 15 min 27 s clean,
-   locally.** That is comfortably inside an unattended loop, so the assumption
-   that local builds are too slow to automate **is wrong for the cheap forks**.
+   **Four forks measured 2026-08-23, and the assumption that local builds are
+   too slow to automate is wrong.**
+
+   | Fork | Time | ABIs | Dependencies built from source |
+   | --- | --- | --- | --- |
+   | **Cemu** | **~2 min 42 s** native | 1 | **none — vcpkg prebuilt** |
+   | ARMSX2 | 11 min 25 s | 1 | librashader (Rust), shaderc |
+   | azahar | 14 min 33 s | 1 | **2,206 targets** |
+   | melonDS | 15 min 27 s | **3** | librashader (Rust) |
+
+   **Emulator size does not predict build time. Source-built dependencies do.**
+   Cemu has the second-largest native codebase and the fastest build, because
+   **it compiles none of its dependencies** — vcpkg supplies them prebuilt, so
+   only its own 498 objects are built. ARMSX2 has the largest codebase and is
+   second fastest.
+
+   **This refines the ABI finding rather than contradicting it.** rpcsx's
+   "doubled the native compile" holds, but **the native compile is not the whole
+   build**, and for three of these four it is not the dominant part. melonDS
+   builds three ABIs and is slowest, yet its log is dominated by **Rust**.
+
+   **So the bigger lever is prebuilding dependencies, not cutting ABIs** — and
+   that is the dependency-unification argument arriving from a second direction.
+   The packed binary cannot **link** five copies of `glslang`; the fleet also
+   **compiles** it four times at every clean build.
+
+   See [`work_log/20260823_0243_cemu_build_and_what_drives_build_time.md`](work_log/20260823_0243_cemu_build_and_what_drives_build_time.md).
 
    **And the shape of the cost is the useful part.** The time is dominated by
    compiling `librashader`'s Rust dependency graph, not the emulator's C++, so
