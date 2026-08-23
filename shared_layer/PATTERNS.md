@@ -243,6 +243,26 @@ The contract takes a declared class list per backend. It does not impose one.
 
 ---
 
+### The API boundary is a per-backend property, and it decides what is expressible
+
+**Read 2026-08-23.** Whether the guest's graphics work reaches the emulator as a
+**high-level API call with logical resource identity**, or as **hardware command
+packets that have erased it**, is fixed by the console.
+
+| Backend | Arrives as | Boundary |
+| --- | --- | --- |
+| **GameThor** | `d3d9.dll`, replaced by DXVK | **API, by replacement** |
+| **Vita3K** | **`SceGxm`, identity intact** | **API** |
+| **Cemu** | GX2, **lowered to PM4 inside the draw** | **available, declined** |
+| xenia | PM4 only; the XDK is inside the XEX | **none** |
+| ARMSX2 | GS through GIF | **none** |
+| melonDS | registers | **none** |
+| azahar | GSP command lists | **none** |
+
+**"Translate the API rather than emulate the GPU" is only expressible in the top
+rows.** See
+[`../research_log/20260823_1955_api_translation_boundary.md`](../research_log/20260823_1955_api_translation_boundary.md).
+
 ## 3. Shader translation
 
 Every fork translates guest shaders and caches the result. Two forks share a

@@ -4692,6 +4692,51 @@ The larger speed lever, on xenia's evidence, is architectural: translate the
 guest API rather than emulate the guest GPU. `xbox360-d3d-hle-recomp` records
 that direction, dated 2026-07-02.
 
+**QUALIFIED 2026-08-23, and the qualification is large.** xenia wrote a 200-line
+verdict on this — `20260711-rexglue-gpu-dxvk-for-360-verdict-56sol.md` — and
+**this repo had not read it.**
+
+**API translation requires an API boundary, and that is a property of the
+console, not of the emulator.** DXVK works because it **replaces `d3d9.dll`**.
+On the 360 the XDK's D3D9 runtime is **linked into the XEX and becomes ordinary
+PPC game code**, so by the time xenia sees anything, `SetRenderTarget`, `Resolve`
+and `DrawIndexedPrimitive` **have already been lowered into PM4**, which has
+**discarded logical resource identity** — no surface handles, only EDRAM address,
+pitch, format and MSAA state, with height not even directly specified.
+
+> **BD's D3D9 usage is translatable, but only after reconstructing the
+> high-level resource/state API that PM4 erased.**
+
+**And "AOT-recompile the GPU draws" is a category error**, because PM4 buffers
+are runtime data.
+
+**The fleet splits three ways, verified by reading each fork:**
+
+| Backend | Guest graphics arrives as | Boundary |
+| --- | --- | --- |
+| **GameThor** | `d3d9.dll`, **replaced** by DXVK | **API, by replacement** |
+| **Vita3K** | **`SceGxm`, HLE'd with identity intact** — 5,710 lines, `SceGxmContext` carries the bound programs | **API** |
+| **Cemu** | GX2 intercepted in 35 files, **then lowered to PM4 one line into the draw** | **available, declined** |
+| **xenia, ARMSX2, melonDS, azahar** | PM4, GIF packets, registers, GSP lists | **none** |
+
+**So the fork that named this direction is one of the four that cannot take
+it**, and **Vita3K is already an API translator** whether or not it says so.
+**Cemu is the only place where the question is open** — it has the boundary and
+gives it up, which is defensible because GX2 is a thin wrapper over Latte and a
+Wii U game can bypass it.
+
+**And the existence proof proves less than this document has been claiming.**
+xenia's own caution:
+
+> RE2 proves the Thor can run a much larger modern renderer. **It does not prove
+> whether BD's current 100 ms is GPU execution, GPU starvation, or guest CPU
+> work.**
+
+**If unrelated guest CPU work already exceeds 33.3 ms, a perfect renderer
+delivers nothing.**
+
+See [`research_log/20260823_1955_api_translation_boundary.md`](research_log/20260823_1955_api_translation_boundary.md).
+
 ### Agentic acceleration
 
 Run development autonomously wherever the loop closes. The fleet suits this.
