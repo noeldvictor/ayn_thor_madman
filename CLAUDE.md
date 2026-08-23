@@ -279,6 +279,43 @@ not welcome. See [Target hardware](#target-hardware).
 
 ### 2. Speed is the product
 
+**The north star for CPU speed is now specific, 2026-08-23:
+[`shared_layer/TRANSLATION.md`](shared_layer/TRANSLATION.md).**
+
+**Speed in a recompiler is instruction inflation, and inflation is the register
+mapping.** Four independent lines converge:
+
+- **Inflation predicts slowdown by regression**, state-of-the-art DBTs sit at
+  **1.46 or worse**, and attacking it measured **2.99x to 7.12x** on QEMU
+  (ACM TACO, March 2024).
+- **It is not caused by having an IR.** LATX keeps QEMU's IR and is fast; Box64
+  without an IR and FEX with one land in the same band. **QEMU is slow because
+  it optimises little.**
+- **It is caused by the register mapping.** The literature: emulating guest
+  registers in memory "generates excessive load and store operations, and thus
+  drastically degrades the performance", worst **when the guest register file is
+  larger than the host's** — the Xenon's **128 VMX onto 32 NEON**.
+- **The fleet's own numbers agree.** Measured statically: **Cemu IML 2.0**,
+  **dynarmic A64 4.0**, **xenia HIR 5.0** IR ops per guest instruction.
+  **dynarmic expands 4x translating ARM64 to ARM64** — the easiest case there
+  is. **Expansion tracks the register model, not guest-host distance.**
+
+**And residency is not allocation.** Getting guest registers into host registers
+**at all** is the large lever — xenia measured its guest thread **memory-bound,
+~half of a title's field CPU**. Choosing *which* register is worth **5.76% to
+7.79%** (LCCRA, EuroSys 2026). **Residency first; allocation quality probably
+never.**
+
+**This is where one device, one host ISA pays most.** A portable translator
+cannot assume a register count, an ABI or which registers are reserved, so it
+keeps guest state in memory and hopes a general allocator recovers it. **Here
+both register files are constants** — 31 GPRs and 32 vector registers on the
+host, and a known file per guest — **so the mapping is a constant too, decidable
+once per backend and never re-derived at run time.** That is the DELETE
+operation applied to the hottest path in the emulator, with measured evidence
+behind it for the first time.
+
+
 The Thor is a handheld. Frame time and thermal headroom decide whether a game
 is playable. Speed is not a feature to add later; it is the reason for the
 work.

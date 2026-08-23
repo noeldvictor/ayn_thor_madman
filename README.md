@@ -250,6 +250,7 @@ map disagree.
 | `console_lab/` | Experiments and speedups for one console only. |
 | `shared_layer/UNIFICATION.md` | **What unification actually means here. Unify what is forced; harvest what is chosen.** |
 | `shared_layer/PATTERNS.md` | The nine pipelines every emulator has. |
+| **`shared_layer/TRANSLATION.md`** | **Where CPU speed actually is: inflation, and the register mapping that causes it.** |
 | **`shared_layer/HOST_SIDE.md`** | **Every host-side service a core hands over, and who owns it instead.** |
 | `shared_layer/PROPAGATION.md` | Lessons one fork learned that the others have not received. |
 | `shared_layer/THOR_RENDER.md` | The render architecture for this device. |
