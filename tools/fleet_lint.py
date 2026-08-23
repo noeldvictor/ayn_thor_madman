@@ -129,12 +129,16 @@ def _arch_flags(root):
             if not BUILD_FILE_RE.search(name):
                 continue
             text = _read(os.path.join(dirpath, name)) or ""
+            # Strip trailing punctuation: these flags appear in prose comments
+            # as well as in build lines, and "cortex-a715." is not a value.
             for m in re.finditer(r"-march=([\w.+-]+)", text):
-                if not X86_FLAG_RE.search(m.group(1)):
-                    march.append(m.group(1))
+                v = m.group(1).rstrip(".-")
+                if v and not X86_FLAG_RE.search(v):
+                    march.append(v)
             for m in re.finditer(r"-mtune=([\w.+-]+)", text):
-                if not X86_FLAG_RE.search(m.group(1)):
-                    mtune.append(m.group(1))
+                v = m.group(1).rstrip(".-")
+                if v and not X86_FLAG_RE.search(v):
+                    mtune.append(v)
     return march, mtune
 
 
@@ -150,12 +154,17 @@ def check_target_features(_fork, root, _build_file, _native):
         return FAIL, "targets armv9-a — this device exposes no SVE"
     feats = [a for a in march if "dotprod" in a or "sha3" in a]
     tuned = [t for t in mtune if t.startswith("cortex") or t.startswith("neoverse")]
+    # Report every distinct value. A fork can set different flags in different
+    # filter blocks -- xenia names both cortex-a710 and cortex-a715 -- and
+    # printing only the first one is a quiet lie about what it does.
+    feats_s = ", ".join(sorted(set(feats)))
+    tuned_s = ", ".join(sorted(set(tuned)))
     if feats and tuned:
-        return PASS, f"-march={feats[0]} -mtune={tuned[0]}"
+        return PASS, f"-march={feats_s} -mtune={tuned_s}"
     if feats:
-        return WARN, f"-march={feats[0]} but no -mtune"
+        return WARN, f"-march={feats_s} but no -mtune"
     if tuned:
-        return WARN, f"-mtune={tuned[0]} but baseline -march"
+        return WARN, f"-mtune={tuned_s} but baseline -march"
     return WARN, "baseline: names none of the device's features"
 
 
