@@ -102,3 +102,107 @@ object BlockCache {
  * memory has a second consequence.
  */
 enum class WriteTarget { DATA, CODE }
+
+// ---------------------------------------------------------------------------
+// Persisting a block cache, taken from ARMSX2. See
+// research_log/20260823_2205_translate_once_ship_it.md.
+// ---------------------------------------------------------------------------
+
+/**
+ * The options snapshot a persisted artifact is keyed on.
+ *
+ * **Taken from ARMSX2's `mVUbuildOptionsSentinel`**, which is a 64-byte
+ * fixed-layout snapshot of every option that changes emitted code: eleven
+ * codegen switches, eight clamp modes, eight speedhacks, three FPCR masks, and
+ * the recording flag itself — because recording changes the emitted forms.
+ *
+ * **Three rules travel with it and all three are here.**
+ *
+ * 1. **The layout is fixed and its size is asserted**, so drift is caught at the
+ *    point of change rather than by a cache that silently mismatches.
+ * 2. **A reserved tail**, so adding an option does not shift the fields below it
+ *    and invalidate every existing artifact.
+ * 3. **A reserved byte is reclaimed only where zero means "feature off"**, so the
+ *    off-state sentinel stays bit-identical and **enabling a feature does not
+ *    evict the cache of every user who never turns it on.**
+ *
+ * **Rule 3 is the one this project did not have.** It is the difference between
+ * shipping a feature and shipping a feature that costs every user a cold cache.
+ */
+data class OptionsSentinel(
+    /** Bumped when the layout itself changes. A mismatch evicts, it never merges. */
+    val abiVersion: Int,
+    /** Which independent engine this belongs to. Guards against sharing across units. */
+    val unitIndex: Int,
+    /** Every option that changes emitted code, in a fixed order. */
+    val options: List<Byte>,
+) {
+    init {
+        require(options.size == SLOTS) {
+            "sentinel layout drifted: expected $SLOTS slots, got ${options.size}. " +
+                "Bump abiVersion in the same change."
+        }
+    }
+
+    /** The bytes an artifact is keyed on. Order is load-bearing. */
+    fun bytes(): List<Byte> =
+        listOf(abiVersion.toByte(), unitIndex.toByte()) + options
+
+    companion object {
+        /**
+         * The fixed slot count.
+         *
+         * **ARMSX2 asserts `sizeof(Snapshot) == 64` for the same reason.** A
+         * slot that is not yet used holds zero, which is what makes rule 3 work.
+         */
+        const val SLOTS = 62
+
+        /**
+         * Build a sentinel from the options that are set, leaving the rest zero.
+         *
+         * **A slot absent from [set] is zero, and zero must mean "off, old
+         * behaviour".** An option whose off state is not emission-identical to
+         * not having the option at all cannot use a reserved slot; it needs an
+         * [abiVersion] bump instead.
+         */
+        fun of(abiVersion: Int, unitIndex: Int, set: Map<Int, Byte>): OptionsSentinel {
+            require(set.keys.all { it in 0 until SLOTS }) { "slot out of range" }
+            val slots = MutableList<Byte>(SLOTS) { 0 }
+            set.forEach { (slot, value) -> slots[slot] = value }
+            return OptionsSentinel(abiVersion, unitIndex, slots)
+        }
+    }
+}
+
+/**
+ * The key a **persisted** block is stored under.
+ *
+ * **[BlockCacheKey] cannot be persisted, and that is the point of this type.**
+ * It keys on `guestAddress`, which is where the block happened to live in this
+ * process. A cache that outlives the process must key on **what the block is**,
+ * not where it was — ARMSX2 keys its `.vuprog` payloads on a content hash for
+ * exactly this reason, and eden keys its NCE patches on the 32-byte NSO build
+ * ID.
+ *
+ * **The address does not disappear; it moves.** It becomes a relocation input
+ * rather than part of the identity, which is what ARMSX2's placement-relative
+ * fixup table exists to apply.
+ */
+data class PersistentBlockKey(
+    /** Hash of the guest bytes this block was compiled from. */
+    val contentHash: String,
+    /** Every option that changed the emitted code. */
+    val sentinel: OptionsSentinel,
+) {
+    /**
+     * The on-disk path for this artifact, sharded by the first byte of the hash.
+     *
+     * **Sharding is not decoration.** ARMSX2 writes `<root>/<hh>/<hash>.vuprog`
+     * because a flat directory of tens of thousands of files is slow to open on
+     * a phone filesystem.
+     */
+    fun path(root: String, extension: String): String {
+        require(contentHash.length >= 2) { "a content hash needs at least one shard byte" }
+        return "$root/${contentHash.take(2)}/$contentHash$extension"
+    }
+}

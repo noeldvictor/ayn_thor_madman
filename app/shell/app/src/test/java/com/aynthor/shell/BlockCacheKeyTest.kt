@@ -5,6 +5,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Test
 
 /**
@@ -155,5 +156,122 @@ class BlockCacheKeyTest {
         // has to say which it is.
         assertEquals(2, WriteTarget.entries.size)
         assertTrue(WriteTarget.CODE != WriteTarget.DATA)
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Persisting a block cache. Every test below encodes a rule ARMSX2 already
+// pays for in production. See research_log/20260823_2205_translate_once_ship_it.md.
+// ---------------------------------------------------------------------------
+
+class OptionsSentinelTest {
+
+    private fun sentinel(abi: Int = 1, unit: Int = 0, set: Map<Int, Byte> = emptyMap()) =
+        OptionsSentinel.of(abi, unit, set)
+
+    @Test
+    fun `enabling a new default-off option does not change the sentinel`() {
+        // THE RULE THIS PROJECT DID NOT HAVE. ARMSX2: reclaim a reserved byte
+        // only where zero means "feature off / old behaviour", so the off-state
+        // sentinel stays bit-identical and shipping a feature does not evict the
+        // cache of every user who never turns it on.
+        val before = sentinel()
+        val afterFeatureExistsButIsOff = sentinel(set = mapOf(40 to 0))
+        assertEquals(before.bytes(), afterFeatureExistsButIsOff.bytes())
+    }
+
+    @Test
+    fun `turning that option ON does change the sentinel`() {
+        // The other half. A cache compiled with the feature on must never be
+        // matched against a run with it off.
+        val off = sentinel(set = mapOf(40 to 0))
+        val on = sentinel(set = mapOf(40 to 1))
+        assertNotEquals(off.bytes(), on.bytes())
+    }
+
+    @Test
+    fun `layout drift is refused, not silently accepted`() {
+        // ARMSX2 uses static_assert(sizeof(Snapshot) == 64). The failure must
+        // land where the layout changed, not on a user whose cache mismatches.
+        try {
+            OptionsSentinel(1, 0, List(OptionsSentinel.SLOTS - 1) { 0 })
+            fail("a short layout must be refused")
+        } catch (e: IllegalArgumentException) {
+            assertTrue(e.message!!.contains("drifted"))
+        }
+    }
+
+    @Test
+    fun `two units never share a sentinel`() {
+        // ARMSX2 puts vuIndex in the snapshot to guard against accidentally
+        // sharing between VU0 and VU1. A guest with several engines needs this.
+        assertNotEquals(sentinel(unit = 0).bytes(), sentinel(unit = 1).bytes())
+    }
+
+    @Test
+    fun `an abi bump invalidates everything`() {
+        assertNotEquals(sentinel(abi = 1).bytes(), sentinel(abi = 2).bytes())
+    }
+
+    @Test
+    fun `an out of range slot is refused`() {
+        try {
+            OptionsSentinel.of(1, 0, mapOf(OptionsSentinel.SLOTS to 1))
+            fail("slot beyond the layout must be refused")
+        } catch (e: IllegalArgumentException) {
+            assertTrue(e.message!!.contains("out of range"))
+        }
+    }
+}
+
+class PersistentBlockKeyTest {
+
+    private val sentinel = OptionsSentinel.of(1, 0, emptyMap())
+
+    @Test
+    fun `a persistent key carries no runtime address`() {
+        // The whole reason this type exists beside BlockCacheKey. A guest
+        // address is where the block happened to live in one process; it cannot
+        // be part of an identity that outlives that process. ARMSX2 keys
+        // .vuprog payloads on a content hash and relocates on load.
+        val fields = PersistentBlockKey::class.java.declaredFields.map { it.name }
+        assertFalse(fields.any { it.contains("address", ignoreCase = true) })
+        assertTrue(fields.contains("contentHash"))
+    }
+
+    @Test
+    fun `the same guest bytes under the same options give the same key`() {
+        // Content addressing is what makes one person's artifact usable by
+        // another. Cemu's ShaderCacheMerger relies on exactly this property.
+        val a = PersistentBlockKey("deadbeefcafe", sentinel)
+        val b = PersistentBlockKey("deadbeefcafe", sentinel)
+        assertEquals(a, b)
+        assertEquals(a.path("/r", ".blk"), b.path("/r", ".blk"))
+    }
+
+    @Test
+    fun `different options give a different key for the same guest bytes`() {
+        val a = PersistentBlockKey("deadbeefcafe", sentinel)
+        val b = PersistentBlockKey("deadbeefcafe", OptionsSentinel.of(1, 0, mapOf(3 to 1)))
+        assertNotEquals(a, b)
+    }
+
+    @Test
+    fun `payloads are sharded by the first hash byte`() {
+        // Not decoration. A flat directory of tens of thousands of files is slow
+        // to open on a phone filesystem, which is why ARMSX2 writes
+        // <root>/<hh>/<hash>.vuprog.
+        val key = PersistentBlockKey("ab12cd34", sentinel)
+        assertEquals("/root/ab/ab12cd34.vuprog", key.path("/root", ".vuprog"))
+    }
+
+    @Test
+    fun `a hash too short to shard is refused`() {
+        try {
+            PersistentBlockKey("a", sentinel).path("/root", ".vuprog")
+            fail("a one-character hash cannot be sharded")
+        } catch (e: IllegalArgumentException) {
+            assertTrue(e.message!!.contains("shard"))
+        }
     }
 }
