@@ -966,6 +966,7 @@ Packing together is not free. Accept these:
 | Only melonDS ships haptics | **seven of eight do; xenia is the outlier** |
 | No fork plans render passes | **xenia plans them, and patches the pass begin retroactively** |
 | Nobody resolves MSAA on-chip | **xenia does, with the multisample store elided** |
+| Nobody merges passes or uses input attachments | **xenia merges; xenia, ARMSX2 and rpcsx all use input attachments** |
 | No fork persists translated guest code | **ARMSX2 has a persisted VU JIT, 2,576 lines, with three test files** |
 | Frame pacing has no incumbent | **Cemu has four parts of one, including host-driven vsync and dual-screen present serialisation** |
 | Eight Adreno features have zero users | **six of the eight were wrong; the device-layer file is not the whole fork** |
@@ -1659,9 +1660,36 @@ All four read. Ranked by how tiler-correct the attachment operations are:
 That is the design that pairs with `LAZILY_ALLOCATED` memory, since a transient
 attachment that never leaves tile memory needs no backing allocation.
 
-**Nobody merges passes. Nobody uses input attachments** — verified 2026-08-23 by
-counting `pInputAttachments` across seven forks **and reading every hit**; Cemu's
-and eden's are `inputAttachmentCount = 0` initialisers.
+**CORRECTED 2026-08-24. Both halves were wrong, and by different amounts.**
+The 2026-08-23 survey counted `pInputAttachments` across seven forks and read
+every hit. **The reading was right; the vocabulary was one word wide.** The
+interesting half is spelled `subpassInput` and `subpassLoad` in the shader, and
+`vkCmdNextSubpass` in the command stream.
+
+| Fork | Input attachments | **Multi-subpass merge** |
+| --- | --- | --- |
+| **xenia** | yes, with a `subpassInput` shader variant | **YES, a 2-subpass merged feedback pass** |
+| **ARMSX2** | yes, depth `subpassLoad` read in tile | no — **`MAX_SUBPASSES = 1`**, a self-dependency |
+| **rpcsx** | yes, a real non-zero array | no — `subpassCount = 1` |
+| Cemu, eden | `inputAttachmentCount = 0` initialisers | no |
+
+**xenia's is `gpu_vulkan_feedback_merge`**: producer in subpass 0, the same-pixel
+consumer reading it as an input attachment in subpass 1, with a **shader
+variant** emitted by the SPIR-V translator and the **same retroactive
+BeginRenderPass patch** already recorded for load and store ops.
+
+**ARMSX2's is "mobile ROV"**, opt-in via `HWROV`: read depth in tile through a
+depth input attachment so SW-Z, DATE, alpha-test and AA1 passes **fuse in-pass
+rather than round-tripping**. It needs **ROAA on the depth aspect**, which
+xenia's audit probed as **available on this device**. `DEVICE_QUEUE.md` entry 19.
+
+**A merge is one way to keep data in tile memory. It is not the only way** —
+ARMSX2 gets the same benefit with one subpass and an ordered read.
+
+**Both are default-off and unmeasured, and both are title-shaped**: xenia's is
+named for Blue Dragon, ARMSX2's targets specific PS2 idioms. **Neither is a
+general pass-merging framework.** See
+[`research_log/20260824_0210_pass_merging_exists_twice.md`](research_log/20260824_0210_pass_merging_exists_twice.md).
 
 **CORRECTED 2026-08-23: xenia resolves MSAA on-chip, and xenia plans render
 passes.** Both claims above were wrong, and the four-fork ranking omitted xenia

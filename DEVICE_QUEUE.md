@@ -641,6 +641,40 @@ that only some cores can run. **Stated so the run can fail.**
 **If the prediction is wrong, the question reopens for three backends**, and that
 is worth more than anything else in this file.
 
+## 19. ARMSX2 mobile ROV — tile-native ordered depth feedback
+
+**A named flag, a stated fallback, a byte-identical off state, and a capability
+this device was measured to have.** See
+[`research_log/20260824_0210_pass_merging_exists_twice.md`](research_log/20260824_0210_pass_merging_exists_twice.md).
+
+**What it does.** `HWROV` makes ARMSX2 read the depth buffer **in tile**, through
+`subpassLoad` on a depth input attachment, instead of copying depth to a colour
+render target. Its own comment: **SW-Z, DATE, alpha-test and AA1 depth passes
+"fuse in-pass rather than round-tripping".** On a tiler the round trip is the
+cost.
+
+**Why it is runnable.** It needs an ordered in-tile depth read, which means
+**ROAA on the depth aspect**. xenia probed this device on 2026-06-20 and recorded
+**`roaa_color=1 roaa_depth=1`** — and the same probe read **false** three days
+earlier on an older Turnip build, which is itself the argument for the pinned
+driver.
+
+**Set it through settings, not by editing the fork.** `HWROV` is a config
+toggle. **The standing rule forbids modifying ARMSX2 unless asked for by name.**
+
+**Expected signature: lower GPU frame time on scenes using software Z, DATE or
+alpha test, and no change elsewhere.** ARMSX2's comment says the depth half is
+**read at device init**, so **each arm needs a fresh process** — the same trap as
+the per-game driver override and cached device properties.
+
+**Correctness is a gate, not a footnote.** The toggle-off path is described as
+byte-for-byte the well-tested fallback, so **any pixel difference with it on is a
+stop.** Compare frames against a reference.
+
+**Prediction: `OPEN`.** ARMSX2 gated it and did not measure it, this repo's
+manual-derived levers are thirteen for thirteen refuted, and **the depth
+round-trip may not be where this backend's frames go.** Profile first.
+
 ## Not ready to run
 
 These need a decision or a build first, not device time.
