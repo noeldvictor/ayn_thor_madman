@@ -446,9 +446,50 @@ Two are directly on this project's path:
 - **rpcs3 now targets ARM64 and reports Cell CPU optimisation work.** rpcsx
   runs rpcs3 on ARM64. Upstream is doing the port work the fork needs.
 
-**Check what each has landed before optimising the corresponding fork.** The
-alternative is re-deriving a fix that already exists, which is the failure mode
-this whole document describes.
+### What those two upstreams actually landed
+
+Read 2026-08-22, because the rule above is worthless unheeded.
+
+#### PCSX2 2.6.0: feedback reads
+
+The headline change is **binding one texture as both a shader resource and a
+render target**, called feedback reads. Reported gains are large and
+title-specific: **596% in Hitman Blood Money, 413% in Death by Degrees**. It
+also added Multidraw Framebuffer Copy, bringing D3D11 and D3D12 accuracy closer
+to Vulkan and OpenGL.
+
+**The headline numbers are for D3D12, which is irrelevant here. The technique
+is not.** Reading a render target while writing it is a Vulkan feature too,
+through attachment feedback loops, and the PS2 does this constantly, which is
+why the gains are so large. **ARMSX2 renders through Vulkan on the Thor.**
+
+**Read the PCSX2 change before touching the ARMSX2 texture path.**
+
+#### rpcs3: ARM64 SPU work, and it transfers past PS3
+
+Two separate things landed:
+
+1. **An SPU recompiler improvement** giving roughly **5 to 7% on SPU-heavy
+   titles**, benefiting every game because all PS3 games use SPUs.
+2. **ARM64-specific Cell optimisations using `SDOT` and `UDOT`**, the ARMv8.2
+   dot-product instructions, targeting Apple Silicon and Snapdragon
+   ARM64 hardware.
+
+**PS3 is deferred from this project, and this still matters.**
+
+`SDOT` and `UDOT` are available on the Cortex-X3, A715 and A710. Lowering a
+**guest vector unit** onto ARM64 dot-product instructions is not an SPU
+technique; it is a technique for any guest vector unit. **The fleet has three
+more**: the PS2 VU in ARMSX2, VMX128 in xenia, and DS geometry in melonDS.
+
+**rpcsx is GPL-2.0-only and its code cannot be taken. The technique is not
+code.** This is the clearest instance yet of the rule that ideas cross licence
+boundaries freely: a PS3 emulator's ARM64 lowering strategy is readable,
+citable and reusable by a PS2 and an Xbox 360 emulator that can never link
+against it.
+
+Note also that rpcs3 added ARM64 support in **late 2024**, so this is a settled
+platform upstream rather than an experiment.
 
 ## The uncomfortable part
 

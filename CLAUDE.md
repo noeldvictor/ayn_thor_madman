@@ -1537,6 +1537,27 @@ rpcs3 on ARM64.
 **Check what an upstream has landed before optimising its fork.** Re-deriving
 an existing fix is the exact failure mode this section describes.
 
+**Read 2026-08-22:**
+
+- **PCSX2 2.6.0 landed feedback reads**, binding one texture as both shader
+  resource and render target, with reported gains of 596% and 413% on specific
+  titles. The headline numbers are D3D12 and irrelevant here; **the technique
+  is not.** Vulkan has attachment feedback loops, the PS2 reads render targets
+  constantly, and ARMSX2 renders through Vulkan on the Thor. **Read it before
+  touching the ARMSX2 texture path.**
+- **rpcs3 landed ARM64 Cell optimisations using `SDOT` and `UDOT`**, the
+  ARMv8.2 dot-product instructions, plus an SPU recompiler change worth roughly
+  5 to 7% on SPU-heavy titles.
+
+  **PS3 is deferred and this still matters.** `SDOT` and `UDOT` exist on the
+  Cortex-X3, A715 and A710. Lowering a **guest vector unit** onto ARM64
+  dot-product instructions is not an SPU technique; the fleet has three more
+  vector units in ARMSX2's VU, xenia's VMX128 and melonDS's DS geometry.
+
+  **rpcsx is GPL-2.0-only so its code cannot be taken. A technique is not
+  code.** This is the clearest case yet of ideas crossing a licence boundary
+  that code cannot.
+
 ## The key idea
 
 **Share assets and paradigms across the emulators. Solve a problem once.
