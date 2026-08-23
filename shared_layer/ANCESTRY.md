@@ -96,6 +96,66 @@ git -C <fork> grep -hoiE 'Copyright [0-9-]* (Dolphin|Citra|yuzu|PCSX2|RPCS3|melo
 Two forks with the same ancestor and the same file name are the same code,
 diverged. Extract those first.
 
+## Applying the method: 90 shared files between azahar and eden
+
+The method says search for shared ancestors, not shared features. Applied to
+Kotlin and Java basenames across the fleet, 2026-08-22.
+
+**106 distinct filenames appear in two or more forks. Ninety of them are shared
+between azahar and eden alone.**
+
+Both descend from the Citra and yuzu Android frontends, which were built by the
+same team. **This is an entire Android emulator frontend, duplicated.**
+
+### Forty of the ninety are a typed settings framework
+
+```
+AbstractSetting          AbstractBooleanSetting   AbstractFloatSetting
+AbstractIntSetting       AbstractShortSetting     AbstractStringSetting
+BooleanSetting           FloatSetting             DateTimeSetting
+HeaderSetting            SwitchSetting            SliderSetting
+SubmenuSetting           StringInputSetting       StringSingleChoiceSetting
+```
+
+plus a matching `ViewHolder` for each.
+
+**This is the settings schema the backend contract needs, already built,
+twice.** `app/shell/.../Backend.kt` defines `SettingSpec` with a `SettingType`
+enum and a stable key. That design is a rediscovery of what these two forks
+already ship: an abstract setting, typed subclasses, and a view holder per
+type.
+
+**Do not design a settings framework. Take this one.**
+
+### The rest of the ninety
+
+Six shared view models: `DriverViewModel`, `EmulationViewModel`,
+`GamesViewModel`, `HomeViewModel`, `SettingsViewModel`, `TaskViewModel`.
+
+And a working frontend around them: `DirectoryInitialization`, `DocumentsTree`,
+`DriverAdapter`, `DriverManagerFragment`, `DriversLoadingDialogFragment`,
+`EmulationActivity`, `EmulationFragment`, `FileUtil`, `Game`, `GameAdapter`,
+`GameHelper`, `GameIconUtils`, `DiskShaderCacheProgress`, `CompatUtils`,
+`AboutFragment`.
+
+**Licences permit it.** azahar is GPL-2.0-or-later, eden is GPL-3.0-or-later.
+Either works in a GPL-3.0 shared layer, and **azahar's is the more permissive
+source**, so prefer it.
+
+### Why this is the largest finding in the survey
+
+Every earlier candidate was one subsystem. This is a frontend.
+
+| Candidate | Scale |
+| --- | --- |
+| LRU cache | not duplication at all |
+| GPU driver manager | four concerns, one subsystem |
+| Touch overlay | 2,369 lines, one subsystem |
+| **azahar and eden frontend** | **90 files, including 40 of settings** |
+
+It was invisible to every feature-based search and took one filename
+comparison to find. **That is the method working.**
+
 ## What is still unknown
 
 - **How far each copy has drifted.** Vita3K's overlay and azahar's started as

@@ -1433,7 +1433,23 @@ guard and the provenance rule exist to provide.
 | Two forks have `InputOverlay*`, **same ancestor** | **one design, twice** |
 | Two forks have `DiskShaderCacheProgress.kt`, **same ancestor** | same design |
 
-**Search for shared ancestors, not shared features.**
+**Search for shared ancestors, not shared features.** Applied on 2026-08-22 to
+Kotlin and Java basenames, it found the largest duplication in the fleet:
+
+**azahar and eden share 90 files by name**, of which **40 are a typed settings
+framework**: `AbstractSetting` and its typed subclasses, plus `BooleanSetting`,
+`FloatSetting`, `SliderSetting`, `SwitchSetting`, `SubmenuSetting`,
+`StringInputSetting`, `DateTimeSetting` and `HeaderSetting`, each with a
+matching view holder. Plus six view models and a working frontend around them.
+
+**That is the settings schema the backend contract needs, already built,
+twice.** `Backend.kt` defines `SettingSpec` with a type enum and a stable key;
+these two forks already ship exactly that design. **Do not design a settings
+framework. Take theirs.** azahar is GPL-2.0-or-later, the more permissive
+source.
+
+It was invisible to every feature-based search and took one filename comparison
+to find.
 
 ```sh
 git -C <fork> grep -hoiE 'Copyright [0-9-]* (Dolphin|Citra|yuzu|PCSX2|RPCS3|melonDS) [A-Za-z]*'   | sort | uniq -c | sort -rn

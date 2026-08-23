@@ -112,6 +112,16 @@ default, a label, and whether it can change while running.
 overridden per game, and a per-game override for every option is a
 requirement.
 
+**Do not design this framework. azahar and eden both already ship it**, as 40
+shared files: `AbstractSetting` with typed subclasses for boolean, float, int,
+short and string, then `SwitchSetting`, `SliderSetting`, `SubmenuSetting`,
+`StringInputSetting`, `StringSingleChoiceSetting`, `DateTimeSetting` and
+`HeaderSetting`, each with a matching view holder.
+
+They share 90 files in total, both descending from the Citra and yuzu Android
+frontends. See [`../shared_layer/ANCESTRY.md`](../shared_layer/ANCESTRY.md).
+azahar is GPL-2.0-or-later and is the more permissive source.
+
 ## 6. Settings, per game
 
 The same schema as global, with an override layer on top.
