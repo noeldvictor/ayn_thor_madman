@@ -160,19 +160,29 @@ comparison to find. **That is the method working.**
 
 Applying the same method to vendored third-party trees, 2026-08-22.
 
-**Vendored by four forks each:** `stb`, `imgui`, `glad`, `fmt`, `ffmpeg`,
-`cubeb`.
+**Corrected count.** The first pass anchored its pattern to the start of the
+path and missed nested vendor trees, notably rpcsx's at
+`app/src/main/cpp/rpcsx/3rdparty/`. That is the same class of error as claiming
+no fork has a feature: **the search was wrong, not the fleet.**
 
-**By three each:** `xxhash`, `xbyak`, `vulkan-headers`, `libadrenotools`,
-`glslang`, `discord-rpc`.
+| Library | Forks | Vendored by |
+| --- | --- | --- |
+| **`ffmpeg`** | **5** | Vita3K, eden, xenia, ARMSX2, rpcsx |
+| **`cubeb`**, audio | **5** | azahar, Vita3K, Cemu, ARMSX2, rpcsx |
+| `vulkan-headers` | 4 | azahar, Cemu, xenia, rpcsx |
+| `imgui` | 4 | Vita3K, Cemu, xenia, ARMSX2 |
+| `glslang` | 4 | azahar, Vita3K, xenia, rpcsx |
+| `xbyak`, `stb`, `glad`, `fmt` | 4 each | |
+| `discord-rpc` | 4 | |
+| `spirv-tools` | 3 | azahar, xenia, rpcsx |
+| `libadrenotools` | 3 | azahar, Vita3K, Cemu |
+| **`dynarmic`**, an ARM JIT | 2 | **azahar, Vita3K** |
 
-| Library | Vendored by |
-| --- | --- |
-| `cubeb`, audio | azahar, Vita3K, Cemu, ARMSX2 |
-| `imgui` | Vita3K, Cemu, xenia, ARMSX2 |
-| `libadrenotools` | azahar, Vita3K, Cemu |
-| `vulkan-headers` | azahar, Cemu, xenia |
-| **`dynarmic`**, an ARM JIT | **azahar, Vita3K** |
+**FFmpeg is vendored five times.** FFmpeg is enormous, and five copies in one
+binary is not a size problem, it is an impossibility.
+
+**`discord-rpc` is vendored four times** and is Discord Rich Presence. On a
+handheld emulator it is pure weight and probably should not ship at all.
 
 `dynarmic` is the interesting pair: both the 3DS and the Vita have ARM guests,
 so both recompile ARM to ARM64 with the same library. **That is a genuine

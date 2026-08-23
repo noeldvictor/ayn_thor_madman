@@ -2077,19 +2077,25 @@ extension set.
 
 ### The standard row is incomplete: vendored libraries
 
-**Four forks each vendor `cubeb`, `imgui`, `glad`, `fmt` and `ffmpeg`. Three
-each vendor `xxhash`, `xbyak`, `vulkan-headers`, `libadrenotools` and
-`glslang`.**
+| Library | Forks | Vendored by |
+| --- | --- | --- |
+| **`ffmpeg`** | **5** | Vita3K, eden, xenia, ARMSX2, rpcsx |
+| **`cubeb`**, audio | **5** | azahar, Vita3K, Cemu, ARMSX2, rpcsx |
+| `vulkan-headers` | 4 | azahar, Cemu, xenia, rpcsx |
+| `imgui` | 4 | Vita3K, Cemu, xenia, ARMSX2 |
+| `glslang` | 4 | azahar, Vita3K, xenia, rpcsx |
+| `xbyak`, `stb`, `glad`, `fmt`, `discord-rpc` | 4 each | |
+| `libadrenotools` | 3 | azahar, Vita3K, Cemu |
+| `dynarmic`, ARM JIT | 2 | azahar, Vita3K |
 
-| Library | Vendored by |
-| --- | --- |
-| `cubeb`, audio | azahar, Vita3K, Cemu, ARMSX2 |
-| `imgui` | Vita3K, Cemu, xenia, ARMSX2 |
-| `libadrenotools` | azahar, Vita3K, Cemu |
-| `dynarmic`, ARM JIT | azahar, Vita3K |
+**FFmpeg is vendored five times.** It is enormous, and five copies in one
+binary is not a size problem but an impossibility.
+
+`discord-rpc` is vendored four times and is Discord Rich Presence. On a
+handheld emulator it is weight that probably should not ship.
 
 **This is a hard constraint on the packed binary, not a tidiness issue.** You
-cannot link four copies of `cubeb` into one binary. Duplicate symbols do not
+cannot link five copies of `cubeb` or five of FFmpeg into one binary. Duplicate symbols do not
 merge politely, and four *different versions* of one library is worse than four
 copies: the same symbol with different behaviour.
 
