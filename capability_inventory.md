@@ -691,13 +691,24 @@ code, diverged.
 | Fork | Approach | Notable |
 | --- | --- | --- |
 | Cemu-thor | data-driven: a 24-line enum plus default configs and a touch listener | **read; see below** |
-| melonDS-android | `EmulatorOverlayTracker.kt`, **`TouchVibrator.kt`** | **haptics on touch. Nobody else has it.** |
+| melonDS-android | `EmulatorOverlayTracker.kt`, `TouchVibrator.kt` | haptics on touch. **azahar has `hapticFeedback` too; this is two forks, not one.** |
 | eden-thor | overlay assets under `dist/icons/overlay/` | art, not logic |
 | xenia-thor | **nothing.** One research note, `20260527-151500-android-ingame-menu-overlay-controller-start.md` | would gain the feature outright |
 
-**melonDS's `TouchVibrator` is the kind of quality-of-life detail this project
-exists to spread.** A touch button that does not vibrate feels dead, and six
+**Haptics exist in two forks, not one.** melonDS has `TouchVibrator` and azahar
+has `hapticFeedback`. A touch button that does not vibrate feels dead, and five
 forks ship one that does not.
+
+**Two more found by reading the overlay divergence:**
+
+- **azahar has `swapScreen`.** The 3DS is dual-screen and azahar can swap the
+  panels. Directly relevant to the Thor's two displays.
+- **Vita3K hides the overlay when a physical controller attaches**, through
+  `attachController`, `setAllowVirtualController` and
+  `updateVirtualControllerState`, plus an auto-hide timer.
+
+**The Thor has physical controls.** An overlay drawn permanently over a game on
+a device with real buttons is wrong, and only one fork solved it.
 
 **xenia has no touch overlay at all**, despite having the largest Android
 shell. Extraction would give it a feature rather than replacing one.

@@ -321,9 +321,55 @@ a direct-manipulation mode inside the game view. Both teams kept that.
 an interface. So "how far has it drifted" has to be measured per subsystem, and
 the answer changes what extraction means each time.
 
-Vita3K's overlay has **nearly twice the methods in fewer lines**, so azahar has
-fewer and larger ones. Neither is obviously better and the difference is worth
-reading before choosing a base.
+### The divergence: each fork solved a different half
+
+Reading what each side added alone is more useful than the shared part.
+
+**azahar added construction and layout, 11 methods:**
+
+```
+addOverlayControls  initializeOverlayButton  initializeOverlayDpad
+initializeOverlayJoystick  defaultOverlay  defaultOverlayLandscape
+defaultOverlayPortrait  getBitmap  resizeBitmap  hapticFeedback  swapScreen
+```
+
+**Vita3K added lifecycle, state and physical controllers, 30 methods:**
+
+```
+attachController  detachController  detachVirtualController  rebindController
+setAllowVirtualController  updateVirtualControllerState
+setAutoHideEnabled  startHideTimer  stopHideTimer  resetHideTimer  tick  run
+setOpacity  setScale  setLayout  setButton  setAxis  setDpadState
+setState  setTouchState  applyResolvedState  releaseAllInputs
+onAttachedToWindow  onDetachedFromWindow  onSizeChanged
+getOverlayMask  refreshOverlayScope  addVitaOverlayControls
+```
+
+**Neither fork is sufficient alone.** azahar knows how to *build* an overlay:
+per-orientation defaults, element construction, bitmap handling. Vita3K knows
+how to *live* with one: auto-hide on a timer, physical controller attach and
+detach, opacity and scale, input state, Android view lifecycle.
+
+**A shared overlay needs both halves, and the eight shared methods are only the
+seam between them.**
+
+### Two things this corrects
+
+- **azahar has `hapticFeedback`.** This repo recorded haptics as melonDS-only.
+  **Two forks have it, not one.**
+- **azahar has `swapScreen`.** The 3DS is dual-screen and azahar can swap the
+  panels. That is directly relevant to the Thor's two displays and it was
+  unrecorded.
+
+### The finding that matters most for this device
+
+Vita3K's `attachController`, `setAllowVirtualController` and
+`updateVirtualControllerState` mean **the overlay hides itself when a physical
+controller is present.**
+
+**The Thor has physical controls.** A touch overlay drawn permanently over a
+game on a device with real buttons is wrong, and only one fork in the fleet
+solved it.
 
 ## The uncomfortable part
 

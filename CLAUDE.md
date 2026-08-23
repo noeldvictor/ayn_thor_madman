@@ -1958,6 +1958,21 @@ ARMSX2's `GSTextureUpscaler` with the names changed.
    type hierarchy and lost every line; the overlay kept its API surface.
    Measure it per subsystem, because it changes what extraction means.
 
+   **Each fork solved a different half, and neither is sufficient alone.**
+   azahar added construction and layout: per-orientation defaults, element
+   construction, bitmaps, `hapticFeedback` and `swapScreen`. Vita3K added
+   lifecycle and state: an auto-hide timer, opacity and scale, input state,
+   Android view lifecycle, and **physical controller attach and detach**.
+
+   **That last one matters most here. The Thor has physical controls**, and an
+   overlay drawn permanently over a game on a device with real buttons is
+   wrong. Only Vita3K solved it, through `attachController`,
+   `setAllowVirtualController` and `updateVirtualControllerState`.
+
+   Two corrections: **azahar has haptics too**, so that is two forks not one,
+   and **azahar has `swapScreen`** for its dual-screen guest, which is directly
+   relevant to the Thor's two panels.
+
 1. The GPU driver manager. **Read on 2026-08-22: it is four concerns, not six
    copies.** Compose the shared version from the fork that does each best.
 
