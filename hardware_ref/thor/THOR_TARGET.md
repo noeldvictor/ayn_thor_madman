@@ -3,10 +3,39 @@
 **The north star. What every fork compiles for, tunes for, and budgets
 against.**
 
-Written 2026-08-22. It exists because the fleet has no standard and the results
-show it: **Vita3K tunes for `cortex-x3`, Cemu tunes for `cortex-a710`, ARMSX2
-and azahar compile baseline `armv8-a`, and only xenia enables the features the
-device actually has.** Five forks, five answers, one SoC.
+Written 2026-08-22. It exists because the fleet has no standard, and every
+fork answered the question differently or not at all.
+
+**What the build files actually say**, read rather than assumed:
+
+| Fork | `-march` on Android arm64 | `-mtune` | |
+| --- | --- | --- | --- |
+| **melonDS-android** | untouched, so `armv8-a` | **`cortex-x3`**, feature-guarded | **the only fork that reasoned about it** |
+| **xenia-thor** | **`armv8-a+crypto+sha3+crc+dotprod`** | — | the only fork enabling device features |
+| **ARMSX2** | **`armv8-a`, set deliberately** | — | uses `armv8.4-a -mcpu=apple-m1` on Apple |
+| **eden-thor** | preset: none by default, `armv8-a`, or **`armv9-a`** | `generic` | **the `armv9` preset is a live trap here** |
+| azahar-thor | baseline | — | |
+| Cemu-thor | nothing | nothing | |
+| Vita3K | nothing | nothing | |
+
+Three findings come out of that table, and they matter more than the
+inconsistency itself.
+
+**melonDS is already right, and wrote down why.** Its `CMakeLists.txt` states
+that `-mtune` changes scheduling and cost models only, emits no new
+instructions, and so keeps the binary running on any `armv8-a` device, while
+raising `-march` would pull in dotprod, fp16 and LSE and drop pre-ARMv8.2
+hardware, which it calls "a separate call". **That reasoning is correct for
+melonDS-android and wrong for this project**, because this app ships to one
+device. The tradeoff melonDS is protecting does not exist here.
+
+**ARMSX2 targets an Apple M1 more precisely than it targets the Thor.** The
+same file selects `-march=armv8.4-a -mcpu=apple-m1` for Apple Silicon and
+`-march=armv8-a` for Android, commented "ARMv8.0-a is the baseline for Android
+arm64-v8a". It knows how to raise a target. It treats Android as generic.
+
+**eden ships an `armv9` build preset.** On this device that is not a
+theoretical hazard, it is a live one. See below.
 
 Every number here is either measured on the device or cited to its source.
 
@@ -31,6 +60,19 @@ asimdhp atomics lrcpc ilrcpc sha3`, with **no `sve` and no `sve2`**.
 A compiler told `-march=armv9-a` may emit SVE. **Target `armv8.2-a` and name
 the features explicitly.** That is why the forks that chose `armv8-a` were not
 simply being lazy, and it is the single most important line in this document.
+
+**eden already ships the hazard.** Its `CMakeLists.txt` offers
+`YUZU_BUILD_PRESET=armv9`, which sets `-march=armv9-a`. **Do not select it on
+this device.** Its default preset is `custom`, which leaves `march` undefined
+and therefore passes no `-march` or `-mtune` at all, so the default arm64 build
+is untuned rather than mistuned.
+
+**Box64, vendored under `xenia-thor-workspace/reference/`, is the corroborating
+example.** It keeps a per-SoC table of exactly this form — `-march=armv8.2-a+
+crc+crypto+fp16+rcpc+dotprod -mtune=cortex-a76` for the SD865 class — and its
+Oryon entry names `+sve+sve2` explicitly. **It tracks SVE per SoC precisely
+because SVE is not universal on ARMv9.** That is the pattern this document
+follows.
 
 ### Name every feature the device has
 
@@ -61,9 +103,17 @@ wrong somewhere on a 1+4+3 SoC**, so choose deliberately:
   one conditional branch per 16 bytes. See
   [`cpu/CORE_COMPARISON.md`](cpu/CORE_COMPARISON.md). No flag satisfies both.
 
-**Cemu's `-mtune=cortex-a710` is a defensible choice for a fork whose work
-lands on mid cores. It is not the fleet default, and it should be stated as a
-deviation rather than left implicit.**
+**melonDS already picked `cortex-x3` and guards it with
+`check_cxx_compiler_flag`.** Keep the guard. A toolchain that does not know
+`cortex-x3` should fall back rather than fail the build.
+
+**A fork may deviate**, for example by tuning for a mid core when its work
+lands there. **State the deviation and its reason.** No fork currently
+deviates; several are simply silent, which is different.
+
+**Do not use `-mcpu=` here.** It sets features and scheduling together, so it
+hides the ARMv9 question this document exists to answer. Use `-march` for
+features and `-mtune` for scheduling, separately.
 
 ---
 
@@ -137,7 +187,7 @@ Details in [`cpu/CORTEX_X3_NOTES.md`](cpu/CORTEX_X3_NOTES.md) and
 ## 5. What every fork must do
 
 1. **Adopt the compile target in section 1.** Today only xenia enables the
-   device's features; ARMSX2 and azahar are baseline `armv8-a`.
+   device's features, only melonDS sets `-mtune`, and no fork does both.
 2. **Check the emitter, not only the flags.** ARMSX2 and melonDS emit no
    `SDOT`, `UDOT`, `EOR3` or `BCAX` at all.
 3. **Pass real target features to LLVM** where a fork uses it. rpcs3 was gating
@@ -153,8 +203,15 @@ Details in [`cpu/CORTEX_X3_NOTES.md`](cpu/CORTEX_X3_NOTES.md) and
 ## What this document is not
 
 **It is not measured.** Sections 1, 3 and 4 are derived from ARM's guides, from
-`/proc/cpuinfo`, and from research written by two forks in this fleet. **The
-only measured numbers here are the feature list and the power target.**
+`/proc/cpuinfo`, and from research written by forks in this fleet. **The only
+measured numbers here are the feature list and the power target.** The build
+flag table is read from the build files, which makes it fact about the fleet
+and not about performance.
+
+**Nothing here claims the target is faster.** It claims the target matches the
+silicon. Whether `+dotprod` and `-mtune=cortex-x3` actually move frames or
+watts on this device is an open experiment, and the honest prior is that
+`-mtune` alone rarely does much.
 
 Every rule is a hypothesis with a good source until a Thor A/B says otherwise.
 Record those in the experiment ledger, not here.

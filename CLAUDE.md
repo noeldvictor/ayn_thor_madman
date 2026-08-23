@@ -919,8 +919,18 @@ detection problem. **If detection, it is free performance.**
 the fork that wrote the research. The rest compile for a generic ARMv8-A this
 device stopped being years ago.
 
-**This produced the fleet standard.** Five forks gave five answers to one
-question, so the answer is now written down once in
+**This produced the fleet standard.** Reading the build files rather than
+assuming them: **melonDS is the only fork that sets `-mtune`, and it chose
+`cortex-x3` with the reasoning written in the file. xenia is the only fork that
+raises `-march`. No fork does both. Cemu, Vita3K and azahar set neither.**
+ARMSX2 sets `-march=armv8-a` for Android deliberately while selecting
+`armv8.4-a -mcpu=apple-m1` for Apple Silicon, so **it targets an M1 more
+precisely than it targets the Thor.**
+
+**eden ships a `YUZU_BUILD_PRESET=armv9` option that sets `-march=armv9-a`. Do
+not select it on this device.**
+
+The answer is now written down once in
 **[`hardware_ref/thor/THOR_TARGET.md`](hardware_ref/thor/THOR_TARGET.md)**:
 `-march=armv8.2-a+crc+lse+fp16+dotprod+sha3+i8mm+bf16 -mtune=cortex-x3`.
 
