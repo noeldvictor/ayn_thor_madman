@@ -1539,7 +1539,20 @@ differ only in intent, and both need the same format, loader and UI.
   layer.
 - A patch itself is data. It names a game, a version and the bytes to change.
 
-**Two patch systems already exist. Choose between them; do not write a third.**
+**File mods and code patches are two different features.** This repo conflated
+them. Separate them:
+
+| | File mods | Code patches |
+| --- | --- | --- |
+| What | replace game assets | modify guest code at run time |
+| Mechanism | install files, the guest filesystem serves them | assemble and relocate instructions |
+| Example | a texture pack, a translation | 60 FPS, infinite health, disable SSAO |
+
+eden's mod manager is **21 lines**: install a file, list a folder, return a
+result. That is the right size for file replacement and it should not grow.
+
+**Three patch systems already exist. Choose between them; do not write a
+fourth.**
 
 - **xenia `.patch.toml`.** `src/xenia/patcher/patcher.cc` and `patch_db.cc`,
   with `emit_patch_toml.py` authoring a patch from Ghidra. It already carries
@@ -1548,7 +1561,20 @@ differ only in intent, and both need the same format, loader and UI.
 - **Cemu `GraphicPack2Patches`.** Runtime ASM patching with its own parser,
   bundled with texture and shader replacement.
 
-Cemu has the more capable mechanism in the fleet:
+**Cemu's is a symbolic assembler with a linker, and it is not close.**
+`GraphicPack2Patches.h` carries a symbol table, a matched `RPLModule`, an error
+handler reporting line numbers, and multi-pass resolution: `UNKNOWN_VARIABLE`
+is documented as "try again", because a patch may reference a symbol defined
+later. Its errors include branch targets out of range and variable conflicts.
+
+**Build the shared patch engine from Cemu's.** xenia `.patch.toml` and ARMSX2
+`pnach` are flatter formats and can compile into it.
+
+**Binding a patch to the right game build** is solved by two forks and nobody
+else: Cemu matches a loaded `RPLModule`, rpcsx keeps a `PatchHashRepository`.
+Elsewhere a patch can silently apply to the wrong build.
+
+Cemu also has the more capable pack mechanism:
 `GraphicPack2Patches`, `GraphicPack2PatchesParser` and
 `GraphicPack2PatchesApply`, with runtime ASM patching. We already wrote patches
 with it, in `bin/graphicPacks/cemuThorBuiltin/`. **Read that before designing a

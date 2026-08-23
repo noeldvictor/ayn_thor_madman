@@ -217,10 +217,71 @@ the tiered design above is required rather than merely nicer.
 `ai_cheat_helper_switch` is a separate repo. **Not surveyed. No capability is
 claimed for it.**
 
-## Mods and patches — LISTED
+## Mods and patches — PARTIAL, and they are two different features
 
-**Nothing opened.** The xenia `.patch.toml` intents come from a skill
-description, not from the patcher source.
+**READ:** eden `mod_manager.h`, Cemu `GraphicPack2Patches.h`. **LISTED only:**
+xenia `patcher/`, eden `patch_manager`, Cemu `GamePatch`.
+
+**This repo conflated two unrelated things under one heading. Separate them.**
+
+| | File mods | Code patches |
+| --- | --- | --- |
+| What | replace game assets | modify guest code at run time |
+| Mechanism | install files, guest filesystem serves them | assemble and relocate instructions |
+| Example | a texture pack, a translation | 60 FPS, infinite health, disable SSAO |
+| Belongs to | the storage and content layer | the patch engine |
+
+### eden's mod manager is a file installer, 21 lines
+
+```cpp
+enum ModInstallResult { Cancelled, Failed, Success };
+std::vector<std::filesystem::path> GetModFolder(const std::string& root);
+ModInstallResult InstallMod(const std::filesystem::path&, u64 program_id, bool copy);
+```
+
+That is the whole interface. **Mods on Switch are file replacement**, and the
+guest filesystem layer does the serving. The manager only puts files in the
+right place.
+
+This is the right size for that job and it should not be made bigger.
+
+### Cemu's patcher is an assembler with a linker, 267 lines of header alone
+
+`GraphicPack2Patches.h` carries a `PatchContext_t` with a symbol table, a
+matched `RPLModule`, an error handler that reports line numbers, and a set of
+`UnresolvedSymbol` entries holding a line number, a patch group and a name.
+
+Its resolution results:
+
+```cpp
+enum class PATCH_RESOLVE_RESULT {
+  RESOLVED, EXPRESSION_ERROR, VALUE_ERROR, UNKNOWN_VARIABLE,
+  VARIABLE_CONFLICT, INVALID_ADDRESS, UNDEFINED_ERROR,
+};
+```
+
+`UNKNOWN_VARIABLE` is documented as "try again", which means **multi-pass
+resolution**: a patch may reference a symbol defined later, so the resolver
+iterates until it converges.
+
+**This is a real symbolic assembler**: expressions, labels, variables,
+relocation against a loaded module, branch-range checking (`VALUE_ERROR` is
+"branch target out of range"), and conflict detection.
+
+**It is by a wide margin the most sophisticated patch system in the fleet**,
+and it is the one to build the shared engine from. xenia `.patch.toml` and
+ARMSX2 `pnach` are both flatter formats.
+
+### Binding a patch to the right game build
+
+Two forks solve this differently and both were unrecorded:
+
+- **Cemu** matches against a loaded `RPLModule`, so a patch resolves against
+  the module actually present.
+- **rpcsx** keeps a `PatchHashRepository`, matching by hash.
+
+**Nothing else in the fleet appears to solve it at all**, which means patches
+elsewhere can silently apply to the wrong build.
 
 | Capability | Fork | Quality | Notes |
 | --- | --- | --- | --- |
