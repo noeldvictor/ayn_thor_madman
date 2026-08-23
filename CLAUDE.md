@@ -654,6 +654,45 @@ Every duplication claim that has been read has shrunk:
 **Four for four.** The more carefully the fleet is read, the less genuine code
 duplication there is. That is evidence and the plan must answer it.
 
+### The rule, found 2026-08-23: unify what is FORCED, harvest what is CHOSEN
+
+**Nine extraction candidates have now been read. The split is total, and one
+property separates them exactly** — and it is not how similar the code looks.
+
+**Every candidate that survived is one where keeping N implementations is
+impossible. Every candidate that shrank is one where keeping N is merely
+untidy.**
+
+Three things force unification here:
+
+| Forced by | Consequence |
+| --- | --- |
+| **The linker** | one binary cannot hold seven Vulkan devices or five copies of cubeb |
+| **The device** | one GPU, one loaded driver, one memory budget, one prime core |
+| **The product promise** | one app, one settings system, one hotkey set, one cheat library |
+
+**Nothing else forces anything.** Two LRU caches cost maintenance; they do not
+cost correctness, frames or the product.
+
+> **A candidate forced by the linker, the device or the product promise will
+> survive reading. A candidate justified only by "these look the same" will
+> shrink.**
+
+**So stop opening candidates by looking for similar code.** Ask what the packed
+binary, the hardware or the product cannot tolerate two of. **"Six forks have a
+driver picker" was never the evidence. "One process loads one driver" is.**
+
+**And the unit of waste is a lesson, not a function.** ARMSX2 learned three
+per-game-override bugs from bug reports; every other fork will hit them.
+Dolphin added 40 emitter methods melonDS never received. rpcsx measured the ABI
+cost that five forks still pay. **That is why every duplication claim shrank
+while the project stayed right: the waste is real and was being measured with
+the wrong instrument.**
+
+**Rank unification by how well it resists being forgotten**, and the cheapest
+durable form is a **test**, which this project has almost none of. See
+[`shared_layer/UNIFICATION.md`](shared_layer/UNIFICATION.md).
+
 ### The revised position
 
 **The value is not mostly in merging code. It is in three other places.**

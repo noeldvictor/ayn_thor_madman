@@ -229,7 +229,8 @@ map disagree.
 | `.claude/skills/` | Local skills: `capability-check`, `thor-measure`, `extract-subsystem`. |
 | `hardware_ref/console/` | Manuals for each emulated console. |
 | `console_lab/` | Experiments and speedups for one console only. |
-| `shared_layer/PATTERNS.md` | The eight pipelines every emulator has. |
+| `shared_layer/UNIFICATION.md` | **What unification actually means here. Unify what is forced; harvest what is chosen.** |
+| `shared_layer/PATTERNS.md` | The nine pipelines every emulator has. |
 | `shared_layer/THOR_RENDER.md` | The render architecture for this device. |
 | `shared_layer/BACKEND_STANDARD.md` | What a backend must deliver to be part of one app. |
 | `shared_layer/OWNED.md` | What the shared layer owns. Empty today, on purpose. |
