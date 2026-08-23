@@ -58,6 +58,45 @@ data class StorageItem(
     val rebuildable: Boolean,
 )
 
+/**
+ * Storage rollups for the whole library.
+ *
+ * This is the one screen in SCREENS.md with NO prior art anywhere in the fleet.
+ * Several forks measure a directory; none aggregates per game and per category,
+ * and none states the cost of clearing before offering it.
+ *
+ * Kept here as plain functions rather than in the screen, so the rules can be
+ * tested without Compose.
+ */
+object StorageRollup {
+
+    /** Games biggest first, because the real question is which one to delete. */
+    fun byGame(games: List<Game>): List<Pair<Game, Int>> =
+        games.map { it to it.totalMb }.sortedByDescending { it.second }
+
+    /** One row per category, summed across the library, biggest first. */
+    fun byCategory(games: List<Game>): List<StorageItem> =
+        games.flatMap { it.storage }
+            .groupBy { it.label }
+            .map { (label, items) ->
+                StorageItem(
+                    label = label,
+                    megabytes = items.sumOf { it.megabytes },
+                    // A category is only clearable if EVERY instance is. One
+                    // non-rebuildable member makes the whole row unsafe, which
+                    // is the conservative direction and the only safe one.
+                    rebuildable = items.all { it.rebuildable },
+                )
+            }
+            .sortedByDescending { it.megabytes }
+
+    /** What a bulk clear would actually free. Rebuildable rows only. */
+    fun reclaimableMb(games: List<Game>): Int =
+        games.flatMap { it.storage }.filter { it.rebuildable }.sumOf { it.megabytes }
+
+    fun totalMb(games: List<Game>): Int = games.sumOf { it.totalMb }
+}
+
 data class Game(
     val title: String,
     val system: System,

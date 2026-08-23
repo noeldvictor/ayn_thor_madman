@@ -31,6 +31,7 @@ private sealed interface Route {
     data object Library : Route
     data class Detail(val game: Game) : Route
     data object Settings : Route
+    data object Storage : Route
     data object Drivers : Route
     data object Systems : Route
 }
@@ -45,6 +46,7 @@ fun ShellApp(activity: MainActivity) {
                 route = route,
                 onHome = { route = Route.Library },
                 onSettings = { route = Route.Settings },
+                onStorage = { route = Route.Storage },
                 onDrivers = { route = Route.Drivers },
                 onSystems = { route = Route.Systems },
             )
@@ -53,6 +55,7 @@ fun ShellApp(activity: MainActivity) {
                     is Route.Library -> LibraryScreen(activity) { route = Route.Detail(it) }
                     is Route.Detail -> DetailScreen(activity, r.game)
                     is Route.Settings -> SettingsScreen(activity)
+                    is Route.Storage -> StorageScreen()
                     is Route.Drivers -> DriversScreen()
                     is Route.Systems -> SystemsScreen()
                 }
@@ -67,6 +70,7 @@ private fun TopBar(
     route: Route,
     onHome: () -> Unit,
     onSettings: () -> Unit,
+    onStorage: () -> Unit,
     onDrivers: () -> Unit,
     onSystems: () -> Unit,
 ) {
@@ -81,6 +85,8 @@ private fun TopBar(
         NavChip("Library", route is Route.Library, onHome)
         Spacer(Modifier.width(8.dp))
         NavChip("Settings", route is Route.Settings, onSettings)
+        Spacer(Modifier.width(8.dp))
+        NavChip("Storage", route is Route.Storage, onStorage)
         Spacer(Modifier.width(8.dp))
         NavChip("Drivers", route is Route.Drivers, onDrivers)
         Spacer(Modifier.width(8.dp))
@@ -559,4 +565,95 @@ private fun Kv(k: String, v: String) {
         Text(k, color = Dim, fontSize = 12.sp, modifier = Modifier.width(110.dp))
         Text(v, color = Text, fontSize = 12.sp)
     }
+}
+
+// ---------------------------------------------------------------- storage
+
+/**
+ * Storage across the whole library.
+ *
+ * The one screen in SCREENS.md with no prior art in the fleet, so it is
+ * designed here rather than harvested. Three rules, all from CLAUDE.md:
+ *
+ *  - **Sort by size, biggest first.** The question a person actually has is
+ *    "which game should I delete", not "how big is this one".
+ *  - **A cache is an asset, not junk.** State the cost BEFORE the action.
+ *  - **Never put saves near a bulk action.** They are the only irreplaceable
+ *    category, so they are excluded from every total that a button acts on.
+ */
+@Composable
+private fun StorageScreen() {
+    val games = Fake.games
+    val total = StorageRollup.totalMb(games)
+    val reclaimable = StorageRollup.reclaimableMb(games)
+
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) {
+        Text("Storage", color = Text, fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
+        Spacer(Modifier.height(4.dp))
+        Text(
+            "$total MB across ${games.size} games. $reclaimable MB is rebuildable.",
+            color = Dim, fontSize = 13.sp,
+        )
+        Spacer(Modifier.height(18.dp))
+
+        Section("Biggest games first") {
+            StorageRollup.byGame(games).forEach { (game, mb) ->
+                Row(Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+                    Text(game.title, color = Text, fontSize = 13.sp, modifier = Modifier.weight(1f))
+                    Text("$mb MB", color = Dim, fontSize = 13.sp)
+                }
+            }
+        }
+
+        Section("By category, across every system") {
+            StorageRollup.byCategory(games).forEach { item ->
+                Row(
+                    Modifier.fillMaxWidth().padding(vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(item.label, color = Text, fontSize = 13.sp, modifier = Modifier.weight(1f))
+                    if (item.rebuildable) Badge("rebuildable") else Badge("keep", Warn)
+                    Text("${item.megabytes} MB", color = Dim, fontSize = 13.sp)
+                }
+            }
+        }
+
+        Section("Clearing") {
+            // The cost, stated before the action, per CLAUDE.md.
+            StorageRollup.byCategory(games).filter { it.rebuildable }.forEach { item ->
+                Column(Modifier.padding(vertical = 6.dp)) {
+                    Text(
+                        "Clear ${item.label.lowercase()}. Frees ${item.megabytes} MB.",
+                        color = Text, fontSize = 13.sp,
+                    )
+                    Text(costOf(item.label), color = Warn, fontSize = 11.sp)
+                }
+            }
+            Spacer(Modifier.height(10.dp))
+            Text(
+                "There is no clean-up button. Every category costs something different, " +
+                    "and saves and states are never offered here.",
+                color = Warn, fontSize = 12.sp,
+            )
+        }
+    }
+}
+
+/**
+ * What clearing a category actually costs.
+ *
+ * A size alone is not enough to decide with. This is the sentence that turns a
+ * number into a decision, and it is why a single "free up space" button is
+ * refused.
+ */
+private fun costOf(label: String): String = when {
+    label.contains("Shader", true) ->
+        "Shader stutter returns until the cache rebuilds."
+    label.contains("Texture cache", true) ->
+        "Textures are re-upscaled on next load. First minutes are slower."
+    label.contains("code", true) || label.contains("Recompiled", true) ->
+        "Guest code is re-translated. The next boot is slower."
+    label.contains("Screenshot", true) ->
+        "The images are gone. Nothing rebuilds them."
+    else -> "Rebuilt on demand."
 }
