@@ -125,12 +125,36 @@ A portable renderer must invalidate its pipeline cache whenever the driver
 changes, because it cannot know what the user is running.
 
 **The driver is pinned.** The cache is valid across runs, across sessions, and
-across backends. It is keyed by the pinned driver identity, and a driver change
-is a deliberate, announced event that rebuilds it once.
+across backends.
 
 This is the single clearest structural win available, and it is only available
 because the driver is mandated. See
 [The driver baseline](../CLAUDE.md#the-driver-baseline-pinned-turnip).
+
+**Two corrections from reading the fleet on 2026-08-22.**
+
+**Do not invent the key. Vulkan supplies it.**
+`VkPhysicalDeviceProperties::pipelineCacheUUID` changes when a driver's caches
+become incompatible, and the blob carries a 16-byte header containing it.
+ARMSX2's `VKShaderCache.cpp` validates header length, header version, vendor ID,
+device ID and UUID. **Take that function.** Keying on a Turnip build string
+would be worse, because a driver can change its compiled format without changing
+its package name.
+
+**"Rebuilds it once" is false while the per-game driver override exists.** A
+per-game override changes the driver **per game launch**, not once — and with
+**one** shared cache across a packed binary, a single game switching driver
+discards the warm cache **for every backend**, then discards it again on the way
+back.
+
+**So: name the cache file by `pipelineCacheUUID` and keep the last two.** The
+override then costs nothing on return, and the commitment holds as written.
+
+**And validate even though the driver would ignore a stale blob anyway.** xenia
+relies on the driver to reject it, which is correct per the specification but
+produces **no signal**: the game stutters through recompilation and nothing says
+why. On a device where stutter is the symptom this whole subsystem exists to
+remove, a silent cache drop is the failure you most need to see.
 
 ### 6. Two swapchains, both first class
 
@@ -143,6 +167,25 @@ target with its own swapchain, its own pacing decision and its own content.
 An idle Screen-2 is not redrawn per frame. A game using both guest screens
 presents to both. The cost of the second swapchain is **unmeasured** and must
 be measured before the dual-screen layout is assumed free.
+
+**"Its own pacing decision" has no prior art anywhere.** Surveyed 2026-08-23:
+**no fork uses Swappy, and no fork uses `VK_GOOGLE_display_timing`.** Every one
+selects a Vulkan present mode and stops. azahar and melonDS take the
+`Choreographer` vsync signal without a pacing policy, and ARMSX2's
+`FrameGenPacer` paces generated frames only.
+
+**`FIFO` is vsync, not pacing.** A 20 ms frame at 60 Hz misses its vsync and
+alternates 16.6, 33.3, 16.6 — judder more visible than a stable 30.
+
+**Two panels make this harder, not easier**, and nobody has solved even the
+one-panel case here. **Check the 60 Hz cap before measuring any of it**: both
+panels do 120, and the device is currently capped by a user setting, so a
+pacing run measures the setting otherwise.
+
+**Who owns the swapchains when a backend presents two guest screens is still
+open**, and it is the largest single question left in the device-layer
+extraction — xenia's `vulkan_presenter.cc` is 3,879 lines and answers it for one
+swapchain.
 
 ### 7. Submission is designed around one prime core
 
