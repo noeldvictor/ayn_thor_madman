@@ -347,6 +347,88 @@ deciding anything about IRs.
 is **`DEAD`** as of 2026-08-06. **xenia uses the device's vector features and
 that particular fusion still did not pay.**
 
+## 13. Measure instruction inflation — the recipe exists, one flag, one function
+
+**This is the number the whole IR question turns on, and this project has never
+had it.** See
+[`research_log/20260823_1642_ir_in_emulators_literature.md`](research_log/20260823_1642_ir_in_emulators_literature.md)
+section 8: inflation predicts slowdown by regression, state-of-the-art DBTs sit
+at **1.46 or worse**, and attacking it measured **2.99x to 7.12x** on QEMU.
+
+**xenia already has the instrument. No fork needs modifying.**
+
+### The flags
+
+```
+--disassemble_functions=true
+--disassemble_function_filter=82282490
+```
+
+**The filter takes addresses or inclusive ranges and dumps without enabling
+global disassembly**, so this is one function and a small log — not a flood.
+
+### What one run gives, and why it beats the literature's single number
+
+`kDebugInfoAllDisasm` turns on **four** stages at once:
+
+| Flag | Output |
+| --- | --- |
+| `kDebugInfoDisasmSource` | guest PowerPC |
+| `kDebugInfoDisasmRawHir` | **HIR before optimisation** |
+| `kDebugInfoDisasmHir` | **HIR after optimisation** |
+| `kDebugInfoDisasmMachineCode` | host ARM64, **tagged with the guest address** |
+
+**So inflation decomposes into three stages instead of being one ratio:**
+
+- **A — expansion into the IR:** raw HIR ops per guest instruction
+- **B — what the optimiser earns:** optimised HIR against raw HIR
+- **C — codegen:** host instructions per optimised HIR op
+- **Total:** host instructions per guest instruction
+
+**Stage B is the one that answers the IR question directly.** If the optimiser
+removes little, the IR is pure cost. If it removes a lot, the IR is paying for
+itself and the literature's conclusion — that QEMU is slow because it optimises
+little, not because it has an IR — holds here too.
+
+### Counting is mechanical
+
+`DumpMachineCode` emits **one guest address, then the host instructions it
+produced**, via Capstone:
+
+```
+82282490 <hostaddr>  mnemonic  operands
+         <hostaddr>  mnemonic  operands
+82282494 <hostaddr>  mnemonic  operands
+```
+
+**Inflation = total instruction lines / lines that carry a guest address.** A
+five-line script, no judgement calls.
+
+### Why this still needs the device
+
+**The a64 backend only runs on ARM64.** A desktop xenia build uses the x64
+backend, which would measure the wrong emitter. **There is no ARM64 host here
+other than the Thor.**
+
+**But it is a cheap run**: load a title, dump one function, pull the log. **No
+scene navigation, no timing, no thermal soak, no A/B.** It is a capture, not a
+benchmark, so none of this queue's measurement traps apply.
+
+**Prediction: total inflation between 2 and 4, and stage B removing 20-40%.**
+The guest is PowerPC on ARM64 — **RISC to RISC, the easy case** — so it should
+sit well below the CISC-to-RISC figures. **If total inflation comes in near or
+below 1.46, the IR is not costing this project anything and the whole thread
+closes.**
+
+### Do the same for Cemu, and the comparison is nearly controlled
+
+**Cemu is also PowerPC on ARM64 and also has an IR** (`IML`, 6,327 lines).
+**Same guest family, same host, different IR design** — the closest to a
+controlled comparison this fleet allows.
+
+**There is no same-guest IR-against-no-IR pair anywhere in the fleet**, so a
+cross-fork number measures the guest as much as the IR. **Say so in any result.**
+
 ## Not ready to run
 
 These need a decision or a build first, not device time.
