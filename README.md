@@ -80,6 +80,70 @@ GPU model, the guest memory map and the timing.
 Every collision is a vendored dependency. **Seven cores in one binary is not the
 risk; seven dependency sets are.**
 
+## Compute it once, for everybody
+
+**Added 2026-08-23, and it is the strongest idea in this repo.**
+
+**Every artifact an emulator derives at run time is a pure function of the guest
+content and the host configuration.** Translated code. Translated shaders.
+Compiled pipelines. Upscaled textures.
+
+**Fix the host configuration and every one of them becomes cacheable across
+launches, poolable across users, and shippable.**
+
+**This project fixes the host configuration harder than anything else in
+emulation** — one device, one GPU, one pinned Turnip build, one ABI, one
+toolchain. **Every one of those pins was chosen for a different reason.**
+Together they buy this.
+
+**The clearest case is the Vulkan pipeline cache.** It is driver-specific, so
+normally nobody can ship one to their users. **The Steam Deck is the exception,
+because every user has the same hardware** — which is why Valve can distribute
+precompiled shaders. **The Thor has the same shape.** Valve's tool for it,
+Fossilize, is MIT and is a Vulkan **layer**, so it records a backend without
+modifying that backend's source.
+
+**And the fleet has already built most of this, three times, without
+coordinating:**
+
+- **ARMSX2 persists translated PS2 vector-unit programs** — content-addressed,
+  relocatable through a fixup table, validated by a 64-byte snapshot of every
+  option that changes emitted code. Its own test asserts the program then runs
+  with **zero block compiles and a bit-identical post-state.**
+- **Cemu ships a tool that merges another user's shader cache into yours.** That
+  is community cache pooling, shipped, and it is why Wii U shader caches
+  circulated for years. **It works only on the hardware-independent half. The
+  pinned driver is what makes the other half shareable too** — and the other half
+  is the one that costs the compile stall.
+- **eden patches a Switch module's whole text segment ahead of time**, keyed by
+  the guest build ID, with relocation and trampolines — **then throws it away and
+  redoes it on the next launch.** The type for the cache that would fix it is
+  declared in the header and used nowhere.
+
+**So this is a fifth operation beside UNIFY, DELETE, ISOLATE and PROPAGATE:
+PERSIST.** Ask of any hot path whether its output is a pure function of guest
+content and host configuration. **If it is, it should be computed once for
+everybody, not once per launch per user.**
+
+**None of it is measured yet.** Cache size, replay time and the stutter reduction
+are all unknown, and they are the gates. See `DEVICE_QUEUE.md` entries 15 to 18.
+
+### The pattern behind all of it
+
+**Every large finding in this repo has the same shape: the fleet already solved
+it, and nothing indexed the solution.**
+
+The cause is always the instrument. On one day in August 2026 a capability survey
+read ARMSX2 as requesting 482 Vulkan extensions when the answer is 35, read
+Vita3K as 9 when the answer is 35, produced eight "nobody uses this" claims of
+which six were wrong, and returned all zeros from an instruction survey because
+the emitters spell mnemonics in lower case.
+
+**So the tools in [`tools/`](tools/) are not housekeeping. They are the product
+of this phase** — `supervise.py`, `vk_capability_census.py`, `hle_coverage.py`,
+`fleet_lint.py`. **A finding that is not indexed will be found again, and the
+finding after it will be wrong.**
+
 ## Translate the console to ARM64. Never inherit the x86 detour.
 
 **The CPU half of the guiding idea, and the reason this project can be faster
