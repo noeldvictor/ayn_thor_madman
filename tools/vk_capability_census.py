@@ -51,6 +51,12 @@ DEVICE_LAYERS = {
                "vita3k/renderer/src/vulkan/renderer.cpp"),
     "eden": ("eden-thor",
              "src/video_core/vulkan_common/vulkan_device.cpp"),
+    # ADDED 2026-08-24. Omitting rpcsx made the no-user list wrong twice: rpcsx
+    # requests VK_KHR_dynamic_rendering_local_read, which this tool reported as
+    # requested by nobody. PS3 is out of the packed binary; it is not out of the
+    # fleet, and a capability census that skips a fork cannot say "nobody".
+    "rpcsx": ("ps3-thor/rpcsx-ui-android",
+              "app/src/main/cpp/rpcsx/rpcs3/Emu/RSX/VK/vkutils/device.cpp"),
 }
 
 # Forks spell an extension two ways: the string "VK_KHR_swapchain" and the macro
@@ -74,6 +80,10 @@ PROBED_ON_DEVICE = [
     "VK_KHR_shader_float16_int8", "VK_KHR_synchronization2",
     "VK_EXT_multi_draw", "VK_EXT_extended_dynamic_state3",
 ]
+
+
+VENDORED_LINE = re.compile(r"third_party|3rdparty|externals|dependencies|"
+                           r"vulkan_core|volk|vk_mem_alloc", re.I)
 
 
 def normalise(token):
@@ -108,6 +118,30 @@ def read(fork):
     found = {normalise(m.group(0)) for m in TOKEN.finditer(text)}
     found |= {normalise_hpp(m.group(1), m.group(2)) for m in HPP_TOKEN.finditer(text)}
     return found
+
+
+
+def whole_fork(fork, extension):
+    """Does the extension appear anywhere in the fork's own source?
+
+    The device-layer file is not the whole fork. This is the check that six
+    wrong "nobody uses this" claims on 2026-08-23 did not have.
+    """
+    rel = DEVICE_LAYERS[fork][0]
+    root = os.path.join(FLEET, rel)
+    body = extension[3:]
+    vendor, _, rest = body.partition("_")
+    camel = "".join(w.capitalize() for w in rest.split("_"))
+    pattern = "%s|%s|vk::%s%sExtensionName" % (
+        extension, extension.upper(), vendor.upper(), camel)
+    cmd = ["git", "-C", root, "grep", "-lIE", pattern, "--",
+           "*.cpp", "*.cc", "*.h", "*.hpp"]
+    try:
+        r = subprocess.run(cmd, capture_output=True, timeout=120)
+    except (OSError, subprocess.SubprocessError):
+        return False
+    out = r.stdout.decode("utf-8", errors="replace").splitlines()
+    return any(not VENDORED_LINE.search(ln) for ln in out)
 
 
 def main():
@@ -157,9 +191,20 @@ def main():
     wanted = args.check if args.check else PROBED_ON_DEVICE
     label = "named on the command line" if args.check else "probed = 1 on the Thor"
     print("\nextensions %s, and who asks for them:" % label)
+    print("  extension                                            device-layer | elsewhere in fork")
     for e in wanted:
         who = sorted(f for f, g in sets.items() if e in g)
-        print("  %-52s %d  %s" % (e, len(who), " ".join(who) if who else "NOBODY"))
+        # A device-layer miss is NOT absence. Six of eight such claims made on
+        # 2026-08-23 were wrong because the extension was used elsewhere in the
+        # fork. This column is that second search, built in.
+        elsewhere = sorted(f for f in sets if f not in who and whole_fork(f, e))
+        print("  %-52s %-12s | %s"
+              % (e, " ".join(who) if who else "-",
+                 " ".join(elsewhere) if elsewhere else "-"))
+    print("")
+    print("A blank left column with names on the right means the fork uses the")
+    print("extension without its device layer naming it. A row blank on BOTH")
+    print("sides is a candidate for absence, not a proof of it.")
     return 0
 
 

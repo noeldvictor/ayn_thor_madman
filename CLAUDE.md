@@ -807,9 +807,20 @@ of the Thor. Measured 2026-08-23 with
 | xenia, azahar | 13 |
 | melonDS | 9 |
 
-**Union 120. Asked for by one fork alone: 84. Asked for by four or more forks:
-5** — and four of those five are how you get a window. **Seven emulators target
+**Union 135. Asked for by one fork alone: 89. Asked for by four or more forks:
+6** — and most of those six are how you get a window. **Eight emulators target
 one GPU and agree on almost nothing.**
+
+**Figures revised 2026-08-24 when rpcsx was added to the census.** Omitting a
+fork made the tool's no-user list wrong twice, so it now also carries a
+**whole-fork second search as a built-in column** — a device-layer miss is not
+absence. **After that, three of the fourteen high-value extensions are unused
+anywhere in the fleet, not eight**: `VK_EXT_load_store_op_none`,
+**`VK_EXT_graphics_pipeline_library`** and `VK_EXT_multi_draw`.
+
+**The middle one matters most here**: precompiling a pipeline needs render state,
+and graphics pipeline library removes that requirement for the shader half.
+**Nobody uses it and the device exposes it.**
 
 **ARMSX2 states the consequence in its own source.** Its frame generation, which
 this file calls possibly the highest-value feature in the fleet, runs at **fp32

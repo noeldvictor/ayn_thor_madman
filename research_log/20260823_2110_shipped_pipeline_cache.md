@@ -108,6 +108,24 @@ resource arguments.** The capability argument is separate.
 wrong.** The device-layer file is not the whole fork. Re-searched across every
 fork's own source, excluding vendored headers:
 
+**FINAL, 2026-08-24.** `tools/vk_capability_census.py` now covers rpcsx and
+carries the second search as a built-in column, so this table no longer depends
+on remembering to do it. **Three of the fourteen are unused anywhere in the
+fleet, not eight:**
+
+| Unused by every fork | What it would buy |
+| --- | --- |
+| **`VK_EXT_load_store_op_none`** | skip redundant tile load and store traffic |
+| **`VK_EXT_graphics_pipeline_library`** | **compile shader stages without knowing the full pipeline state** |
+| **`VK_EXT_multi_draw`** | batch draw submission |
+
+**The middle row is the one this log is about.** Precompiling a pipeline needs
+render state; graphics pipeline library is the extension that removes that
+requirement for the shader half. **Nobody in the fleet uses it, and the device
+exposes it.**
+
+**The original eight, and what the second search found:**
+
 | Extension | After the second search |
 | --- | --- |
 | `VK_EXT_load_store_op_none` | **no user, confirmed twice** |
