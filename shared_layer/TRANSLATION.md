@@ -243,6 +243,59 @@ sets.
 
 See [`../research_log/20260823_1740_rosetta_as_a_star.md`](../research_log/20260823_1740_rosetta_as_a_star.md).
 
+## CONFIRMED ON THE DEVICE: xenia already measured all of this
+
+**Found 2026-08-23 by surveying xenia's `docs/research/`, which holds 553
+documents.** Everything above was derived from literature and static counting.
+**xenia had already measured it on hardware.**
+
+**The problem** — `a64-context-traffic-audit`, hottest function `8272A3A4`:
+
+```text
+blocks=54 instrs=2467
+context_loads=255 context_stores=442
+ppc_loads gpr=255   ppc_stores gpr/cr=252/183
+barriers ctx=85
+```
+
+**697 context memory operations in 2,467 IR instructions — 28% of the IR is
+guest-state traffic**, and every load is a GPR. **That is the device-side twin
+of the static 5.0-against-2.0 measurement above.**
+
+**The experiment** — `a64-gpr-cache-barrier-negative`:
+
+```text
+loads/hits=546/0   stores/cached=562/463   invalid reg=768   barrier_preserves=213
+```
+
+**546 context loads, zero cache hits**, even preserving across all 213 barriers.
+
+**And the conclusion is the strongest evidence this document has:**
+
+> the current emit-time cache is **the wrong layer** ... **it has no durable host
+> register**: the normal HIR register allocator reuses the same small
+> **`x22..x28`** pool, and **`register_invalidations=768`** kills every candidate
+> before the next `LOAD_CONTEXT`.
+
+**`x22..x28` is seven registers. The Thor has thirty-one.**
+
+**That gap is the entire argument of this document, in measured form.** The
+allocator had seven, the guest has 32, the cache scored zero out of 546 — **and
+it had seven only because the design must not assume the host.**
+
+**xenia's own ranked next steps**, verbatim in order: a **compile-time HIR
+promotion** removing redundant clean GPR `LOAD_CONTEXT` before register
+allocation; a **pinned-register experiment** for one or two hot GPRs, "likely
+`r[1]` and `r[11]`"; then a larger allocator change reserving **durable state
+registers**. Its store histogram picks the candidates — **`r[11]` at 110 stores**,
+`r[10]` at 64.
+
+> **Do not spend more time on the current emit-time cache by merely preserving
+> across more barriers; the Thor audit shows that is not where the hits are
+> lost.**
+
+See [`../research_log/20260823_1830_xenia_already_measured_residency.md`](../research_log/20260823_1830_xenia_already_measured_residency.md).
+
 ## What to do, in order
 
 **1. Prove residency on the backend that already has the switch.**

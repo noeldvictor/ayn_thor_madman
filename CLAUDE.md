@@ -2680,7 +2680,25 @@ The other six never learn about it. Nothing today carries a good idea across a
 fork boundary.
 
 Keep a capability inventory. Record which fork has which capability, and at
-what quality. Read it before you build anything. The first question for any
+what quality. Read it before you build anything.
+
+**And read the fork's own research directory. It is the richest unmined seam in
+the fleet.** Surveyed 2026-08-23:
+
+| Fork | `docs/research` | skills | tools |
+| --- | --- | --- | --- |
+| **xenia** | **553** | **37** | **142** |
+| **rpcsx** | 23 | **51** | 40 |
+| Vita3K | 2 | 18 | 4 |
+
+**Roughly 590 documents and 106 skills. This repo had read about a dozen.**
+
+**553 is not a corpus anyone reads exhaustively, but the titles are a searchable
+index of every question already asked — and the negatives are the valuable
+half.** Three documents read from that seam confirmed the register-residency
+thesis on hardware, showed the experiment had already been run and returned
+**zero hits out of 546 context loads**, and supplied a ranked plan for what to
+try next. The first question for any
 new feature is "which fork already has this?", not "how do I write this?".
 
 The survey on 2026-08-22 proved the point. ARMSX2 and melonDS-android both
