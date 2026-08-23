@@ -45,27 +45,84 @@ class MainActivity : ComponentActivity() {
         setContent { ShellApp(this) }
     }
 
-    override fun onStart() {
-        super.onStart()
+    /**
+     * onResume and onPause, not onStart and onStop.
+     *
+     * A Presentation belongs to the app's window token and is NOT torn down
+     * when the activity merely stops, so a panel can sit on Screen-2 showing
+     * stale content while the person is somewhere else entirely. ARMSX2 shipped
+     * that bug and fixed it here; see research_log/20260822_2154.
+     */
+    override fun onResume() {
+        super.onResume()
         attachSecondDisplay()
     }
 
-    override fun onStop() {
-        super.onStop()
-        presentation?.dismiss()
-        presentation = null
+    override fun onPause() {
+        super.onPause()
+        detachSecondDisplay()
     }
 
-    /** Find a display that is not the main one and put a Presentation on it. */
+    private var displayListener: DisplayManager.DisplayListener? = null
+    private var presentationDisplayId: Int = Display.INVALID_DISPLAY
+
+    /**
+     * Put a Presentation on a display the activity is not already on.
+     *
+     * Idempotent. Called on every resume rather than only on a change, because
+     * a dual-screen handheld lets a person move the app, so the activity can
+     * come back on a different display than it left on. That also means the
+     * target cannot be "not DEFAULT_DISPLAY": if the activity itself has been
+     * moved to Screen-2, the display to avoid is Screen-2.
+     */
     private fun attachSecondDisplay() {
         val dm = getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
-        val second = dm.displays.firstOrNull { it.displayId != Display.DEFAULT_DISPLAY }
+
+        if (displayListener == null) {
+            val l = object : DisplayManager.DisplayListener {
+                override fun onDisplayAdded(displayId: Int) = attachSecondDisplay()
+                override fun onDisplayRemoved(displayId: Int) = attachSecondDisplay()
+                override fun onDisplayChanged(displayId: Int) = Unit
+            }
+            runCatching { dm.registerDisplayListener(l, null) }.onSuccess { displayListener = l }
+        }
+
+        val hostId = display?.displayId ?: Display.DEFAULT_DISPLAY
+        val second = dm.displays.firstOrNull { it.displayId != hostId }
+
         if (second == null) {
-            screen2Status = "no second display found"
+            dismissPresentation()
+            screen2Status = "no second display found (app is on $hostId)"
             return
         }
+
+        // Already on the right display. Leave it alone.
+        if (presentation != null && presentationDisplayId == second.displayId) return
+
+        dismissPresentation()
         screen2Status = "display ${second.displayId}, ${second.name}"
+        presentationDisplayId = second.displayId
         presentation = Screen2Presentation(this, second).also { it.show() }
+        // A fresh Presentation starts blank. Restore what Screen-2 was showing.
+        presentation?.render(screen2Title, screen2Lines)
+    }
+
+    private fun detachSecondDisplay() {
+        displayListener?.let { l ->
+            runCatching {
+                (getSystemService(Context.DISPLAY_SERVICE) as DisplayManager)
+                    .unregisterDisplayListener(l)
+            }
+        }
+        displayListener = null
+        dismissPresentation()
+        screen2Status = "detached"
+    }
+
+    private fun dismissPresentation() {
+        runCatching { presentation?.dismiss() }
+        presentation = null
+        presentationDisplayId = Display.INVALID_DISPLAY
     }
 
     var screen2Status by mutableStateOf("not attached")
