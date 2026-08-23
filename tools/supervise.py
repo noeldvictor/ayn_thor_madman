@@ -168,9 +168,14 @@ def check_negatives(paths):
             stripped = line.lstrip()
             if stripped.startswith(">"):
                 continue  # a quotation is somebody else's claim
-            # A quoted list item is a claim being LISTED for verification, not
-            # asserted. This is how the audit backlog is written.
-            if re.match(r'^[-*]\s+["“]', stripped):
+            # A claim in quotation marks inside a list item, a table row or a
+            # heading is being DISCUSSED, not asserted -- that is how the audit
+            # backlog, the verdict tables and their headings are written.
+            #
+            # Checked on the LINE. The EXEMPT pattern below runs against a
+            # multi-line window, where an anchored ^ cannot match a row that
+            # starts partway through.
+            if re.match(r'^([-*]\s|\||#{1,6}\s)', stripped) and re.search(r'["“]', stripped):
                 continue
             if not NEGATIVE.search(line):
                 continue

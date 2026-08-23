@@ -725,6 +725,8 @@ Packing together is not free. Accept these:
 | Only ARMSX2 has frame generation | **xenia has one too, by extrapolation instead of interpolation** |
 | Storage aggregation has no prior art anywhere | **GameThor has 2,136 lines of it** |
 | Only melonDS ships haptics | **seven of eight do; xenia is the outlier** |
+| No fork plans render passes | **xenia plans them, and patches the pass begin retroactively** |
+| Nobody resolves MSAA on-chip | **xenia does, with the multisample store elided** |
 
 The cause is the same every time: **the inventory was built from file listings,
 and a listing cannot tell you what a file does.**
@@ -1242,8 +1244,50 @@ All four read. Ranked by how tiler-correct the attachment operations are:
 That is the design that pairs with `LAZILY_ALLOCATED` memory, since a transient
 attachment that never leaves tile memory needs no backing allocation.
 
-**Nobody merges passes. Nobody uses input attachments. Nobody resolves MSAA
-on-chip.**
+**Nobody merges passes. Nobody uses input attachments** — verified 2026-08-23 by
+counting `pInputAttachments` across seven forks **and reading every hit**; Cemu's
+and eden's are `inputAttachmentCount = 0` initialisers.
+
+**CORRECTED 2026-08-23: xenia resolves MSAA on-chip, and xenia plans render
+passes.** Both claims above were wrong, and the four-fork ranking omitted xenia
+entirely because **the earlier survey read the render pass *cache*** — xenia's
+planning lives in `vulkan_command_processor.cc`, driven by draw analysis.
+
+**Four things it does that nothing else does:**
+
+1. **On-chip MSAA resolve with the store elided.**
+   `subpass.pResolveAttachments = bd_color_resolve ? bd_resolve_refs : nullptr`,
+   and the multisample colour gets `STORE_OP_DONT_CARE` — *"the MSAA color need
+   not be stored (only the resolved 1x is kept)"*. **That is the whole point of
+   an on-chip resolve on a tiler.**
+2. **`LOAD_OP_DONT_CARE` proven, not assumed.**
+   `gpu_edram_passes_dont_care_safe` verifies the pass's first draw covers the
+   whole render area **by replaying its vertex positions on the CPU**, per-pass
+   and per-attachment, and **any uncertainty falls back to loading.**
+3. **A depth path that knows `STORE_OP_NONE` is not `DONT_CARE`** —
+   `STORE_OP_NONE` **preserves** the depth EDRAM memory where `DONT_CARE` would
+   undefine it and corrupt aliasing render targets.
+4. **It patches the pass begin retroactively.** It records
+   `vkCmdBeginRenderPass`, accumulates per-attachment coverage as the pass runs,
+   then rewrites the recorded command — **because load and store ops do not
+   affect Vulkan render pass compatibility**, so the framebuffer and every
+   pipeline stay valid. An ineligible pass simply keeps its original begin.
+
+**Item 4 is the part to take.** It removes the hardest constraint on planning
+attachment operations: that a renderer usually cannot know at `BeginRenderPass`
+what the pass will contain. **It is BSD and already written.**
+
+**So the premise below is half wrong.** A shared render graph does **not** add
+planning nobody has — xenia has it. **It should take xenia's mechanism and its
+three provers, and keep the propagation list for the six forks that lack any.**
+
+**The provers are guest knowledge** — `RB_DEPTHCONTROL`, the guest clear idiom,
+EDRAM tile rounding — **the mechanism is not.**
+
+**Nothing is measured.** Every flag read is **off by default** and marked
+`EXPERIMENTAL (Thor/TBDR)`.
+
+See [`research_log/20260823_1626_xenia_plans_render_passes.md`](research_log/20260823_1626_xenia_plans_render_passes.md).
 
 ### The propagation list
 
@@ -1581,6 +1625,30 @@ themselves:
 | Cemu | 1 | 1 |
 | **ARMSX2** | **0** | **0** |
 | **melonDS** | **0** | **0** |
+
+**CORRECTED 2026-08-23: that table conflates three different things, and the
+Cemu row is misleading.** Its two hits are **comments** in
+`src/Common/cpu_features.h` — `// FEAT_DotProd - UDOT/SDOT` and
+`// FEAT_SHA3 - also provides EOR3/BCAX/RAX1/XAR`. **Cemu detects the features
+and never emits the instructions.** A row one below xenia implies it uses them
+rarely; it uses them not at all.
+
+**And eden was missing from the table**, with five matching files — **all guest
+decode.** dynarmic's `simd_crypto_four_register.cpp` and `simd_sha512.cpp`
+translate the **guest's** `EOR3` and `SHA512`.
+
+**eden is the worst case for the guest/host trap in the fleet, because its guest
+ISA is the host ISA.** Every ARM64 mnemonic appears in eden as guest decoding,
+so counting mnemonics there tells you nothing.
+
+| | Fork | Meaning |
+| --- | --- | --- |
+| **host emission** | **xenia only** | actually uses the device's vector features |
+| feature detection | Cemu | knows the CPU has them |
+| **guest decode** | eden | must recognise them as guest instructions |
+
+**Search the emitter directory, not the tree.** `src/xenia/cpu/backend/a64/`
+answers this in one pass. **The claim itself holds.**
 
 ARMSX2 and melonDS have baseline flags **and** no emitter support. **xenia is
 the only fork using the device's vector features at all.**
@@ -4467,9 +4535,25 @@ the app.
 Move each fork to [the standard row](#the-standard-row). One fork at a time.
 Build after each change. Verify C++20 per fork.
 
-Start with **melonDS-android**. It is the only fork with a build recipe already
-verified on this box, dated 2026-07-12 in `melonds_HD/CLAUDE.md`. A known-good
-starting point separates a toolchain failure from a recipe failure.
+**STALE, corrected 2026-08-23. Four forks now build on this box, all on the
+standard row**, so melonDS is no longer the only known-good starting point:
+
+| Fork | On the standard row |
+| --- | --- |
+| **Cemu** | **5 min 8 s** |
+| **ARMSX2** | **9 min 3 s** |
+| **azahar** | 14 min 49 s |
+| **melonDS** | 18 min 12 s |
+
+**Two do not build, and neither failure is in an emulator.** Vita3K's own recipe
+runs gradle from the wrong directory and its prebuilt FFmpeg has no `x86_64`
+build — **`arm64-v8a` configures and compiles cleanly.** eden needs `pkg-config`
+and then **`glslangValidator`, which the NDK does not ship** — it provides
+`glslc`. GameThor cannot resolve a SNAPSHOT dependency that no longer exists.
+
+**Start with Cemu**, which is fastest because **it compiles none of its
+dependencies** — vcpkg supplies them prebuilt. **Source-built dependencies drive
+build time, not emulator size.**
 
 Then continue in rising order of build cost. Leave ARMSX2, Cemu-thor and
 xenia-thor until last. They are the most expensive to build.

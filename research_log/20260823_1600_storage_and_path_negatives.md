@@ -1,11 +1,11 @@
-# Three more negatives checked: storage, haptics and the path resolver
+# Five more negatives checked: storage, haptics, paths, render passes, vector features
 
 **Goal: continue verifying the live absolute negatives `tools/supervise.py`
 found in [`CLAUDE.md`](../CLAUDE.md).**
 
 No device. Reading only.
 
-**Result: two wrong, one confirmed with a refinement.**
+**Result: five checked here and in the render-pass log — three wrong, two confirmed but with their evidence corrected.**
 
 ## WRONG: "Storage aggregation remains the one screen with no prior art anywhere"
 
@@ -138,6 +138,88 @@ two entries, not one.**
 **Take melonDS's delegate and amplitude fallback for the first, and eden's
 per-device routing for the second.**
 
+## HOLDS, but its evidence table is wrong: "xenia is the only fork using the device's vector features at all"
+
+**The claim survives. The table under it does not, and it would mislead the next
+reader.**
+
+`CLAUDE.md` records:
+
+| Fork | `SDOT`/`UDOT` | `EOR3`/`BCAX`/`RAX1`/`XAR` |
+| --- | --- | --- |
+| **xenia** | **2 files** | **6 files** |
+| Cemu | 1 | 1 |
+| ARMSX2 | 0 | 0 |
+| melonDS | 0 | 0 |
+
+**Cemu's "1 and 1" are comments.** Both hits are in `src/Common/cpu_features.h`:
+
+```cpp
+bool asimddp{ false };  // FEAT_DotProd - UDOT/SDOT
+bool sha3{ false };     // FEAT_SHA3 - also provides EOR3/BCAX/RAX1/XAR
+```
+
+**Cemu detects the features and never emits the instructions.** A count that
+puts it one row below xenia implies it uses them at a tenth of xenia's rate. It
+uses them not at all.
+
+**And eden was missing from the table**, with five files matching — **all guest
+decode.** `simd_crypto_four_register.cpp` and `simd_sha512.cpp` in dynarmic
+translate the **guest's** `EOR3` and `SHA512` instructions, and
+`core/arm/nce/visitor_base.h` is a guest visitor.
+
+**eden is the worst case for this trap in the whole fleet**, because **its guest
+ISA is the host ISA.** Every ARM64 instruction name appears in eden as guest
+decoding. **Counting instruction mnemonics tells you nothing there.**
+
+**So there are three distinct things one grep conflated:**
+
+| | Fork | Meaning |
+| --- | --- | --- |
+| **host emission** | **xenia only** — `a64_backend.cc`, `a64_sequences.cc` | actually uses the device's vector features |
+| feature **detection** | Cemu | knows the CPU has them |
+| **guest decode** | eden | must recognise them as guest instructions |
+
+**Search the emitter directory, not the tree.** `src/xenia/cpu/backend/a64/`
+answers this in one pass; the whole tree does not.
+
+## CONFIRMED: transient attachments, and performance-as-a-test
+
+**Two that survive two searches each.**
+
+### "Vita3K tracks transient attachments and nothing else does" — holds
+
+First search: `LAZILY_ALLOCATED|eLazilyAllocated|TRANSIENT_ATTACHMENT|
+eTransientAttachment` across seven forks, excluding Vulkan headers. **One hit,
+in Vita3K `renderer/src/vulkan/creation.cpp`.**
+
+Second search, different words: `transient|memoryless|tile.?memory|
+on.?chip.?only`. **Every other hit is an unrelated use of the word** — a cvar
+name, a service, a libretro shim, a main function.
+
+**This is the one genuinely tiler-correct thing in the fleet that only one fork
+does**, and it pairs with the `DONT_CARE` work: an attachment that never leaves
+tile memory needs no backing allocation.
+
+### "Almost no emulator does performance-as-a-test" — holds
+
+The claim is narrow: **record FPS and frametime per commit, and fail the build on
+a regression.**
+
+**A filename count is misleading here and nearly produced a wrong answer.**
+Matching `bench|perf.*test|regression` returns 32 files in ARMSX2 and 39 in
+azahar; **after excluding vendored trees, ARMSX2 has one and azahar has none.**
+
+| Fork | What is actually there | Is it a per-commit gate |
+| --- | --- | --- |
+| ARMSX2 | `ee_sa_perf_console_conformance_tests.cpp` | **no** — a conformance test |
+| xenia | `tools/edram_bench/` | **no** — a standalone benchmark |
+| **Vita3K** | `run-thor-regression-suite.ps1`, `thor-render-regression-matrix.json` | **closest** — an on-device matrix, run by hand |
+| azahar, melonDS, Cemu | nothing | — |
+
+**Nobody fails a build on a performance regression.** Vita3K has the closest
+thing and it is manual.
+
 ## Running tally
 
 `tools/supervise.py` listed **15** live unqualified negatives in `CLAUDE.md`.
@@ -149,9 +231,18 @@ Three checked so far:
 | "storage aggregation has no prior art anywhere" | **WRONG** — GameThor has 2,136 lines |
 | "Vita3K has a content path resolver, nobody else does" | **holds**, refine to name eden's adjacent half |
 | "haptics nobody else ships" | **WRONG and inverted** — 7 of 8 have them; xenia is the outlier |
+| "no fork plans render passes" | **WRONG** — xenia plans them and patches the begin retroactively |
+| "nobody resolves MSAA on-chip" | **WRONG** — xenia does, with the store elided |
+| "nobody uses input attachments" | **holds** — every hit is a zero-initialiser |
+| "xenia is the only fork using the device's vector features" | **holds**, but its evidence table conflates emission, detection and guest decode |
+| "Vita3K tracks transient attachments, nothing else does" | **holds** |
+| "almost no emulator does performance-as-a-test" | **holds** — nobody gates a build on it |
+| "melonDS is the only fork with a verified build recipe" | **STALE** — four forks now build on the standard row |
 
-**Three of four wrong.** The repo's table said every one had been wrong; the
-rate is now **15 of 17** across its history.
+**Six of eleven wrong or stale.** The repo's table said every one had been
+wrong; the rate is now **18 of 24** across its history — high, but no longer
+total. **And of the five that held, three needed their evidence corrected**, so
+the claim surviving is not the same as the reasoning surviving.
 
 **All three misses share a cause, and none was a hard search.** Frame generation
 was missed because the search was by filename and xenia's lives inside
@@ -165,14 +256,9 @@ generation splits into interpolation and extrapolation, haptics into touch
 feedback and rumble routing. **That is now the most common shape of a wrong
 negative in this repo**, ahead of the feature simply existing elsewhere.
 
-## The eleven still unchecked
+## The four still unchecked
 
-- "no fork plans render passes"
-- "Vita3K tracks transient attachments and nothing else does"
 - "nobody has priced Anime4K's two dedicated passes"
-- "xenia is the only fork using the device's vector features at all"
-- "melonDS-android is the only fork with a verified build recipe"
-- "almost no emulator does performance-as-a-test"
-- and five more
+- and three more, all low-value
 
 **Do not rely on any of them until checked.**

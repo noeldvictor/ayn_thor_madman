@@ -327,3 +327,72 @@ trusts is worse than no check.**
 
 `python tools/supervise.py --strict` exits **0** on this working tree. Three
 `WARN`s remain and all three are legitimate prompts rather than errors.
+
+---
+
+# Addendum — the negative audit, eleven of fifteen checked
+
+**`tools/supervise.py` found 15 unqualified absolute negatives still in
+`CLAUDE.md`, written before the rule that a negative needs a second search.**
+The repo's own table says every such claim it has made has been wrong. Eleven
+are now checked.
+
+## Six wrong or stale
+
+| Claim | Reality |
+| --- | --- |
+| only ARMSX2 has frame generation | **xenia has one**, by extrapolation — no held frame, where ARMSX2's interpolation costs one |
+| storage aggregation has no prior art | **GameThor has 2,136 lines**, including `moveGame` between internal and external storage |
+| haptics nobody else ships | **seven of eight forks have them**; xenia is the outlier |
+| **no fork plans render passes** | **xenia plans them, and patches the pass begin retroactively** |
+| nobody resolves MSAA on-chip | **xenia does**, with the multisample store elided |
+| melonDS is the only verified build recipe | **four forks now build** on the standard row |
+
+## Five hold, three with corrected evidence
+
+| Claim | Note |
+| --- | --- |
+| nobody uses input attachments | every hit in every fork is a zero-initialiser |
+| Vita3K tracks transient attachments alone | two searches, different words |
+| almost no emulator gates a build on performance | Vita3K's manual matrix is closest |
+| Vita3K has a content path resolver | **holds**, but eden solves the adjacent SAF/removable-volume half |
+| xenia alone uses the device's vector features | **holds**, but its table conflates three things |
+
+## The render pass finding is the consequential one
+
+**`THOR_RENDER.md` commitment 2 rests on a false premise.** `CLAUDE.md` argued a
+shared render graph "adds planning nobody has". **xenia has it**, and a graph
+that ignored it would replace analysis with a lookup.
+
+**What xenia does that nothing else does:** an on-chip MSAA resolve with
+`STORE_OP_DONT_CARE` on the multisample colour; `LOAD_OP_DONT_CARE` **proven by
+replaying the first draw's vertex positions on the CPU**, per-attachment, falling
+back to loading on any uncertainty; a depth path that knows **`STORE_OP_NONE`
+preserves EDRAM where `DONT_CARE` would undefine it**; and — the part to take —
+**it patches the already-recorded `vkCmdBeginRenderPass`** after accumulating
+coverage, **because load and store ops do not affect render pass
+compatibility.**
+
+**That removes the hardest constraint on pass planning**: that a renderer cannot
+usually know at `BeginRenderPass` what the pass will contain. **It is BSD.**
+
+## Two lessons about the instrument, not the fleet
+
+**Filename counts are the wrong tool twice over.** Matching
+`bench|perf.*test|regression` gives ARMSX2 32 files and azahar 39; **after
+excluding vendored trees, one and zero.** And frame generation returned **zero**
+files for xenia because its implementation lives inside `presenter.*`.
+
+**eden is the worst case for the guest/host trap in the fleet, because its guest
+ISA is the host ISA.** Every ARM64 mnemonic appears there as guest decoding, so
+`EOR3` in dynarmic means it *decodes* the instruction, not that it emits it.
+**Cemu's two hits are comments in `cpu_features.h`** — detection, not use.
+
+## The supervisor needed three fixes while doing this
+
+All three were **false positives on quoted claims** — a list item, a table row,
+a heading — each *discussing* a claim rather than asserting one. Generalised to
+one rule: a quoted claim inside a list item, table row or heading is exempt.
+**The self-test still catches a planted bare assertion.**
+
+**Four claims remain unchecked**, all low value.
