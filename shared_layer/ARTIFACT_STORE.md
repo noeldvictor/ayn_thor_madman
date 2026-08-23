@@ -103,9 +103,23 @@ mechanism for pooling exists; the pinned driver extends what it can pool.**
 **Fossilize is MIT and is a Vulkan layer**, so it records a backend without
 modifying that backend's source — which the standing rule requires.
 
-**Read one caveat first.** Cemu **disables** Valve's layer:
-`DISABLE_VK_LAYER_VALVE_steam_fossilize_1=1` in `src/main.cpp`. The reason is not
-recorded. Find it.
+**The caveat is answered, 2026-08-23, and it becomes two rules.** Cemu disables
+Valve's layer because **Steam's shader precaching conflicts with Cemu's async
+shader compilation** — its own guide reports "graphics or models failing to
+render". That is a **two-owner problem**: Cemu could not switch off a layer the
+Steam client injected. **This app owns both the device layer and the compile
+schedule**, so the conflict does not arise here.
+
+**But two rules follow and they are binding:**
+
+1. **Record from inside the device layer this project owns, not from a layer
+   under a backend doing async compilation** — or disable async compilation for
+   the capture run and record that it was disabled.
+2. **The acceptance test is visual.** Cemu's failure was **silent visual
+   corruption, not a crash and not a stall**, so a cache run judged on frame time
+   alone would have passed while rendering a broken game.
+
+See [`../research_log/20260823_2340_why_cemu_disables_fossilize.md`](../research_log/20260823_2340_why_cemu_disables_fossilize.md).
 
 ## Open, and none of it is measured
 

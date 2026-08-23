@@ -512,18 +512,35 @@ can ship one to its users. **The Thor pins one driver**, which is the same
 property that lets Valve distribute precompiled shaders for the Steam Deck.
 **Nothing else in emulation has that property.**
 
-**Read this first, before anything else in this entry.** Cemu, which has the best
-pipeline cache in the fleet, **explicitly disables Valve's layer**:
-`_putenvSafe("DISABLE_VK_LAYER_VALVE_steam_fossilize_1=1")` in `src/main.cpp`.
-**The reason is not recorded anywhere.** Find it. Cemu paid for that line and it
-may invalidate this whole entry.
+**The Cemu caveat is answered and this entry survives it.** Cemu disables Valve's
+layer because Steam's shader precaching **conflicts with Cemu's async shader
+compilation**, producing "graphics or models failing to render". That is two
+owners of pipeline caching in one process, and Cemu could not turn off a layer
+the Steam client injected. **This app owns both sides.**
+
+**Two rules come out of it and both bind this run:**
+
+- **Do not record through a layer while the backend compiles pipelines
+  asynchronously.** Record from inside the shared device layer, or turn async
+  compilation off for the capture and say so in the result.
+- **Async compilation and a warm cache attack the same problem.** Async hides a
+  compile behind a placeholder; a warm cache means there is nothing to hide.
+  **Measuring one while the other moves measures neither.** State the async
+  setting and hold it fixed across arms.
+
+See [`research_log/20260823_2340_why_cemu_disables_fossilize.md`](research_log/20260823_2340_why_cemu_disables_fossilize.md).
 
 **The run:** on one backend and one title, capture a cold first-play session and
 a second session with the cache warmed by the first. Record frame time
 percentiles, not the mean.
 
-**Expected signature if it works:** **the 99th percentile frame time falls and
-the mean does not move.** Stutter lives in the tail. **A mean improvement would
+**A frame comparison against a reference is mandatory, not optional.** Cemu's
+failure mode with a second cache owner was **silent visual corruption**, so a run
+judged on timing alone can pass while rendering a broken game.
+
+**Expected signature if it works:** **the 99th percentile frame time falls, the
+mean does not move, and the frames match the reference.** Stutter lives in the
+tail. **A mean improvement would
 be evidence of something else and should be treated as `CONFOUNDED`.**
 
 **Also record, because they decide feasibility and nobody has measured them:**
