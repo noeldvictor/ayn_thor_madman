@@ -729,7 +729,52 @@ Register pressure is the central problem in a guest-to-host recompiler and the
 standard answer is a stack spill. On the X3 the vector file is faster than L1.
 Check whether any of the four recompilers does this.
 
-**Both leads belong in the experiment ledger before anyone acts on them.**
+### One code layout cannot suit all four cores
+
+The four optimization guides give **directly conflicting advice**. Distilled in
+[`hardware_ref/thor/cpu/CORE_COMPARISON.md`](hardware_ref/thor/cpu/CORE_COMPARISON.md).
+
+| Core | Branch layout advice |
+| --- | --- |
+| X3, A710 | at most 4 branches per aligned 32-byte region |
+| **A715** | **prefer branches concentrated**: one 32-byte region with two branches beats two regions with one each |
+| A510 | at most **one** conditional branch per aligned **16-byte** region |
+
+A715 asks for the opposite of A510. Alignment thresholds differ too: the A510
+penalises loads crossing 32 bytes and stores crossing 16, where the big cores
+penalise 64 and 32.
+
+**Consequence: tune the recompiler for the X3 and place hot code there.** The
+alternative is per-cluster codegen variants, which multiplies the code cache
+and the testing.
+
+### The A510 vector unit is shared between two cores
+
+> Cortex-A510 shares a VPU between all Cortex-A510 cores in a complex.
+> Instructions being executed on VPU pipelines by one core may reduce
+> performance of the instructions executed on the VPU by the other core.
+
+The Thor has three A510s, so at least one pair shares a vector unit and an L2.
+**Two vector-heavy threads on a paired A510 contend, and nothing in either
+thread reveals it.**
+
+The datapath may also be 2x64-bit rather than 2x128-bit, which would halve
+128-bit vector throughput there. **Both are readable from the device**
+through `IMP_CPUCFR_EL1.Cores` and `IMP_CPUCFR_EL1.VPU`. Read them before
+placing vector work on the little cores.
+
+### The A710 stalls three cycles on lane-assembled vector registers
+
+> a V-pipeline uOP containing more than 1 quad-word register source, a portion
+> or all of which was previously written as one or multiple single words, will
+> stall in dispatch for three cycles.
+
+**This is exactly what an emulated guest vector unit does.** Writing lanes
+individually and then using the whole register is the normal case for PS2 VU,
+Xbox 360 VMX128 and DS geometry. Three cycles on first use, on two of the
+Thor's cores.
+
+**All these leads belong in the experiment ledger before anyone acts on them.**
 
 ## The philosophy: share the hot path, not the periphery
 
@@ -1333,7 +1378,7 @@ manual here one time. Every fork reads it from here.
 | Directory | Contents |
 | --- | --- |
 | `hardware_ref/thor/soc/` | Snapdragon 8 Gen 2 documents |
-| `hardware_ref/thor/cpu/` | Cortex-X3, A715, A710, A510. Includes [`CORTEX_X3_NOTES.md`](hardware_ref/thor/cpu/CORTEX_X3_NOTES.md), the codegen rules distilled from the X3 optimization guide. |
+| `hardware_ref/thor/cpu/` | Cortex-X3, A715, A710, A510. [`CORTEX_X3_NOTES.md`](hardware_ref/thor/cpu/CORTEX_X3_NOTES.md) for the prime core, [`CORE_COMPARISON.md`](hardware_ref/thor/cpu/CORE_COMPARISON.md) for where the four cores disagree. |
 | `hardware_ref/thor/gpu/` | Adreno 740, Vulkan, driver notes. Includes [`VULKAN_TIPS.md`](hardware_ref/thor/gpu/VULKAN_TIPS.md), the practical rules sheet for getting the most out of this GPU. |
 | `hardware_ref/thor/android/` | Android 13 platform notes, NDK notes |
 | `hardware_ref/thor/device/` | Panel, thermals, controller, battery |
