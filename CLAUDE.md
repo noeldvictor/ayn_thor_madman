@@ -1497,9 +1497,24 @@ git -C <fork> grep -hoiE 'Copyright [0-9-]* (Dolphin|Citra|yuzu|PCSX2|RPCS3|melo
 ### These forks have upstreams they do not track
 
 melonDS-android carries Dolphin 2008 code. Vita3K carries Dolphin 2013 code.
-**Neither lists Dolphin as a remote**, so neither will ever see a fix. Twelve
-years of improvement sits upstream of a fork nobody thinks of as having an
-upstream.
+**Neither lists Dolphin as a remote**, so neither will ever see a fix.
+
+**Checked 2026-08-22, and the cost is concrete.** Dolphin's overlay today still
+uses the same four class names it used in 2013 — so does azahar through Citra,
+and so does Vita3K. **Three independent codebases, one design, twelve years, no
+coordination.** That is the strongest evidence yet that the shape is right.
+
+But the forks are behind on two things:
+
+- **`InputOverlayPointer.kt` exists upstream and in neither fork.** A fifth
+  component for pointer input. The Wii IR pointer is its origin, but a stylus
+  is the same abstraction and **the DS and 3DS both use one.**
+- **Dolphin migrated the overlay to Kotlin.** azahar did too, independently.
+  **Vita3K is still Java.**
+
+**It takes one lookup to find out whether an ancestor moved on.** Do it for
+Citra and yuzu, PCSX2, rpcs3 and melonDS upstream before extracting from their
+descendants.
 
 ## The key idea
 

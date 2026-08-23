@@ -261,8 +261,7 @@ three integrations of one AMD library.
 
 ## What is still unknown
 
-- **Whether the ancestors have fixes worth back-porting.** Dolphin's overlay
-  has twelve years of improvement that Vita3K never received.
+- ~~Whether the ancestors have fixes worth back-porting.~~ **Answered below.**
 - **Whether the ancestors have fixes worth back-porting.** Dolphin's overlay
   has twelve years of improvement that Vita3K never received. That is free work
   sitting upstream of a fork nobody thinks of as having an upstream.
@@ -370,6 +369,50 @@ controller is present.**
 **The Thor has physical controls.** A touch overlay drawn permanently over a
 game on a device with real buttons is wrong, and only one fork in the fleet
 solved it.
+
+## Answered: what the ancestor has that the forks do not
+
+Checked Dolphin's current Android overlay, 2026-08-22.
+
+`Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/overlay/`:
+
+```
+InputOverlay.kt   InputOverlayDrawableButton.kt   InputOverlayDrawableDpad.kt
+InputOverlayDrawableJoystick.kt   InputOverlayPointer.kt
+```
+
+### The design is durable across three codebases and twelve years
+
+**Dolphin still uses the same four class names it used in 2013.** So does
+azahar, through Citra. So does Vita3K, which kept the 2013 copyright header.
+
+**Three independent codebases, one design, twelve years, no coordination.**
+That is far stronger evidence that the shape is right than either fork alone,
+and stronger than the eight shared method names measured earlier.
+
+### Two things the forks are behind on
+
+1. **`InputOverlayPointer.kt` exists upstream and in neither fork.** A fifth
+   component, for pointer input. The Wii remote's IR pointer is the obvious
+   origin, but a stylus and a mouse are the same abstraction, and **the DS and
+   3DS both use a stylus.** Worth reading before designing touch input.
+
+2. **Dolphin migrated the whole overlay to Kotlin.** azahar is Kotlin,
+   independently. **Vita3K is still Java**, so it is behind by a full language
+   migration.
+
+### This is the "free work upstream" claim, made concrete
+
+The document argued that informal copying gives you the initial value and none
+of the compounding. **Here is the compounding, itemised:** a fifth component
+and a language migration, sitting in a repository neither fork lists as a
+remote.
+
+**Nobody has to guess whether the ancestors moved on. It takes one lookup.**
+
+Do the same for the other ancestors before extracting from their descendants:
+Citra and yuzu for the settings framework, PCSX2 for ARMSX2, rpcs3 for rpcsx,
+melonDS upstream for melonDS-android.
 
 ## The uncomfortable part
 
