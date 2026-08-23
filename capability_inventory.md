@@ -670,9 +670,14 @@ opposite failure. Two forks, two findings, neither aware of the other.
 **READ:** the file inventory and `XeniaCoverArt.java`. **LISTED only:** the
 bodies of the other twenty files.
 
-**xenia has the most complete shell and the worst structure.** 12,313 lines of
-Java across the emulator package. The completeness is real; so is the
-accretion.
+**CORRECTED 2026-08-22 by measurement. xenia has the SMALLEST Tier 1 frontend
+and the worst structure.** 12,334 lines of Java across the emulator package,
+against melonDS-android's 78,033 and ARMSX2's 63,111.
+
+**The accretion is real. The completeness was assumed.** What xenia genuinely
+has is the most complete *feature list* — it reached for more shell features
+than anyone else — and the worst structure to hold them in. Take the list, not
+the shape, and take the structure from melonDS-android.
 
 Its shape is **Activity-per-manager**: `SettingsActivity`,
 `GpuDriverManagerActivity`, `GamePatchManagerActivity`,
