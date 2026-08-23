@@ -454,6 +454,53 @@ cited as the proof that translation beats emulation on this device. GameThor is
 not an odd fit for the fleet. It is the working example of the direction xenia
 wants to move toward. Keep it, and study it as evidence.
 
+## Guest accounts and guest system applets — READ
+
+azahar has the most developed applet system in the fleet and it is structured
+the way the shared layer needs.
+
+| Layer | Path |
+| --- | --- |
+| Frontend interface | `src/core/frontend/applets/` — `swkbd`, `mii_selector`, `default_applets` |
+| Guest HLE side | `src/core/hle/applets/` — `applet`, `erreula` (the error applet) |
+| Qt implementation | `src/citra_qt/applets/` |
+| Android implementation | `src/android/.../applets/` Kotlin plus JNI |
+
+**A frontend-agnostic interface with per-frontend implementations and a
+headless default.** That is exactly the shape this project needs, already
+built.
+
+Its own header states the split:
+
+> Configuration thats relevent to frontend implementation of applets. Anything
+> missing that we later learn is needed can be added here and filled in by the
+> backend HLE applet
+
+`Frontend::SoftwareKeyboard`, 152 lines, carries a `KeyboardConfig` with button
+configuration, accepted-input mode, multiline, max length and digits, hint
+text, caller-supplied button labels, and a filter set covering digits, `@`,
+`%`, `\`, profanity and a guest callback. It returns `KeyboardData` and a
+`ValidationError` enum with twelve cases.
+
+**Taken into [`shared_layer/thor_backend.h`](shared_layer/thor_backend.h)** as
+the guest system UI channel. azahar is GPL-2.0-or-later so it can be used as
+GPL-3.0.
+
+Note the config is 3DS-shaped in places: a `Triple` button layout exists
+because Nintendo's keyboard has an "I Forgot" button, and the profanity filter
+is Nintendo's. **The structure generalises; those specifics do not.**
+
+### Guest accounts
+
+| Fork | Implementation |
+| --- | --- |
+| Cemu-thor | `src/Cafe/Account/Account.cpp`, `Account.h`, `AccountError.h` |
+| azahar-thor | `MiiSelector.kt`, `MiiSelectorDialogFragment.kt`, `mii_selector.cpp` |
+| eden-thor | `ProfileAdapter.kt` |
+
+Not found in xenia-thor, Vita3K-Thor or rpcsx-ui-android. **The search was by
+name and those forks may use different ones**, which has been wrong before.
+
 ## Survey gaps
 
 Partly surveyed forks:

@@ -134,6 +134,96 @@ struct GuestScreen {
   bool required_by_title;
 };
 
+// ------------------------------------------------------- guest system UI
+//
+// The guest OS asks the host to show something and waits for an answer. A
+// software keyboard, an account picker, an avatar selector, an error dialog.
+//
+// THE APP RENDERS ALL OF IT, IN THE APP'S STYLE. Seven backends each drawing
+// their own system dialogs is the inconsistency this project exists to remove,
+// and a person should not be able to tell which backend asked.
+//
+// Modelled on azahar Frontend::SoftwareKeyboard, which is the most developed
+// version of this in the fleet and already splits it the right way: the guest
+// HLE fills in a config, the frontend renders it and returns data. Its own
+// header says so.
+//
+// azahar is GPL-2.0-or-later, so this may be used as GPL-3.0.
+
+enum class AppletKind : uint8_t {
+  kTextEntry,     // software keyboard
+  kUserSelect,    // account, profile, Mii, gamertag
+  kErrorDialog,   // the guest raised an error and wants it shown
+};
+
+// What kind of input the guest will accept. Taken from azahar's AcceptedInput,
+// which learned these cases from real 3DS titles.
+enum class AcceptedInput : uint8_t {
+  kAnything,
+  kNotEmpty,
+  kNotEmptyAndNotBlank,
+  kNotBlank,
+  kFixedLength,
+};
+
+struct TextEntryConfig {
+  AcceptedInput accept;
+  bool multiline;
+  uint16_t max_length;
+  uint16_t max_digits;
+  std::string_view hint;
+
+  // Button labels the guest supplies. The app styles them; it does not rename
+  // them. A guest may ask for one, two or three.
+  uint8_t button_count;
+  std::string_view button_text[3];
+
+  // Guest-imposed restrictions. Kept as a flag set rather than a callback, so
+  // the app can validate before dismissing rather than round-tripping.
+  bool prevent_digit;
+  bool prevent_at;
+  bool prevent_percent;
+  bool prevent_backslash;
+  bool prevent_profanity;
+
+  // True when the guest wants to vet the string itself. The app must then
+  // call back before accepting.
+  bool guest_validates;
+};
+
+// Why the app rejected input, so it can say so in place rather than failing
+// silently. Superset of azahar's ValidationError.
+enum class ValidationError : uint8_t {
+  kNone,
+  kButtonOutOfRange,
+  kMaxDigitsExceeded,
+  kAtSignNotAllowed,
+  kPercentNotAllowed,
+  kBackslashNotAllowed,
+  kProfanityNotAllowed,
+  kGuestRejected,
+  kFixedLengthRequired,
+  kMaxLengthExceeded,
+  kBlankInputNotAllowed,
+  kEmptyInputNotAllowed,
+};
+
+struct TextEntryResult {
+  std::string_view text;
+  uint8_t button;   // which of the guest's buttons was pressed
+  bool cancelled;
+};
+
+// A guest user the backend knows about. Cemu has Account, azahar has Mii,
+// eden has profiles; the shapes differ and only the id crosses the boundary.
+struct GuestUser {
+  std::string_view id;
+  std::string_view display_name;
+};
+
+// RULE: an applet request BLOCKS THE GUEST. Show it immediately. Do not queue
+// it behind an animation and do not batch it with a frame.
+
 // ------------------------------------------------------------- the interface
 
 class Backend {
@@ -159,6 +249,13 @@ class Backend {
 
   virtual uint32_t GuestScreenCount() const = 0;
   virtual GuestScreen GuestScreenAt(uint32_t index) const = 0;
+
+  // ---- guest users
+  //
+  // Empty is valid. Not every system has accounts.
+  virtual uint32_t GuestUserCount() const = 0;
+  virtual GuestUser GuestUserAt(uint32_t index) const = 0;
+  virtual bool SetActiveGuestUser(std::string_view id) = 0;
 
   // ---- the frame
   //
@@ -223,6 +320,20 @@ void ReportResolve(std::string_view reason);
 
 // Report an LRZ break, for the same reason.
 void ReportLrzBreak(std::string_view reason);
+
+// ---- guest system UI, host side
+//
+// The backend calls these when the guest asks. They block until the person
+// answers, because the guest is blocked too.
+
+ValidationError RequestTextEntry(const TextEntryConfig& config,
+                                 TextEntryResult* out);
+
+// Returns false if the person cancelled.
+bool RequestUserSelect(std::string_view* out_user_id);
+
+// The guest raised an error and wants it shown. Returns when acknowledged.
+void ShowGuestError(std::string_view title, std::string_view message);
 
 }  // namespace thor
 
