@@ -158,8 +158,21 @@ costs one game's warm cache, and with one shared cache it discards every
 backend's. **Fix: name the cache file by `pipelineCacheUUID` and keep the last
 two.** Switching back then finds the old file intact.
 
-**Not done:** xenia's `vulkan_pipeline_cache.cc` has not been compared. It is
-BSD, and the licence rule prefers it when quality is close.
+**xenia compared, and the licence question dissolves.** xenia relies on the
+driver to reject a stale blob, which is correct per the specification. But under
+that approach a stale cache gives **no signal at all** — the game stutters
+through recompilation and nothing says why. **Validate for diagnostics, then let
+the driver decide.** The two are not alternatives, and this is the same rule the
+contract already states for texture upload declines.
+
+**Neither fork separated it.** xenia's `vulkan_pipeline_cache.cc` is 2,875 lines
+of which about 120 concern the blob; the rest is guest pipeline state. So the
+separation that makes xenia right for candidate 0 does not extend here.
+
+**At ~120 lines, licence stops deciding.** The logic is `vkCreatePipelineCache`
+with `pInitialData`, `vkGetPipelineCacheData`, and a header layout defined by the
+Vulkan specification. A file format and a field list are facts, not expression.
+**Write it from the spec, using ARMSX2's validation as the checklist.**
 
 ### Rejected candidates
 
