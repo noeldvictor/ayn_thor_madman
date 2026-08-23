@@ -261,10 +261,8 @@ three integrations of one AMD library.
 
 ## What is still unknown
 
-- **How far the touch overlays have drifted.** The azahar and eden settings
-  files were diffed and had diverged completely. Vita3K's overlay and azahar's
-  have not been diffed, and the settings result suggests they will have
-  diverged too.
+- **Whether the ancestors have fixes worth back-porting.** Dolphin's overlay
+  has twelve years of improvement that Vita3K never received.
 - **Whether the ancestors have fixes worth back-porting.** Dolphin's overlay
   has twelve years of improvement that Vita3K never received. That is free work
   sitting upstream of a fork nobody thinks of as having an upstream.
@@ -272,6 +270,60 @@ three integrations of one AMD library.
   second pass keyed on `SPDX-FileCopyrightText` would find more.
 - Cemu and xenia showed nothing, which may mean independent, or may mean they
   attribute differently.
+
+## Overlay drift, measured: the API survived where the code did not
+
+Kotlin against Java makes a line diff meaningless, so the comparison is
+structural: which method names both still carry, 2026-08-22.
+
+| | azahar `InputOverlay.kt` | Vita3K `InputOverlay.java` |
+| --- | --- | --- |
+| Methods | 19 | 37 |
+| Lines | 1302 | 1067 |
+
+**Eight method names survive in both**, twelve years after the split:
+
+```
+draw            onTouch              onTouchWhileEditing   refreshControls
+isInEditMode    setIsInEditMode      resetButtonPlacement  saveControlPosition
+```
+
+That is 42% of azahar's surface and 22% of Vita3K's.
+
+### Those eight methods are the overlay contract
+
+They were not designed as a contract. **They are what survived two independent
+twelve-year divergences**, which is a better filter than any design meeting:
+
+| Method | What it means the overlay must do |
+| --- | --- |
+| `draw` | render itself |
+| `onTouch` | handle play-mode input |
+| `onTouchWhileEditing` | handle a second, distinct edit-mode input path |
+| `isInEditMode`, `setIsInEditMode` | have an edit mode at all |
+| `refreshControls` | reload its layout without a restart |
+| `resetButtonPlacement` | return to defaults |
+| `saveControlPosition` | persist a moved control |
+
+**The edit mode is the interesting survivor.** Two separate `onTouch` paths and
+an explicit mode flag mean editing the overlay is not a settings screen; it is
+a direct-manipulation mode inside the game view. Both teams kept that.
+
+### This contradicts the settings result, usefully
+
+| | Settings framework | Touch overlay |
+| --- | --- | --- |
+| Shared names | file names only | **method names too** |
+| Literal lines in common | essentially none | not comparable, different languages |
+| What survived | the type hierarchy | **the API surface** |
+
+**Drift is not uniform.** The settings framework kept a shape; the overlay kept
+an interface. So "how far has it drifted" has to be measured per subsystem, and
+the answer changes what extraction means each time.
+
+Vita3K's overlay has **nearly twice the methods in fewer lines**, so azahar has
+fewer and larger ones. Neither is obviously better and the difference is worth
+reading before choosing a base.
 
 ## The uncomfortable part
 

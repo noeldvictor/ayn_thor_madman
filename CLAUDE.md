@@ -1943,6 +1943,21 @@ ARMSX2's `GSTextureUpscaler` with the names changed.
    needs a **kind** as well as a name, because not every overlay element is a
    button.
 
+   **Drift measured 2026-08-22, and the API survived.** Eight method names are
+   still shared twelve years after the split: `draw`, `onTouch`,
+   `onTouchWhileEditing`, `isInEditMode`, `setIsInEditMode`, `refreshControls`,
+   `resetButtonPlacement`, `saveControlPosition`.
+
+   **Those eight are the overlay contract**, not because anyone designed them
+   as one but because they survived two independent divergences. The edit mode
+   is the notable survivor: two distinct touch paths and an explicit mode flag,
+   meaning overlay editing is direct manipulation inside the game view rather
+   than a settings screen. Both teams kept that.
+
+   **Drift is not uniform across subsystems.** The settings framework kept a
+   type hierarchy and lost every line; the overlay kept its API surface.
+   Measure it per subsystem, because it changes what extraction means.
+
 1. The GPU driver manager. **Read on 2026-08-22: it is four concerns, not six
    copies.** Compose the shared version from the fork that does each best.
 
