@@ -474,7 +474,7 @@ a fork an agent can work on and one it cannot.**
 
 ---
 
-## 9. The four operations, and how to choose
+## 9. The five operations, and how to choose
 
 **Given a candidate, ask in this order.**
 
@@ -484,10 +484,30 @@ a fork an agent can work on and one it cannot.**
 | 2 | Does it exist to serve **variability the Thor does not have**? | If **yes** → **DELETE** | medium, and the result is **smaller** than one fork's version | none |
 | 3 | Must these merely **coexist without colliding**? | If **yes** → **ISOLATE** | **low** — a flag and a namespace | none |
 | 4 | Has one fork **learned something** the others have not? | If **yes** → **PROPAGATE** | **low** | **none — ideas cross every wall** |
+| **5** | **Is its output a pure function of guest content and host configuration?** | If **yes** → **PERSIST** | **low** | **none** |
 | — | None of the above | **Leave it alone.** Two implementations are not a problem | — | — |
 
 **The last row is the one this repo kept skipping.** Nine candidates were opened
 because code looked similar; the ones that shrank all belonged in that row.
+
+**Row 5 was added 2026-08-23, and it is the first operation that does not shrink
+on reading.** Every other row moves source. **This one moves computed results**,
+so the question it asks is not "do these look the same" but "why is this being
+computed again".
+
+**It is already built twice in the fleet, and neither half knows the other
+exists:** ARMSX2 persists translated VU programs, content-addressed and
+relocatable, with tests asserting zero block compiles on a cache hit; **Cemu
+ships a tool that merges another user's shader cache into yours.**
+
+**It also answers section 10's falsification test in a way that section did not
+anticipate.** The test asked for an extraction that is genuine duplication
+without being forced. **PERSIST sidesteps it**: the waste is not N
+implementations of one thing, it is **one computation repeated per launch and per
+user**. Nine candidates were measured with the wrong instrument for this, because
+the instrument counted implementations.
+
+See [`../research_log/20260823_2205_translate_once_ship_it.md`](../research_log/20260823_2205_translate_once_ship_it.md).
 
 ## 10. What this does not say
 

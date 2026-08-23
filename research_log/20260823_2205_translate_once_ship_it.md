@@ -164,6 +164,59 @@ Candidates, ranked by whether the mechanism already exists:
   invalidated when the app updates. ARMSX2's ABI-version handshake is the
   starting answer for the second.
 
+## The literature, and the number that tempers this
+
+**Persistent code caching is an established technique with a name and a
+literature.** It is not novel; what is novel here is that **nobody applied it to
+an emulator fleet on a fixed device.**
+
+- **"Persistent Code Caching", CGO 2007.** Reported in secondary summaries as
+  improving GUI applications by nearly 90% through inter-execution persistence,
+  and 59% through **inter-application** persistence.
+- **"A General Persistent Code Caching Framework for Dynamic Binary
+  Translation", USENIX ATC 2016**, Wang, Yew, Zhai and McCamant, built on HQEMU.
+  Handles dynamically generated code.
+
+**The primary sources were not read.** The USENIX PDF and the presentation page
+both return HTTP 403 from here, so **every number in this section comes from a
+secondary summary and none of them is quoted as this project's own.** The same
+rule that withdrew the 35x IR figure applies.
+
+**One reported figure matters more than the headline, if it holds.** The ATC 2016
+work is summarised as **76.4% improvement without helper threads and 9% with
+them.** Helper threads mean translation runs on other cores in parallel.
+
+**If that split is real it is the most important line here**, and it reframes the
+CPU half:
+
+- **The win is not translation cost. It is translation cost that cannot be
+  hidden.** Given spare cores, most of the benefit goes away.
+- **The Thor has eight cores**, so hiding translation is available in principle.
+- **But hiding it is not free on a handheld.** Background translation on the mid
+  cores costs watts and thermal headroom, and this project measures watts.
+  **A cache hit costs neither.**
+
+**And the emulator case differs from the benchmark case in the project's
+favour.** These papers target short-running applications where translation cannot
+amortise. **A game session is long, so steady-state fps should not move.** The
+cost lands on **time to first frame and early-play stutter**, which is what
+`DEVICE_QUEUE` entry 17 predicts and why its prediction is `WIN` on block compile
+count and `OPEN` on time to first frame.
+
+**Inter-application persistence is the untested idea worth naming.** Guest SDK
+and runtime library code is identical across many titles on one console.
+**ARMSX2's payloads are content-addressed, so identical guest programs across
+different titles would hit the cache automatically**, with no extra design.
+**Whether PS2 VU programs are shared across titles is not known here** — VU code
+is usually the game's own vector routines, so the effect is more likely on an EE
+cache than a VU one. **Nothing has measured it.**
+
+### Sources for this section
+
+- <https://dl.acm.org/doi/10.1109/CGO.2007.29>
+- <https://www.usenix.org/conference/atc16/technical-sessions/presentation/wang>
+- <https://dl.acm.org/doi/10.5555/3026959.3027013>
+
 ## Sources
 
 - ARMSX2 `pcsx2/arm64/microVU_ProgCache-arm64.h` and `.inl`,
