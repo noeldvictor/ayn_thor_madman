@@ -1384,6 +1384,68 @@ not an escape.
 
 This note is not legal advice. Confirm before you distribute anything.
 
+## The fleet is already sharing code, badly
+
+**Emulators have copied each other for eighteen years. The sharing already
+happens; it happens in the worst possible way.**
+
+From copyright headers in the forks themselves, 2026-08-22. Full evidence in
+[`shared_layer/ANCESTRY.md`](shared_layer/ANCESTRY.md).
+
+| Fork | Foreign code it carries |
+| --- | --- |
+| **Vita3K-Thor** | Dolphin 2013 x6, Dolphin 2016 x2, Citra x3, yuzu x2 |
+| **melonDS-android** | **Dolphin 2008 x8, Dolphin 2009 x3** |
+| **eden-thor** | yuzu, **over 2,000 files** |
+| **azahar-thor** | Citra, hundreds |
+| ARMSX2 | PCSX2, wholesale |
+| rpcsx-ui-android | rpcs3, wholesale |
+| Cemu-thor, xenia-thor | none found |
+
+**melonDS-android carries Dolphin code written in 2008.** Vita3K carries code
+from three different emulators.
+
+### Why this matters more than the duplication itself
+
+**The alternative to unification was never "everyone writes their own".** It is
+what actually happened: everyone copies once, then diverges forever, and
+**nobody receives the fixes**.
+
+Vita3K took Dolphin's touch overlay in 2013. Dolphin has improved it for twelve
+years since. Vita3K has none of that. azahar took the same code through Citra
+and diverged separately, so two copies of one file are now 1302 lines of Kotlin
+and 1067 lines of Java.
+
+**Informal copying gives you the initial value and none of the compounding.**
+
+The question was never whether emulators should share code. They already do, at
+scale, across a decade. The only question is whether the sharing is **tracked
+and maintained** or **copied and abandoned**. That difference is what
+[`capability_inventory.md`](capability_inventory.md), `OWNED.md`, the build
+guard and the provenance rule exist to provide.
+
+### Shared ancestry predicts duplication. Shared purpose does not.
+
+| Looked duplicated because | Result |
+| --- | --- |
+| Three forks have an LRU cache, same purpose | three different designs |
+| Six forks have a driver picker, same purpose | four different concerns |
+| Two forks have `InputOverlay*`, **same ancestor** | **one design, twice** |
+| Two forks have `DiskShaderCacheProgress.kt`, **same ancestor** | same design |
+
+**Search for shared ancestors, not shared features.**
+
+```sh
+git -C <fork> grep -hoiE 'Copyright [0-9-]* (Dolphin|Citra|yuzu|PCSX2|RPCS3|melonDS) [A-Za-z]*'   | sort | uniq -c | sort -rn
+```
+
+### These forks have upstreams they do not track
+
+melonDS-android carries Dolphin 2008 code. Vita3K carries Dolphin 2013 code.
+**Neither lists Dolphin as a remote**, so neither will ever see a fix. Twelve
+years of improvement sits upstream of a fork nobody thinks of as having an
+upstream.
+
 ## The key idea
 
 **Share assets and paradigms across the emulators. Solve a problem once.

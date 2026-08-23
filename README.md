@@ -123,6 +123,33 @@ The reference point is a well-optimised **native** game captured on the Thor,
 not another emulator. The difference between that capture and a backend capture
 is the roadmap.
 
+## The fleet is already sharing code, badly
+
+Emulators have copied each other for eighteen years. From the copyright headers
+in these forks:
+
+| Fork | Foreign code it carries |
+| --- | --- |
+| Vita3K-Thor | Dolphin 2013, Dolphin 2016, Citra, yuzu |
+| melonDS-android | **Dolphin 2008 and 2009** |
+| eden-thor | yuzu, over 2,000 files |
+| azahar-thor | Citra, hundreds of files |
+
+**The alternative to unification was never "everyone writes their own".** It is
+what actually happened: everyone copies once, then diverges forever, and nobody
+receives the fixes.
+
+Vita3K took Dolphin's Android touch overlay in 2013. Dolphin has improved it
+for twelve years since; Vita3K has none of that. azahar took the same file
+through Citra. The two copies in this fleet are now 1302 lines of Kotlin and
+1067 lines of Java that began as one file.
+
+The question was never whether emulators should share code. **They already do,
+at scale, across a decade.** The only question is whether that sharing is
+tracked and maintained, or copied and abandoned.
+
+See [`shared_layer/ANCESTRY.md`](shared_layer/ANCESTRY.md).
+
 ## The duplication problem
 
 Agentic coding accelerates duplication. A feature that used to be built once,
