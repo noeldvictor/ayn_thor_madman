@@ -163,7 +163,105 @@ compile.
 
 ---
 
-## 6. What this does not say
+## 6. The bigger idea: the operation is DELETE, not MERGE
+
+Section 2 says unify what is forced. **That rule has a generator, and naming it
+turns a list of candidates into one idea.**
+
+**Every structure this project keeps finding "duplicated" is a portability
+layer, and this project has already refused to pay for portability everywhere
+else.**
+
+| Structure, present N times | Exists to serve | What we actually have |
+| --- | --- | --- |
+| **Seven Vulkan device layers** | many GPUs, vendors, drivers, API versions | **one Adreno 740, one pinned Turnip** |
+| **xenia's HIR; dynarmic's IR** | many host CPUs | **one ARM64** |
+| **`glslang` and the GLSL text path**, three forks | many shader targets | **SPIR-V, always** |
+| Present-mode selection and capability branching | unknown display stacks | **two measured panels** |
+| Runtime feature detection | unknown capability sets | **`/proc/cpuinfo`, measured and fixed** |
+| Multi-ABI builds, five forks | many devices | **`arm64-v8a`** |
+| Driver pickers, four concerns | user-installed drivers | **one bundled driver** |
+
+**They look duplicated because they solve the same problem — portability — not
+because anyone copied anyone.** That is why every "these look the same"
+candidate shrank when read: **seven answers to one question are not one answer
+written seven times.**
+
+### So merging them is the wrong operation
+
+`THOR_RENDER.md` already reached this for renderers: extracting from seven
+portable layers "yields the union of seven sets of compromises". **That argument
+generalises to every row above.**
+
+**The operation is not merge. It is delete.** Remove the machinery that exists
+to serve variability this device does not have, and what remains is smaller than
+any one fork's version — not the sum of seven.
+
+**This also explains the size results.** xenia's device layer is the one worth
+taking not because it is best, but because **it is the only one already
+separated from the thing it was abstracting for.** Once you are deleting rather
+than merging, "which fork drew the boundary already" is exactly the right
+question.
+
+### The CPU half has literature behind it, and it is recent
+
+**arXiv:2501.03427, *Boosting Cross-Architectural Emulation Performance by
+Foregoing the Intermediate Representation Model*** (Amy I. Parker, January 2025)
+argues precisely this for binary translation: QEMU's TCG spends performance on
+an IR that exists for retargetability, and a **direct guest-to-host translator
+for a fixed architecture pair** removes that step. Its proof of concept reports
+**up to 35x faster than QEMU with TCG**, and it proposes a middle tier of direct
+translators for "commonly paired architectures".
+
+**The stated tradeoff is portability, which is the one thing this project has
+already given up on purpose.**
+
+Measured in the fleet on 2026-08-23:
+
+| Fork | Guest to host | IR? |
+| --- | --- | --- |
+| **xenia** | PowerPC to ARM64 | **yes — `src/xenia/cpu/hir/`, 36 files** |
+| **eden** | ARM to ARM64 | **yes — vendored dynarmic's `ir/`** |
+| ARMSX2 | MIPS to ARM64 | no dedicated IR tree |
+| Cemu | PPC to ARM64 | minimal |
+| melonDS | ARM to ARM64 | none |
+
+**Two forks pay the IR tax and three do not.** And xenia's HIR exists because
+xenia targets x86_64 as well — **a portability requirement this project does not
+have.**
+
+**State the honesty plainly.** 35x is one proof of concept on one pair, not this
+workload, and an IR buys real things: optimisation passes, register allocation
+and a place to put correctness. **Nothing here says delete xenia's HIR.** It says
+the IR is on the same list as the seven device layers — a portability structure
+whose justification does not apply here — and that **nobody in this repo had put
+it on that list.**
+
+### What to do with this
+
+1. **Add "what variability does this serve?" to the extraction procedure.** If
+   the answer is variability the Thor does not have, the operation is deletion
+   and the size estimate should be **smaller** than one fork's implementation,
+   not larger.
+2. **Treat the IR as a measurable question, not a taboo.** The cheapest version
+   is not deleting anything: take one hot guest sequence in one fork and compare
+   the HIR path against a hand-written direct lowering. **That is a bounded
+   experiment with a published prior.**
+3. **Do not confuse this with "rewrite the emulators".** Deleting a portability
+   layer is not rewriting a guest model. The guest side — ISA semantics, timing,
+   the GPU model — is untouched and stays per-backend forever.
+
+### One thing checked and left alone
+
+`CLAUDE.md` says direct GMEM access extensions arrive at the Adreno 840 and the
+740 does not have them. **Checked against Qualcomm's current documentation and
+it is correct**: `VK_QCOM_tile_memory_heap` and `VK_QCOM_tile_shading` are
+documented for **Adreno 840 and higher**. **Do not design around them**, exactly
+as already written.
+
+---
+
+## 7. What this does not say
 
 **It does not say the shared layer is unnecessary.** The forced list is real and
 the packed binary depends on all of it.

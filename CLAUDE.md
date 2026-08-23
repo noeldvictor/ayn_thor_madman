@@ -690,8 +690,50 @@ while the project stayed right: the waste is real and was being measured with
 the wrong instrument.**
 
 **Rank unification by how well it resists being forgotten**, and the cheapest
-durable form is a **test**, which this project has almost none of. See
-[`shared_layer/UNIFICATION.md`](shared_layer/UNIFICATION.md).
+durable form is a **test**, which this project has almost none of.
+
+### And the operation is DELETE, not MERGE
+
+**The forced rule has a generator.** Every structure this repo keeps finding
+"duplicated" is a **portability layer**, and this project has already refused to
+pay for portability everywhere else.
+
+| Present N times | Exists to serve | What we have |
+| --- | --- | --- |
+| seven Vulkan device layers | many GPUs and drivers | **one Adreno 740, one pinned Turnip** |
+| **xenia's HIR, dynarmic's IR** | **many host CPUs** | **one ARM64** |
+| `glslang` and the GLSL text path | many shader targets | **SPIR-V, always** |
+| runtime feature detection | unknown capabilities | **measured and fixed** |
+| multi-ABI builds | many devices | **`arm64-v8a`** |
+
+**They look duplicated because they answer the same question — portability —
+not because anyone copied anyone.** That is why every "these look the same"
+candidate shrank: **seven answers to one question are not one answer written
+seven times.**
+
+**So merging is the wrong operation.** `THOR_RENDER.md` already says extracting
+from seven portable renderers "yields the union of seven sets of compromises".
+**That generalises.** Delete the machinery serving variability this device does
+not have, and what remains is **smaller than any one fork's version**.
+
+**The CPU half has a recent citation.** arXiv:2501.03427 argues QEMU's TCG pays
+for an IR that exists for retargetability, and that a **direct guest-to-host
+translator for a fixed pair** removes it — up to **35x** in a proof of concept.
+**The stated tradeoff is portability, which this project already gave up.**
+Measured here: **xenia carries a full HIR and eden's dynarmic carries an IR;
+ARMSX2, Cemu and melonDS do not.** xenia's exists because xenia also targets
+x86_64.
+
+**This does not say delete xenia's HIR.** 35x is one proof of concept on one
+pair, and an IR buys optimisation passes and a place to put correctness. **It
+says the IR belongs on the same list as the seven device layers, and nobody had
+put it there.**
+
+**Add one question to the extraction procedure: what variability does this
+serve?** If the answer is variability the Thor does not have, the operation is
+deletion and the estimate should be **smaller** than one fork's implementation.
+
+See [`shared_layer/UNIFICATION.md`](shared_layer/UNIFICATION.md).
 
 ### The revised position
 
