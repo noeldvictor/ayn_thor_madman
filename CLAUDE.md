@@ -919,10 +919,28 @@ detection problem. **If detection, it is free performance.**
 the fork that wrote the research. The rest compile for a generic ARMv8-A this
 device stopped being years ago.
 
-**Caveat:** build flags are not the whole story, since a recompiler emits its
-own instructions and an LLVM backend passes target attributes separately. A
-fork can be baseline at `-march` and still emit `SDOT` from its JIT. **Check
-both.**
+**Caveat checked, and it rescues nobody.** Searching the ARM64 backends
+themselves:
+
+| Fork | `SDOT`/`UDOT` | `EOR3`/`BCAX`/`RAX1`/`XAR` |
+| --- | --- | --- |
+| **xenia** | **2 files** | **6 files** |
+| Cemu | 1 | 1 |
+| **ARMSX2** | **0** | **0** |
+| **melonDS** | **0** | **0** |
+
+ARMSX2 and melonDS have baseline flags **and** no emitter support. **xenia is
+the only fork using the device's vector features at all.**
+
+**The ARMSX2 case is the notable one.** It is the seed of the shared layer and
+holds the most Thor-specific research in the fleet, and it emits neither
+dot-product nor three-input bitwise instructions. **The PS2's VU is a vector
+unit for 3D maths — dot products are what it does**, and `EOR3` and `BCAX`
+collapse the three-input bitwise sequences a VU mask synthesis produces
+constantly.
+
+A specific, checkable opportunity in the fork this project cares most about.
+**It needs a device A/B, not an assumption.**
 
 ### Prefer a load over arithmetic on the mid cores
 

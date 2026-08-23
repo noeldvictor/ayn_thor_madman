@@ -1285,6 +1285,38 @@ generic ARMv8-A that this device has not been for years.
   guides give conflicting advice. Tuning for one core is a choice, not an
   oversight, but it should be a stated one.
 
+### The caveat checked: the emitters agree with the flags
+
+Searching the ARM64 backends themselves, not the build files:
+
+| Fork | `SDOT`/`UDOT` in source | `EOR3`/`BCAX`/`RAX1`/`XAR` in source |
+| --- | --- | --- |
+| **xenia-thor** | **2 files** | **6 files** |
+| Cemu-thor | 1 | 1 |
+| **ARMSX2** | **0** | **0** |
+| **melonDS-android** | **0** | **0** |
+
+**The caveat does not rescue anyone.** ARMSX2 and melonDS have baseline build
+flags **and** no emitter support. xenia leads at both levels, consistent with
+its flags.
+
+**xenia is the only fork in the fleet using the device's vector features at
+all.**
+
+### The ARMSX2 case is the notable one
+
+ARMSX2 is the seed of the shared layer, holds the most Thor-specific research
+in the fleet — texture upscaling, the neural path, the MCP design, the ARM64
+review — and **emits neither dot-product nor three-input bitwise
+instructions.**
+
+**The PS2's VU is a vector unit for 3D maths. Dot products are what it does.**
+`SDOT` and `UDOT` exist on this device, and `EOR3` and `BCAX` collapse
+three-input bitwise sequences that a VU mask synthesis produces constantly.
+
+That is a specific, checkable opportunity in the fork this project cares most
+about, and it needs a device A/B rather than an assumption.
+
 **This is cheap to check and cheap to fix**, which is what makes it worth doing
 before any deeper optimisation work.
 
