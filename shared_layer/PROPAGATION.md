@@ -62,8 +62,8 @@ and found not to transfer.
 | 9 | A `Presentation` is **not torn down** when the activity stops; re-attach every resume | ARMSX2 | GPL-3 | app shell | **applied**, device-verify queued | **DONE**, unverified |
 | 10 | `yield` is a **no-op** on ARM; use `ISB` for spin backoff | rpcs3 → xenia | idea | every fork with a spin loop | A/B on device | **BLOCKED** — needs builds |
 | 11 | Pass **real target features** to the compiler and to LLVM | xenia | BSD | six forks | build-flag guard | **READY** |
-| 12 | A **content path resolver** must search many roots; users put files anywhere | Vita3K | GPL-2+ | app shell | unit test over fake roots | **READY** |
-| 13 | A driver picker should **advise**, not list — verdicts, not options | rpcsx | **GPL-2 only** | shared driver manager | test on package names | **READY** |
+| 12 | A **content path resolver** must search many roots; users put files anywhere | Vita3K | GPL-2+ | app shell | **unit test — written** | **DONE** |
+| 13 | A driver picker should **advise**, not list — verdicts, not options | rpcsx | **GPL-2 only** | shared driver manager | **unit test — written, on the real file names** | **DONE** |
 | 14 | Mark fork divergence at line level with a **`NOTE(thor):`** comment | xenia | BSD | every fork | lint | **READY** |
 
 ### Guest-side and render-side. These need the target to build.
@@ -90,12 +90,66 @@ and found not to transfer.
 
 ## What this ledger says
 
-**Five lessons have landed and all five were host-side, licence-free and
-testable without a device.** That is not a coincidence — it is the ranking in
+**Seven lessons have landed and all seven were host-side, licence-free and
+testable without a device.**
+
+### The tests caught two real bugs in a reimplementation, which is the whole point
+
+**Propagating an idea rather than a file means rewriting it, and a rewrite drops
+details whose purpose is not visible.** Both bugs were in the driver advisor and
+both were caught by the tests before the code was committed.
+
+**1. A `normalize()` step that looked incidental was load-bearing.** rpcsx
+replaces separators with spaces before matching. Skipping it meant `gen` never
+matched `Turnip_Gen8_V33`, because **`_` is a word character and there is no
+boundary before `Gen`** — so **the exact driver that must be rejected assessed
+as merely RISKY**.
+
+**2. The original regex quietly assumed one input format.** rpcsx requires the
+literal `tm` in `adreno\s*\(?tm\)?\s*(\d{3})`, which is right for the Vulkan
+renderer string — literally `Adreno (TM) 740`. **It fails on a package filename,
+where a human writes `Adreno 740`.** Our version makes `(TM)` optional, which is
+an improvement on the source rather than a copy of it.
+
+**Neither bug is visible by reading.** Both are visible in one second of test
+output. **That is the argument for "a propagation lands with a test" stated as
+evidence rather than as a rule.** That is not a coincidence — it is the ranking in
 `UNIFICATION.md` section 5 playing out: the cheapest durable form is a test, and
 host-side lessons are the ones a test can reach.
 
-**Nine are `READY`** and need only the work.
+**Seven are `READY`** and need only the work.
+
+### Two landed while writing this ledger, and both improved on their source
+
+**Item 12, Vita3K's content path resolver.** Taken as a shape — enumerate roots,
+build candidates, resolve, report — and **generalised from cheats to any content
+kind**, because the app needs the same search for packs, mods, saves and ROMs.
+
+**Two changes to the design.** It now **reports which root answered**, because
+the storage view has to say where content actually is and "no cheats found" is
+not actionable while "looked in these six places" is. And **`has()` is defined
+in terms of `locate()`** rather than being a second function: Vita3K ships
+`find_*` and `has_*` separately, which is two chances to disagree, and **a badge
+that says a game has cheats when the loader finds none is worse than no badge.**
+
+**Item 13, rpcsx's driver advisor.** rpcsx is GPL-2.0-only, so this is a
+reimplementation from the shape rather than a copy — **which is exactly the case
+`UNIFICATION.md` makes for technique crossing walls that code cannot.**
+
+**It catches a hazard that is live on this device.** `CLAUDE.md` records
+`Turnip_Gen8_V33.zip` and `a8xx-gen8-V24.zip` sitting in the Thor's storage, and
+both target **a8xx** while the Thor is **a7xx**. The tests assert against those
+exact filenames.
+
+**The part worth stealing is decoding the marketing name.** Qualcomm sells a8xx
+as "Gen 8", so `Turnip_Gen8_V33` claims a8xx **without ever saying so**, and a
+picker matching only `a8xx` would install it.
+
+**And it keeps rpcsx's honesty**: AdrenoTools metadata carries no target-GPU
+field, so this is a heuristic over a filename. It is allowed to answer `RISKY`,
+and **the provisional pin `turnip_mrpurple_T30-toasted` assesses as `RISKY`, not
+`COMPATIBLE`** — nothing in its name proves the family. Saying so is more useful
+than pretending to know.
 
 **Five are `BLOCKED` on builds**, and four of those five are the render-side
 attachment lessons — **the ones most likely to buy frames and watts on a
