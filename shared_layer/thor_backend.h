@@ -302,9 +302,21 @@ enum class SettingSource : uint8_t {
 // A kPromoted field is written to global by copying THAT ONE FIELD, never by
 // saving the resolved object, which would leak every per-game value upward.
 
-// Settings need versioning. ARMSX2 carries seven one-time migration keys for
-// fields that changed scope or default.
-inline constexpr uint32_t kSettingsSchemaVersion = 1;
+// Settings need versioning, and melonDS-android has the only real framework in
+// the fleet: 37 files, 16 concrete migrations, an interface of from/to/migrate.
+// ARMSX2 uses ad-hoc one-time keys instead and needed seven of them.
+//
+// Two rules that are not obvious:
+//
+// 1. THE SCHEMA VERSION IS THE APP'S OWN VERSION CODE, not a separate constant.
+//    A separate constant is a number somebody has to remember to bump.
+// 2. A MIGRATION MUST NEVER DESERIALIZE WITH THE CURRENT STRUCT. Freeze a copy
+//    per version and read that. Otherwise the migration breaks silently when
+//    the current struct changes, and only for users upgrading from an old
+//    version, which is the hardest case to test.
+//
+// The migration runner is host-side and lives in the app, not here. A backend
+// never migrates its own settings.
 
 // ------------------------------------------------------------- the interface
 

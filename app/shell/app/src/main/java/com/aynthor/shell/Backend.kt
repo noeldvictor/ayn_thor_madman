@@ -236,13 +236,56 @@ object SettingResolver {
 }
 
 /**
- * The settings schema version.
+ * Settings migration.
  *
- * ARMSX2 carries seven one-time migration keys for settings that changed scope
- * or default. A schema that ships needs migrations, so the version exists from
- * the start rather than being retrofitted.
+ * Taken from melonDS-android, which has the only real framework in the fleet:
+ * 37 files, 16 concrete migrations. ARMSX2 does it with ad-hoc one-time keys
+ * instead, and needed seven of them.
+ *
+ * Two rules that are not obvious:
+ *
+ * 1. **The schema version is the app's own version code**, not a separate
+ *    constant. A separate constant is a number somebody has to remember to
+ *    bump; a version code is already bumped for other reasons. [firstVersion]
+ *    is the floor for installs that predate migrations.
+ * 2. **A migration must never deserialize with the CURRENT data class.** Freeze
+ *    a DTO per version and read that. Otherwise the migration silently breaks
+ *    when the current class changes, and only for users upgrading from an old
+ *    version, which is the hardest case to test.
  */
-const val SETTINGS_SCHEMA_VERSION: Int = 1
+interface SettingsMigration {
+    val from: Int
+    val to: Int
+
+    /** State the reason in a comment. The reader is a future upgrade bug. */
+    fun migrate(store: MutableMap<String, String>)
+}
+
+object SettingsMigrator {
+    /** Version at which migrations began. Installs older than this start here. */
+    const val firstVersion: Int = 1
+
+    /**
+     * Run every migration in (lastVersion, currentVersion]. Refuses duplicate
+     * [SettingsMigration.from] values, because two migrations from one version
+     * have no defined order.
+     */
+    fun migrate(
+        migrations: List<SettingsMigration>,
+        store: MutableMap<String, String>,
+        lastVersion: Int,
+        currentVersion: Int,
+    ): Int {
+        require(migrations.map { it.from }.toSet().size == migrations.size) {
+            "two migrations share a `from` version; their order would be undefined"
+        }
+        if (lastVersion >= currentVersion) return lastVersion
+        migrations.sortedBy { it.from }
+            .filter { it.from >= lastVersion && it.to <= currentVersion }
+            .forEach { it.migrate(store) }
+        return currentVersion
+    }
+}
 
 // ----------------------------------------------------------------- storage
 

@@ -181,3 +181,63 @@ class SettingResolverTest {
         assertEquals("on", out.perGame["cheats"])
     }
 }
+
+/**
+ * Tests for settings migration.
+ *
+ * The shape is melonDS-android's, which is the only real migration framework in
+ * the fleet. See research_log/20260822_2233_fleet_frontend_census.md.
+ */
+class SettingsMigratorTest {
+
+    private class Rename(
+        override val from: Int,
+        override val to: Int,
+        private val oldKey: String,
+        private val newKey: String,
+    ) : SettingsMigration {
+        override fun migrate(store: MutableMap<String, String>) {
+            store.remove(oldKey)?.let { store[newKey] = it }
+        }
+    }
+
+    @Test
+    fun `runs only the migrations in range, in order`() {
+        val store = mutableMapOf("a" to "1")
+        val migrations = listOf(
+            Rename(1, 2, "a", "b"),
+            Rename(2, 3, "b", "c"),
+            // Out of range: the app has not reached version 4 yet.
+            Rename(3, 4, "c", "d"),
+        )
+        val now = SettingsMigrator.migrate(migrations, store, lastVersion = 1, currentVersion = 3)
+        assertEquals(3, now)
+        assertEquals(mapOf("c" to "1"), store)
+    }
+
+    @Test
+    fun `does nothing when the store is already current`() {
+        val store = mutableMapOf("a" to "1")
+        val now = SettingsMigrator.migrate(
+            listOf(Rename(1, 2, "a", "b")), store, lastVersion = 5, currentVersion = 5,
+        )
+        assertEquals(5, now)
+        assertEquals(mapOf("a" to "1"), store)
+    }
+
+    @Test
+    fun `refuses two migrations from the same version`() {
+        // Their order would be undefined, so this is a programming error and
+        // must fail loudly rather than pick one.
+        var threw = false
+        try {
+            SettingsMigrator.migrate(
+                listOf(Rename(1, 2, "a", "b"), Rename(1, 2, "a", "c")),
+                mutableMapOf(), lastVersion = 1, currentVersion = 2,
+            )
+        } catch (e: IllegalArgumentException) {
+            threw = true
+        }
+        assertTrue("a duplicate `from` must be rejected", threw)
+    }
+}

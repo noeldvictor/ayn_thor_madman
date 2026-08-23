@@ -2693,9 +2693,24 @@ So a setting declares a **scope**:
 **Promote by copying the field onto global, never by saving the resolved
 object**, or every per-game value leaks into the global layer.
 
-**Settings need versioning too.** ARMSX2 carries seven one-time migration keys
-for settings that changed scope or default. A schema that ships will need
-migrations, and nothing here says how.
+**Settings need versioning, and melonDS-android says how.** ARMSX2 carries seven
+ad-hoc one-time migration keys; melonDS-android has a real framework, 37 files,
+16 concrete migrations from `Migration6to7` to `Migration40to41`. Its interface
+is three members: `from`, `to`, `migrate()`. The runner refuses a duplicate
+`from`, sorts, runs those in range, then records the new version.
+
+Three points to take:
+
+- **The schema version is the app's own version code**, read with
+  `getLongVersionCode`, with a floor for installs that predate migrations.
+  **There is no separate number to forget to bump.**
+- **Freeze the old data shapes.** Its `legacy/` package holds `Rom21`, `Rom22`,
+  `RomConfigDto25`, `RomDto31` and more. **A migration must never deserialize
+  with the current class**, because the current class keeps changing and the
+  migration then breaks retroactively — silently, only on upgrade from an old
+  version, which is the hardest case to test.
+- **A migration is tiny and states its reason.** `Migration40to41` is six lines
+  of code and four lines of why.
 
 Design consequences:
 
@@ -3411,10 +3426,30 @@ Do it in this order:
    extensions a backend may declare. This falls out of steps 1 to 4 rather
    than being argued in advance.
 
-**CORRECTED 2026-08-22: ARMSX2's Android frontend is the most complete shell in
-the fleet, not xenia's.** Measured rather than assumed: **63,111 lines across
-153 files**, in Compose with ViewModels and a navigation graph, against xenia's
-12,313 lines of Java. **5.1x larger and modern.**
+**CORRECTED TWICE on 2026-08-22. Census first, superlative second.** The whole
+fleet was finally counted, and both earlier claims were wrong.
+
+| Fork | Frontend | Files |
+| --- | --- | --- |
+| **melonDS-android** | **78,033 lines** | **698** |
+| **ARMSX2** | 63,111 | 153 |
+| eden-thor | 33,671 | 217 |
+| azahar-thor | 26,919 | 156 |
+| Vita3K-Thor | 20,744 | 76 |
+| Cemu-thor | 18,501 | 144 |
+| **xenia-thor** | **12,334** | **25** |
+
+**xenia has the SMALLEST Tier 1 frontend, not the most complete** — smaller than
+melonDS-android by a factor of six.
+
+**melonDS-android is the largest and the only properly layered one**: `domain`
+with 120 files, `impl` with 97, Hilt injection, a database layer, and a
+**migrations package of 37 files**. ARMSX2 has none of those layers.
+
+**So take the structure from melonDS-android and the features from ARMSX2.**
+ARMSX2 holds what this project specifically needs — the per-game override
+system, the Thor work, the second-screen panel, the hotkey enum — in 153 large
+files with repositories as top-level singletons.
 
 It already implements most of [`app/SCREENS.md`](app/SCREENS.md): library with
 cover art, game detail, in-game overlay, the Screen-2 panel, 13 settings tabs
@@ -3423,8 +3458,10 @@ diagnostics — plus onboarding, achievements, friends, news, BIOS and memory ca
 managers, a texture pack catalogue with an online section, a shader chain editor,
 controller skins, themes and 13 languages.
 
-**Mine ARMSX2's frontend. Read xenia's only for what ARMSX2 lacks**, which is
-the cheat manager UI and the storage view.
+**Mine ARMSX2's frontend for features and melonDS-android's for structure.**
+Neither has a cheat manager UI or a storage view.
+
+See [`research_log/20260822_2233_fleet_frontend_census.md`](research_log/20260822_2233_fleet_frontend_census.md).
 
 See [`research_log/20260822_2203_armsx2_frontend_is_the_shell.md`](research_log/20260822_2203_armsx2_frontend_is_the_shell.md).
 
