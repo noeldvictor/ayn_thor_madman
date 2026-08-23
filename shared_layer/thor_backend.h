@@ -224,6 +224,88 @@ struct GuestUser {
 // RULE: an applet request BLOCKS THE GUEST. Show it immediately. Do not queue
 // it behind an animation and do not batch it with a frame.
 
+// ------------------------------------------------------------------ settings
+//
+// The minimum contract names settings: the key namespace, and the resolution
+// order for a per-game override. This section was missing until 2026-08-22.
+//
+// It is modelled on ARMSX2's ConfigStore, which is the only production
+// implementation in the fleet: 240 fields, two storage tiers, and three fixes
+// that the obvious design does not have. Do not simplify it. The Kotlin
+// counterpart in app/shell/Backend.kt has JUnit tests, and the obvious design
+// fails four of eight.
+//
+// See research_log/20260822_2203_armsx2_frontend_is_the_shell.md.
+
+enum class SettingType : uint8_t { kBool, kInt, kFloat, kEnum, kString };
+
+// Which storage tier a setting may live in.
+//
+// kPerGame is the normal case and the project's stated requirement. The
+// exception is real: some settings are structurally process-wide, because
+// there is one server, one loaded driver and one device. ARMSX2's PINE server
+// is one instance for the whole process, so its per-game file refuses the key.
+// Toggling it from the in-game menu wrote it NOWHERE and it read as enabled
+// until the process restarted.
+enum class SettingScope : uint8_t {
+  kPerGame,     // sparse, and sticky once set
+  kPromoted,    // offered per game, WRITTEN TO GLOBAL
+  kGlobalOnly,  // never offered per game
+};
+
+struct SettingSpec {
+  // Stable forever. A setting with no stable key cannot carry an override.
+  std::string_view key;
+  std::string_view label;
+  std::string_view group;
+  SettingType type;
+  SettingScope scope;
+  std::string_view default_value;
+  // Empty unless type is kEnum.
+  const std::string_view* options;
+  uint32_t option_count;
+  // False means changing it needs a restart, and the UI must say so BEFORE
+  // the change rather than after.
+  bool live_changeable;
+};
+
+// Where a resolved value came from. The order is fixed and lives in one place;
+// a backend never invents its own.
+enum class SettingSource : uint8_t {
+  kPerGame,
+  kGlobal,
+  kThorProfile,
+  kBackendDefault,
+};
+
+// THE THREE RULES A WRITER MUST OBEY. Each was paid for by a reported bug.
+//
+// 1. SPARSE. A field the user never touched is absent, so a later global
+//    change still reaches it. That inheritance is the point.
+//
+// 2. STICKY. A field is PINNED once overridden and stays pinned even when its
+//    value equals global. Without this, setting a value per game while global
+//    agrees stores nothing; a later global change then silently takes the
+//    game's setting with it. ARMSX2's symptom: cheats on per game while global
+//    was also on, global later off, THE GAME SILENTLY LOST ITS SETTING.
+//
+// 3. CHANGE-TRACKED. Rule 2 makes a wrong value permanent, so a pinned key the
+//    caller did not just touch must keep its STORED value rather than whatever
+//    the incoming object holds. Screens write whole settings objects, so the
+//    incoming object can be a stale snapshot. ARMSX2's symptom: A PER-GAME
+//    FRAME CAP OF 30 CAME BACK AS 0 AND STAYED 0, surviving even after the
+//    writers were fixed.
+//
+// Rule 3 exists BECAUSE of rule 2. A contract that specifies pinning without
+// change-tracking ships the third bug.
+//
+// A kPromoted field is written to global by copying THAT ONE FIELD, never by
+// saving the resolved object, which would leak every per-game value upward.
+
+// Settings need versioning. ARMSX2 carries seven one-time migration keys for
+// fields that changed scope or default.
+inline constexpr uint32_t kSettingsSchemaVersion = 1;
+
 // ------------------------------------------------------------- the interface
 
 class Backend {
@@ -249,6 +331,18 @@ class Backend {
 
   virtual uint32_t GuestScreenCount() const = 0;
   virtual GuestScreen GuestScreenAt(uint32_t index) const = 0;
+
+  // ---- settings
+  //
+  // The backend declares. The app renders, resolves and stores. A backend
+  // never reads or writes a setting file itself, and never resolves its own
+  // override order.
+  virtual uint32_t SettingCount() const = 0;
+  virtual SettingSpec SettingAt(uint32_t index) const = 0;
+
+  // Apply a fully resolved value. The backend is told the answer; it does not
+  // compute it. Returns false if the key is unknown or the value is invalid.
+  virtual bool ApplySetting(std::string_view key, std::string_view value) = 0;
 
   // ---- guest users
   //

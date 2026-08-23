@@ -73,10 +73,32 @@ necessary rather than defensive.
 The real implementation was then restored and re-verified: 8 tests, 0 failures,
 `assembleDebug` successful.
 
-## What is not done
+## Follow-up, same session: the native contract
 
-- **`shared_layer/thor_backend.h` does not carry the scope concept yet.** The
-  native contract and the Kotlin contract now disagree.
+**`shared_layer/thor_backend.h` had no settings at all**, which is worse than
+disagreeing with the Kotlin side: `CLAUDE.md` lists settings in the **minimum**
+contract, naming the key namespace and the override resolution order.
+
+Added a settings section carrying `SettingType`, `SettingScope`, `SettingSpec`,
+`SettingSource`, `kSettingsSchemaVersion`, the three rules as a comment block
+with the ARMSX2 symptom for each, and two interface methods: `SettingCount` /
+`SettingAt` to declare, and `ApplySetting` to receive **a fully resolved value**.
+The backend is told the answer; it never resolves its own order and never reads
+or writes a settings file.
+
+**Syntax-checked, and this is the first time the header has been compiled:**
+
+```
+clang++ --target=aarch64-linux-android33 -std=c++20 -fsyntax-only thor_backend.h
+1 warning generated  (#pragma once in main file, expected)
+exit code: 0
+```
+
+NDK `29.0.14206865`, the version in the standard row. It compiles as C++20 on
+the target triple. That is one data point toward the C++20 decision `CLAUDE.md`
+marks unverified — for this header only, not for any fork.
+
+## What is not done
 - Nothing reads `SETTINGS_SCHEMA_VERSION`. It is a placeholder with a reason.
 - **No screen calls `SettingResolver`.** It had no callers before this change
   either, so the contract is still unexercised by the UI.
