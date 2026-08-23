@@ -887,6 +887,32 @@ raises the command-processor thread priority.
 **This is host-side, so it transfers to every fork**, unlike the vector items.
 Check every spin loop in the fleet for a `yield` that does nothing.
 
+### Feature detection may be silently excluding this device
+
+rpcs3 was gating FMA on the CPU **name** containing "cortex", so **every
+Qualcomm and Apple core fell off the fast path** despite FMA being baseline on
+ARM64. Their fix detects features properly and passes them to LLVM as target
+attributes, so LLVM stops generating conservative code.
+
+**This is a cheap fleet-wide check.** For every fork with an LLVM backend: is
+it passing real target features for the Thor — `+dotprod`, `+i8mm`, `+fp16`,
+`+sha3` — or is LLVM emitting generic AArch64?
+
+xenia records its own instance: `arm64_fma_v128_fastpath` is **default-off** in
+its tree, and it does not know whether that is a correctness problem or a
+detection problem. **If detection, it is free performance.**
+
+### Prefer a load over arithmetic on the mid cores
+
+**The A715 and A710 have three 128-bit load ports but only two 128-bit
+arithmetic ports.** So materialising a constant with a load can be **cheaper
+than computing it**, which is the opposite of the usual advice.
+
+Reported as a novel finding, and expected to apply across the A7xx line, so to
+Android SoCs broadly. It bites at constant materialisation in a recompiler and
+at any guest vector sequence that synthesises a mask arithmetically. **Guest
+threads land on exactly these cores.**
+
 ### One code layout cannot suit all four cores
 
 The four optimization guides give **directly conflicting advice**. Distilled in

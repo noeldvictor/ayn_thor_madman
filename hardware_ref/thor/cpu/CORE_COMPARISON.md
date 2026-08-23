@@ -120,6 +120,29 @@ either, so keep it, but do not expect it to help on the little cores.
 > write-streaming mode. This can reduce performance and increase power when
 > writes miss in the L1 or L2 caches.
 
+## Mid-core port asymmetry: prefer a load over arithmetic
+
+**Reported as novel** by Whatcookie and recorded in xenia's research. It
+extends the dispatch table above into a codegen rule.
+
+**The A715 and A710 have three 128-bit load ports but only two 128-bit
+arithmetic ports.**
+
+So on the mid cores **materialising a constant with a load can be cheaper than
+computing it** — the opposite of the usual advice, which assumes arithmetic is
+free and memory is not.
+
+It is expected to apply across the A7xx line generally, so **broadly to Android
+SoCs**, not just this one.
+
+**Where it bites in an emulator:** constant materialisation in a recompiler,
+and any guest vector sequence that synthesises a mask with arithmetic. Guest
+threads land on exactly these cores.
+
+The dispatch table above records L pipelines at 5 to 6 uOPs against 2 each on
+V0 and V1. **This is what that asymmetry means in practice**, and the table did
+not say so.
+
 ## The A710 dispatch stall
 
 A710 has a trap the other guides do not list.
