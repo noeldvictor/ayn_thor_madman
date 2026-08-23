@@ -50,4 +50,8 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.material.icons.extended)
+
+    // The settings resolver is pure Kotlin with no Android dependency, so it
+    // is testable on the JVM with no device. Tests are mandatory; see CLAUDE.md.
+    testImplementation("junit:junit:4.13.2")
 }

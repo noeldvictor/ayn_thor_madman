@@ -69,11 +69,38 @@ data class GuestScreenSpec(
 enum class SettingType { BOOL, INT, FLOAT, ENUM, STRING }
 
 /**
+ * Which tier a setting may be stored in.
+ *
+ * Taken from ARMSX2's ConfigStore, which found the exception the hard way. Its
+ * PINE server is one instance for the whole process, so the per-game file
+ * structurally cannot hold it: toggling it from the in-game menu wrote it
+ * NOWHERE, and it read as enabled until the process restarted.
+ *
+ * See research_log/20260822_2203_armsx2_frontend_is_the_shell.md.
+ */
+enum class SettingScope {
+    /** The normal case. Sparse, and sticky once set. */
+    PER_GAME,
+
+    /**
+     * Offered per game, but written to GLOBAL, because the per-game tier
+     * cannot hold it. Promote by copying this one field onto global, never by
+     * saving the resolved object, which would leak every per-game value upward.
+     */
+    PROMOTED,
+
+    /** Never offered per game at all. */
+    GLOBAL_ONLY,
+}
+
+/**
  * One setting.
  *
  * [key] must be stable forever. A setting with no stable key cannot carry a
- * per-game override, and a per-game override for every option is a
- * requirement.
+ * per-game override.
+ *
+ * [scope] exists because "every setting is overridable per game" is nearly
+ * true and the exception is real. See [SettingScope].
  *
  * [liveChangeable] drives a rule from SCREENS.md: a setting that needs a
  * restart says so **before** it is changed, not after.
@@ -86,6 +113,7 @@ data class SettingSpec(
     val default: String,
     val options: List<String> = emptyList(),
     val liveChangeable: Boolean = false,
+    val scope: SettingScope = SettingScope.PER_GAME,
 )
 
 /**
@@ -93,28 +121,128 @@ data class SettingSpec(
  *
  * The order is fixed and lives in one place. A backend never invents its own.
  */
-enum class SettingSource { PER_GAME, THOR_PROFILE, BACKEND_DEFAULT }
+enum class SettingSource { PER_GAME, GLOBAL, THOR_PROFILE, BACKEND_DEFAULT }
 
 data class ResolvedSetting(val value: String, val source: SettingSource)
 
 /**
- * The one resolver. Per-game value, then Thor profile, then backend default.
+ * The one resolver and the one override writer.
  *
  * Kept here rather than in a screen so that no caller can invent an order.
+ *
+ * The write half is not obvious and is not ours. ARMSX2 shipped the obvious
+ * version and reported three bugs from it; [writeOverride] carries all three
+ * fixes. Do not simplify it without reading the log named above.
  */
 object SettingResolver {
+
+    /** Per-game, then global, then Thor profile, then backend default. */
     fun resolve(
-        key: String,
+        spec: SettingSpec,
         perGame: Map<String, String>,
+        global: Map<String, String>,
         thorProfile: Map<String, String>,
         backendDefault: Map<String, String>,
     ): ResolvedSetting? {
-        perGame[key]?.let { return ResolvedSetting(it, SettingSource.PER_GAME) }
-        thorProfile[key]?.let { return ResolvedSetting(it, SettingSource.THOR_PROFILE) }
-        backendDefault[key]?.let { return ResolvedSetting(it, SettingSource.BACKEND_DEFAULT) }
+        // A setting the per-game tier cannot hold must not be read from it, or
+        // a stale override outlives the rule that put it there.
+        if (spec.scope == SettingScope.PER_GAME) {
+            perGame[spec.key]?.let { return ResolvedSetting(it, SettingSource.PER_GAME) }
+        }
+        global[spec.key]?.let { return ResolvedSetting(it, SettingSource.GLOBAL) }
+        thorProfile[spec.key]?.let { return ResolvedSetting(it, SettingSource.THOR_PROFILE) }
+        backendDefault[spec.key]?.let { return ResolvedSetting(it, SettingSource.BACKEND_DEFAULT) }
         return null
     }
+
+    /** What a game-scope save produces: a new override map and a global patch. */
+    data class WriteResult(
+        val perGame: Map<String, String>,
+        val globalPatch: Map<String, String>,
+    )
+
+    /**
+     * Write a game-scope change.
+     *
+     * Three rules, each paid for by a reported ARMSX2 bug:
+     *
+     * 1. **Sparse.** A field the user never touched is absent, so a later
+     *    global change still reaches it. That inheritance is the point.
+     * 2. **Sticky.** A field is PINNED once overridden, and stays pinned even
+     *    when its value happens to equal global. Without this, setting a value
+     *    per game while global agrees stores nothing, and a later global change
+     *    silently takes the game's setting with it.
+     * 3. **Change-tracked.** Rule 2 makes a wrong value permanent, so a pinned
+     *    key the caller did not just touch keeps its STORED value rather than
+     *    whatever [updated] holds. Screens write the whole settings object, so
+     *    [updated] can be a stale snapshot; without this a per-game frame cap
+     *    was overwritten and then stuck, surviving the fix to the writers.
+     *
+     * [previous] is what the caller last saw. Only keys it proves changed are
+     * taken from [updated]. Pass null only when the caller genuinely cannot
+     * know, and accept that rule 3 does not apply.
+     */
+    fun writeOverride(
+        specs: List<SettingSpec>,
+        existingPerGame: Map<String, String>,
+        global: Map<String, String>,
+        updated: Map<String, String>,
+        previous: Map<String, String>?,
+    ): WriteResult {
+        val byKey = specs.associateBy { it.key }
+        val perGame = LinkedHashMap<String, String>()
+        val globalPatch = LinkedHashMap<String, String>()
+
+        val changedNow: Set<String> =
+            previous?.let { p -> updated.filter { (k, v) -> p[k] != v }.keys } ?: emptySet()
+
+        // Keys already pinned to this game, plus whatever the caller just changed.
+        val pinned = LinkedHashSet<String>(existingPerGame.keys)
+        pinned.addAll(changedNow)
+
+        for (key in pinned) {
+            val spec = byKey[key] ?: continue
+            when (spec.scope) {
+                // Cannot live per game. Promote this ONE field, do not write the
+                // resolved object, and never keep a per-game copy of it.
+                SettingScope.PROMOTED ->
+                    if (key in changedNow) updated[key]?.let { globalPatch[key] = it }
+
+                SettingScope.GLOBAL_ONLY -> Unit
+
+                SettingScope.PER_GAME -> {
+                    // Trust `updated` only where `previous` proves a change, or
+                    // where the caller could not tell us.
+                    val trustUpdated = key in changedNow || previous == null
+                    val value =
+                        if (trustUpdated) updated[key] ?: existingPerGame[key]
+                        else existingPerGame[key] ?: updated[key]
+                    if (value != null) perGame[key] = value
+                }
+            }
+        }
+
+        // A field that differs from global is an override even if it was never
+        // pinned before. This is the entry point into rule 2.
+        for ((key, value) in updated) {
+            val spec = byKey[key] ?: continue
+            if (spec.scope != SettingScope.PER_GAME) continue
+            if (key in perGame) continue
+            if (global[key] != value) perGame[key] = value
+        }
+
+        return WriteResult(perGame, globalPatch)
+    }
 }
+
+/**
+ * The settings schema version.
+ *
+ * ARMSX2 carries seven one-time migration keys for settings that changed scope
+ * or default. A schema that ships needs migrations, so the version exists from
+ * the start rather than being retrofitted.
+ */
+const val SETTINGS_SCHEMA_VERSION: Int = 1
 
 // ----------------------------------------------------------------- storage
 
