@@ -1555,8 +1555,30 @@ an existing fix is the exact failure mode this section describes.
   vector units in ARMSX2's VU, xenia's VMX128 and melonDS's DS geometry.
 
   **rpcsx is GPL-2.0-only so its code cannot be taken. A technique is not
-  code.** This is the clearest case yet of ideas crossing a licence boundary
-  that code cannot.
+  code.** Ideas cross a licence boundary that code cannot.
+
+**CORRECTION, and the fleet got there first.** Two forks have already done this
+cross-pollination and neither was recorded here: xenia
+`docs/research/20260805-rpcs3-arm64-optimizations-applicable.md` and Cemu
+`docs/research/20260820-rpcs3-arm64-optimizations-for-cemu.md`, 395 lines,
+citing **twelve merged rpcs3 PRs by number**. **Cemu's cites xenia's.** The
+fleet is already cross-pollinating and already citing itself.
+
+**Whatcookie's numbers are on this exact SoC.** Their test device was an AYN
+Odin 2, the same Snapdragon 8 Gen 2, same 1+4+3 layout. Their headline claim,
+**theirs and unverified**, is roughly 60% faster at 25% less power. Cemu's
+document is explicit that this must not be restated as ours.
+
+**And it refutes the claim above.** Cemu's guest is Espresso, a 750CL
+derivative with **no VMX at all**, only paired-singles, so `UDOT` and `SDOT`
+have no guest-side counterpart there. Roughly half the rpcs3 list dies at that
+line.
+
+**Rule: separate host-side from guest-side before claiming a technique
+transfers.** Host-side crosses freely — spin and wait behaviour, timer
+plumbing, compiler target features, memcmp shapes. Guest-side crosses only
+where the guest ISAs align: xenia's Xenon has VMX and it transfers, Cemu's
+Espresso does not and it does not.
 
 ## The key idea
 

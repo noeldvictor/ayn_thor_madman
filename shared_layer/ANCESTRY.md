@@ -491,6 +491,59 @@ against it.
 Note also that rpcs3 added ARM64 support in **late 2024**, so this is a settled
 platform upstream rather than an experiment.
 
+### CORRECTION: the fleet already did this, twice, and one fork refuted my
+### generalisation
+
+**Two forks have already done exactly this cross-pollination**, and neither was
+recorded here:
+
+| Fork | Document | Date |
+| --- | --- | --- |
+| xenia-thor | `docs/research/20260805-rpcs3-arm64-optimizations-applicable.md` | 2026-08-05 |
+| Cemu-thor | `docs/research/20260820-rpcs3-arm64-optimizations-for-cemu.md`, **395 lines** | 2026-08-20 |
+
+**Cemu's cites xenia's**, describing it as "same source material, mapped onto
+Xenon rather than Espresso". So the fleet is already cross-pollinating, already
+citing itself, and this repo did not know.
+
+Cemu's document cites **twelve merged rpcs3 PRs by number**, plus Whatcookie's
+write-up and the v0.0.42 release notes, and opens by stating that no code was
+changed and nothing has been measured on the Thor.
+
+#### Whatcookie's numbers are on this exact SoC
+
+> Their test device was an AYN Odin 2 — Snapdragon 8 Gen 2, the same SoC as the
+> Thor. Their numbers are on our silicon, same 1xX3 / 2xA715 / 2xA710 / 3xA510
+> layout.
+
+The headline claim, **theirs and unverified**, is roughly **60% faster at 25%
+less power**. The document is explicit that this must not be restated as ours.
+
+#### It refutes the generalisation made one commit ago
+
+This repo claimed the `SDOT` and `UDOT` technique transfers to ARMSX2's VU,
+xenia's VMX128 and melonDS's DS geometry. **Cemu's document draws the line
+correctly and I did not:**
+
+> Cemu's guest is **Espresso**, a 750CL derivative with **no VMX at all** — its
+> only SIMD is paired-singles. So the large RPCS3 vector items
+> (`VPERM`→`TBL`, `EOR3`/`BCAX`, SVE2, `UDOT`/`SDOT`, ...) have **no guest-side
+> counterpart here**. Roughly half of the RPCS3 list dies at this line.
+
+**A guest-side technique transfers only where the guest has a comparable
+feature.** xenia's Xenon has VMX, so it transfers. Cemu's Espresso does not, so
+it does not. My claim was true for some forks and false for others, stated as
+though it were general.
+
+**What does transfer is host-side**, and the document says so: spin and wait
+behaviour, timer plumbing, compiler target features, and memcmp and checksum
+shapes. Its own Tier 1 finding is host-side too — guest `mftb` performing a
+128-bit software divide under a global spinlock.
+
+**Rule: separate host-side from guest-side before claiming a technique
+transfers.** Host-side crosses freely. Guest-side crosses only where the guest
+ISAs align.
+
 ## The uncomfortable part
 
 **This fleet's forks have upstreams they do not track.**
