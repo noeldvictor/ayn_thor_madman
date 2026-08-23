@@ -1,5 +1,191 @@
 # ayn_thor_madman — the master repo
 
+## Working rules — read before you touch anything
+
+**These override anything below them. Set 2026-08-23.**
+
+### All work stays in this repo
+
+**Do not modify a fork. Ever, unless asked for that fork by name.**
+
+Read them, measure them, learn from them, and write what you learned **here**.
+A change to a fork is not this project's work product; **this repo is.**
+
+**This rule was set after a fleet-wide SDK migration edited nine forks.** The
+change built cleanly on four of them and was still wrong, because it put the
+work in nine places nobody is tracking. **It was reverted in full**, and the
+finding it produced is kept in
+[`work_log/20260823_1310_sdk_standardisation.md`](work_log/20260823_1310_sdk_standardisation.md).
+
+**Measurement is not modification.** Building a fork, reading it and running a
+lint over it are all fine — they leave no trace. **If a build needs a file
+changed to proceed, back it up, and put it back afterwards.**
+
+### Do not use the device
+
+**Somebody else is testing on the Thor.** Every device experiment goes to
+[`DEVICE_QUEUE.md`](DEVICE_QUEUE.md) with its prediction and waits.
+
+**This is not a constraint on progress.** Most of what this project needs is
+reading, measuring and building, and none of that touches hardware.
+
+### Do not commit emulator adaptation until the core style is settled
+
+**Hold changes that adapt an emulator** until the app's own style is decided.
+Committing an adaptation before the target shape exists means adapting twice.
+
+**Repo documents, research and work logs are not adaptation. Keep writing
+those.**
+
+### Light mode is the default
+
+**The person using this prefers light mode. Build for that first.**
+
+Offer a theme switch so anybody can choose, but **the default is light** and the
+light theme is the one that gets the attention. **A dark-first design with a
+light option bolted on is not the same thing.**
+
+### The UI must be cheap. This is a constraint, not a style note
+
+**Every frame the shell draws is fill rate and CPU taken from the emulator**, on
+a tile-based GPU with a thermal budget. [Foundation](#foundation) point 2 says
+speed is the product; **the frontend is not exempt from it.**
+
+**The rules:**
+
+- **Nothing animates unless a finger is on it.** No idle motion, no looping
+  background, no ambient shader. An animated library background costs frames
+  forever to be looked at for seconds.
+- **No blur and no elevation shadows.** Both are fill-rate operations and both
+  are worst on a tiler. **Separate surfaces with a flat panel colour and a
+  one-pixel line**, which is what the light palette is built for.
+- **Minimise overdraw.** One opaque background. No stacked translucent layers.
+  A tiler pays for every layer at every pixel.
+- **Cover art is decoded once at display size** and cached. Never decode a
+  full-resolution image and scale it per frame.
+- **Lazy lists with stable keys**, so scrolling recomposes rows rather than
+  rebuilding them.
+- **Screen-2 draws on change, not per frame.** Already a rule; it belongs here
+  too.
+- **While a game runs, the shell should draw nothing.** The in-game overlay is
+  the exception and it is one cheap layer, not a second UI.
+
+**Judge a screen by what it costs when nobody is looking at it.** The right
+answer is almost always nothing.
+
+### The library is per console, not one mixed list
+
+**A console selector sits at the top. Pick a console, see that console's
+games.** An **All** entry stays available for anyone who wants the mixed view.
+
+**This reverses an earlier decision here**, which said the library is one list
+across every backend. The reasons for the change:
+
+- **It matches intent.** A person reaches for "a PS2 game", not for "a game".
+- **It keeps each list short**, which is the cheap option as well as the clear
+  one.
+- **It removes a whole class of confusion** — two games with the same name on
+  two systems, or a cheat badge that belongs to a different backend.
+
+**Losing nothing:** the shared library, per-game overrides, cheats, storage
+accounting and badges all still work across every backend. **Only the default
+view is split.**
+
+### The navigation model is EmulationStation's: system first, then games
+
+**Pick a console, then pick a game.** Two levels, both legible from arm's
+length, both drivable with a d-pad.
+
+**EmulationStation is the reference because it is the cheapest serious frontend
+that exists** — it was built to run on a Raspberry Pi 1. That is the same
+constraint as the rule above, solved by somebody else first.
+
+**Take:**
+
+- **The system selector as the top level.** Not a filter bolted onto a mixed
+  list — the first thing you see.
+- **Gamepad-first navigation.** The Thor has real buttons. Every screen must be
+  drivable without touching the glass, and touch is the addition rather than
+  the assumption.
+- **A game list with a metadata panel** beside it, rather than a grid that
+  hides the details.
+
+**Do not take:**
+
+- **Themed background art and video snaps.** They are the reason some ES themes
+  are slow, and on a tiler a full-screen video behind a menu is the worst thing
+  on the list.
+- **Deep nested settings menus.** ES inherits the same failure this project
+  names in RetroArch. **Settings stay in one place with search.**
+- **Per-system theme packs**, at least until the core is settled.
+
+### The look to match is Alekfull NX, which means the Switch home screen
+
+**Chosen 2026-08-23.** Alekfull NX is an EmulationStation theme that mimics the
+Nintendo Switch home screen, and it fits the constraints already set better than
+the darker, busier alternatives.
+
+**Why it fits:**
+
+- **It is clean by construction.** The Switch home screen is mostly empty
+  space, one accent colour and a row of large icons. Low ornament is also low
+  fill rate.
+- **It has a light variant**, because the Switch does. Most well-known ES
+  themes are dark, so copying one of those would undo the light-mode decision.
+- **Its system row is horizontal**, which is the shape already chosen for the
+  system selector.
+
+**Take:**
+
+- **A horizontal row of large, evenly spaced system entries** as the top level.
+- **A high whitespace ratio.** Space does the separating, not boxes and rules.
+- **One accent colour**, used for selection and nothing else.
+- **Minimal chrome.** No panel border where a gap will do.
+
+**Do not take:**
+
+- **Its icon set, fonts or backgrounds.** Those are the licensed assets. **Take
+  the layout, not the files** — see below.
+- **The Switch's selection animation.** The home screen scales and glows the
+  focused tile; that is per-frame work for a cursor. **Selection is a colour
+  change and a rule.**
+
+**Honest limit:** the claim here is that Alekfull NX mimics the Switch home
+screen and that the Switch aesthetic is clean, light-capable and cheap. **No
+claim is made about which ES theme is most popular**, which is not verifiable
+from here and does not matter — the aesthetic is the target, not the ranking.
+
+### Take an ES theme's layout, never its files
+
+**EmulationStation themes differ in skin, not in structure.** ES constrains its
+views — a system view and a gamelist view — so nearly every well-known theme
+lands on the same shape: a system carousel with a large logo, then a list on one
+side with box art and metadata on the other. **They vary in art, fonts and
+colour, not in layout.**
+
+**Two consequences.**
+
+**"Copy the most popular theme" mostly resolves to "use ES's standard
+layout"**, which is already the plan. The remaining difference is the skin, and
+the skin is the part this project has its own opinion about.
+
+**Most of the well-known themes are dark**, because ES's default is dark and the
+aesthetic followed. **Copying one wholesale would undo the light-mode
+decision**, so take the proven layout and render it in the light palette.
+
+**And themes are asset bundles with their own licences** — logos, fonts,
+backgrounds. **Take the layout, not the files.** Same rule as everywhere else
+here: a design is not expression, an asset is.
+
+### The UI references are melonDS, ARMSX2 and Dolphin
+
+**Those three are the ones worth looking at.** Take layout, interaction and
+structure from them.
+
+Earlier notes here ranked shells by line count, which measured effort rather
+than quality. **These three are named because they look and feel right**, and
+that is the criterion that matters for the app's own screens.
+
 ## Logging rules — read first
 
 **Record all research in a research log. Record all work in a work log. Write
@@ -153,8 +339,54 @@ The rules that follow:
 ### Frame generation already exists in the fleet
 
 **ARMSX2 has a complete Vulkan frame-generation subsystem, 31 files, all
-GPL-3.0-or-later.** Nothing else has one, and nothing recorded it until
-2026-08-22.
+GPL-3.0-or-later.**
+
+**CORRECTED 2026-08-23: xenia has one too, and it is a different design.** The
+claim "nothing else has one" was the **thirteenth** absolute negative in this
+repo to be wrong. A filename search for `framegen|lsfg|fsr3` returns 39 files in
+ARMSX2 and **zero** in xenia, because xenia's lives inside
+`src/xenia/ui/presenter.*`. **A filename search cannot see a feature that lives
+in another subsystem's files.**
+
+| | ARMSX2 | xenia |
+| --- | --- | --- |
+| Method | **interpolation** | **extrapolation** |
+| Needs the next real frame | **yes** | **no** |
+| **Latency cost** | **a held frame** | **none** |
+| Source | eden PR #4263, lsfg-vk | written here |
+| Default | — | **off, byte-identical when off** |
+
+**Verified by vocabulary:** ARMSX2's `FrameGen/` has eight occurrences of
+*interpolate* and **zero** of *extrapolate*; xenia's flag is
+`present_frame_extrapolation`.
+
+**The latency split is the decision, and it was not written down.**
+Interpolation cannot present until the later real frame exists, so it costs **a
+full guest frame of latency**. Extrapolation forward-projects and costs none.
+**On a device with real buttons that is the same class of cost as the touch
+overlay this project already hides.**
+
+**xenia has two synthesis methods and an A/B already wired:** a 50% cross-fade,
+or `present_frame_gen_motion_warp` — a separable **Lucas-Kanade** global motion
+estimate in a 1x1 RGBA32F pass, forward-extrapolating by half the camera
+translation. Plus `present_frame_gen_factor`, default 2, which subdivides the
+guest interval into slices.
+
+**And xenia has the stronger argument for the feature**, which this document did
+not have:
+
+> For logic-locked-framerate guests (e.g. Blue Dragon's fixed 30Hz),
+> synthesizing in-between presented frames is the only way to raise the
+> *presented* frame rate
+
+**When the guest's logic is locked to 30 Hz, no optimisation raises the frame
+rate**, because the guest will not produce more frames. **Frame generation is
+the only lever that exists.** That is narrower and much harder to refute than
+"makes 30 feel like 60".
+
+**Do not merge them.** Two designs answering two tradeoffs, not one feature
+written twice — the LRU-cache result again. See
+[`research_log/20260823_1549_frame_generation_is_in_two_forks.md`](research_log/20260823_1549_frame_generation_is_in_two_forks.md).
 
 `pcsx2/GS/Renderers/Vulkan/FrameGen/`, ported from **eden PR #4263** and
 **lsfg-vk**. It includes a `FrameGenPacer`, because generated frames need their
@@ -486,6 +718,13 @@ Packing together is not free. Accept these:
 | No CPU-side differential testing | ARMSX2 `tests/ctest/core/recompilers/` |
 | Dual-screen routing must be designed | azahar and melonDS both ship it |
 | Only melonDS has haptics | azahar has `hapticFeedback` too |
+| The two CPU leads are unmeasured | **xenia has flags for all three**, with SWOG citations |
+| Guest FP status is a faithfulness choice | **the Xenon has two FP mode registers, ARM64 has one** |
+| `yield` should be replaced with `ISB` | **three forks measured that as a regression** |
+| Seven cores in one binary risks symbol collisions | **zero emulator-code collisions; all 25,526 are dependencies** |
+| Only ARMSX2 has frame generation | **xenia has one too, by extrapolation instead of interpolation** |
+| Storage aggregation has no prior art anywhere | **GameThor has 2,136 lines of it** |
+| Only melonDS ships haptics | **seven of eight do; xenia is the outlier** |
 
 The cause is the same every time: **the inventory was built from file listings,
 and a listing cannot tell you what a file does.**
@@ -604,6 +843,13 @@ emulator.
 
 See [`shared_layer/PATTERNS.md`](shared_layer/PATTERNS.md) for the line
 between guest side and host side, pipeline by pipeline.
+
+**And [`shared_layer/HOST_SIDE.md`](shared_layer/HOST_SIDE.md) for the other
+axis: the concrete inventory of every host-side service a core hands over, and
+who owns it instead.** Five groups — graphics, CPU and synchronisation, platform
+and process, interaction, data and content — each row naming the fork evidence.
+**Several entries are not pipelines at all**: the JNI boundary, the spin
+primitive, dependency and symbol ownership, haptics, path resolution.
 
 ### Where the wins actually come from
 
@@ -1053,6 +1299,57 @@ real workload, measured.** Then a second. Do not design it for seven.
 
 ## Two CPU leads worth chasing
 
+### AUDITED 2026-08-23: all three are already implemented, in xenia
+
+**`a64_backend.cc` carries 111 tuning flags**, and the three leads below are
+among them, with primary-source citations and partial measurements. **Most are
+off by default with the trade stated**, which is why no feature-shaped search
+found them.
+
+| Lead | xenia flag | State |
+| --- | --- | --- |
+| Guest FP status serialising | `a64_fpcr_single_mode`, `a64_fpcr_switch_census` | off, census first |
+| Spill GPRs to the vector file | `a64_spill_gprs_to_vector` | off, **measured**: `UMOV` latency **2** against `LDR` **4** |
+| A710 lane-assembly stall | `a64_vmx_nan_fixup_branchless` | off, pending a qemu differential |
+
+**The FP lead had the wrong root cause here.** It is not that emulators are
+faithful for its own sake. **The Xenon has two independent FP mode registers —
+`FPSCR` for scalar, `VSCR.NJ` for VMX — and ARM64 has one.** The two modes
+differ by one bit, `FZ`, so every transition rewrites `FPCR`, and the A710 SWOG
+Table 4-3 note 2 says a write that changes the control fields **introduces a
+barrier**.
+
+**ARMSX2 has the best answer in the fleet, in three parts**, and the third is
+what makes the first two safe:
+
+1. EE `DIV`/`SQRT` **bake the FP environment into the block as an immediate**, so
+   recompiled code never reads `FPCR`.
+2. mVU **gates the write** — `mvuNeedsFPCRUpdate` skips it when it already
+   matches.
+3. mVU **hashes all four FP environments into its block-cache sentinel**, so a
+   block compiled under one can never be reused under another.
+
+**Parts 1 and 2 without part 3 are a correctness bug.** Baking a mode into
+generated code makes that code wrong the moment the mode changes.
+
+**Its ARM64 JIT emits no `MRS`/`MSR FPCR` at all**, and PS2 needs three FP
+environments — `FPUFPCR`, `VU0FPCR`, `VU1FPCR` — not one.
+
+**Four positions across the fleet:** bake it (ARMSX2), switch it and measure the
+switching (xenia), set `FZ` once and leave guest `FPSCR` writes unimplemented
+(Cemu), have no guest FP mode at all (melonDS).
+
+**And the spill lead has an argument this repo did not have.** It is off in xenia
+because **the 360 guest is a 128-vector-register machine already squeezed into
+28**, so reserving vector registers worsens vector pressure to relieve integer
+pressure. It only pays in integer-heavy, vector-light functions.
+
+See [`research_log/20260823_1520_cpu_leads_already_done.md`](research_log/20260823_1520_cpu_leads_already_done.md).
+
+**The original section follows, kept because the hardware facts in it are still
+the reason these flags exist.**
+
+
 From the Cortex-X3 optimization guide, distilled in
 [`hardware_ref/thor/cpu/CORTEX_X3_NOTES.md`](hardware_ref/thor/cpu/CORTEX_X3_NOTES.md).
 Both are unmeasured and both are cheap to check.
@@ -1119,6 +1416,60 @@ raises the command-processor thread priority.
 
 **This is host-side, so it transfers to every fork**, unlike the vector items.
 Check every spin loop in the fleet for a `yield` that does nothing.
+
+#### AUDITED 2026-08-23. The check is right. The obvious fix is measured harmful.
+
+**Measured on this SoC**, by rpcsx's `tools/bench/thor_bench.cpp`, recorded in
+its `docs/arm64/bench-results.md`:
+
+| shape | ns per iteration |
+| --- | --- |
+| `yield` | **0.36** |
+| `nop` | 0.36 |
+| `isb` | **11.42** |
+| armed `wfe` | **72,024** |
+
+**`YIELD` is exactly a `nop` on the silicon, not just in the manual.** And
+**`ISB` costs 32 times a `yield`.**
+
+**That 32x is why swapping the instruction alone regresses.** Spin counts were
+hand-tuned around an instruction that costs nothing, so substituting one that
+costs 32x more multiplies every tuned backoff. **Three forks measured it
+separately:** rpcsx **+23% regression**, xenia's equivalent A/B **`CONFOUNDED`**,
+and **Cemu tried the tidy fix** — make the backoff time-based to restore x86
+intent — and it was **worse on the Thor**, `LatteCP_readU32Deprc` going 5.13% to
+7.12% of total CPU. Its comment ends **"leave the count alone."**
+
+> **The backoff instruction and the iteration count are one tuned pair.**
+> Changing either alone is a regression risk, and the correct total backoff time
+> is per-loop, not a fleet constant.
+
+**Three tiers exist in the fleet, and the best one exists twice:**
+
+| Tier | Mechanism | Where |
+| --- | --- | --- |
+| **1** | **`SEVL`/`WFE` + `LDAXR`, park on the address** | **ARMSX2** `MonitoredWait`; **dynarmic** `EmitSpinLockLock`, **0BSD** |
+| 2 | `ISB` backoff | Cemu, Vita3K, xenia |
+| **3** | **`asm("yield")`** | **eden** `Common::SpinLock`, 2 hot sites |
+| — | no host spin loop | melonDS |
+
+**ARMSX2's is fork work**, not upstream, and it carries its own numbers: **3.5
+wake-ups per wait as written against 6708 with a `CLREX` added**, because
+clearing the monitor is itself a wake event. It cites Linux's arm64 `__cmpwait`.
+**dynarmic reached the identical shape independently** — the same convergence
+signal as three forks choosing Oboe.
+
+**eden ships both.** It vendors dynarmic, so the correct 0BSD spin lock is
+already in its binary, while `Common::SpinLock` still spins on `yield` in
+`k_slab_heap.h` and `KThread::m_context_guard`. **The fix is a DELETE, not a
+rewrite.**
+
+**How long to spin matters more than which instruction, and only two forks
+decided it.** ARMSX2 **calibrates at run time** — it times its own backoff on the
+host it booted on, so the 32x problem cannot reach it — and Vita3K derives a
+wall-clock budget from **`CNTFRQ_EL0`**. xenia and eden have no budget at all.
+
+See [`research_log/20260823_1454_spin_wait_audit.md`](research_log/20260823_1454_spin_wait_audit.md).
 
 **A related survey, 2026-08-23: two forks set no host affinity at all.** Four do
 — xenia, ARMSX2, eden and rpcsx. **melonDS sets thread priority but never
@@ -1968,12 +2319,14 @@ an existing fix is the exact failure mode this section describes.
   **rpcsx is GPL-2.0-only so its code cannot be taken. A technique is not
   code.** Ideas cross a licence boundary that code cannot.
 
-**CORRECTION, and the fleet got there first.** Two forks have already done this
-cross-pollination and neither was recorded here: xenia
-`docs/research/20260805-rpcs3-arm64-optimizations-applicable.md` and Cemu
+**CORRECTION, and the fleet got there first.** **Three** forks have already done
+this cross-pollination and none was recorded here: xenia
+`docs/research/20260805-rpcs3-arm64-optimizations-applicable.md`, Cemu
 `docs/research/20260820-rpcs3-arm64-optimizations-for-cemu.md`, 395 lines,
-citing **twelve merged rpcs3 PRs by number**. **Cemu's cites xenia's.** The
-fleet is already cross-pollinating and already citing itself.
+citing **twelve merged rpcs3 PRs by number**, and **Vita3K
+`docs/research/20260820-rpcs3-arm64-optimizations-for-vita3k.md`**, found
+2026-08-23 during the spin-wait audit. **Cemu's cites xenia's.** The fleet is
+already cross-pollinating and already citing itself.
 
 **Whatcookie's numbers are on this exact SoC.** Their test device was an AYN
 Odin 2, the same Snapdragon 8 Gen 2, same 1+4+3 layout. Their headline claim,
@@ -2313,6 +2666,7 @@ Rules:
 | `capability-check` | Answer "which fork already has this?" before any feature work. |
 | `thor-measure` | Connect, avoid the traps that produce fake numbers, and record a result that can be trusted. |
 | `extract-subsystem` | Prove the duplication is real, pass the licence gate, then the five steps and the build guard. |
+| `supervise` | Catch the repeated unproductive cycles this repo runs. Runs `tools/supervise.py`. |
 
 Still to write:
 
@@ -2330,6 +2684,38 @@ skills. Port them. Do not write them again.**
 **The fleet is inconsistent about where skills live.** xenia-thor and
 Vita3K-Thor use `.agents/skills/`. melonds_HD_2 uses `.claude/skills/`. Use
 `.claude/skills/` in this repo. Leave the forks alone until a reason appears.
+
+### The supervision layer, taken from AVO
+
+**Added 2026-08-23.** NVIDIA's AVO architecture has four parts and **this
+project already had three** — the agent loop, persistent memory, and domain
+tools. **The fourth is a supervision layer** that "monitors the broader
+trajectory for stagnation or repeated unproductive cycles and can redirect the
+main agent toward alternative strategies".
+
+**That is the one part worth taking**, because this repo's failure modes are
+already recorded as repeated cycles rather than one-off mistakes: the
+["Read before you claim"](#read-before-you-claim) table, the nine-fork SDK
+migration that was reverted in full, and the experiment ledger, which exists
+because dead levers were re-run.
+
+**`tools/supervise.py` is the executable half**, and it reads **added lines
+only** — scanning whole documents reports the correction tables as the disease.
+Six checks: unqualified negatives, work leaking into a fork, a queued experiment
+with no prediction, a session with no log, a fleet-wide claim with no named
+instrument, and an experiment proposed without querying the ledger.
+
+**It caught a real error on its first run**: a research log asserted "No other
+fork does this" about three forks on the strength of reading one. The second
+search confirmed the claim, but it was unverified when written.
+
+**It also produced a false positive on its first run**, failing a
+`DEVICE_QUEUE.md` entry that states its predictions in a table column. **The
+document was right and the tool was wrong** — the same lesson as the ABI lint
+and Cemu. **When a tool and a document disagree, read the actual line.**
+
+**Do not quote AVO's benchmark numbers here.** Nothing in this repo has been
+measured against them.
 
 ## Console lab
 
@@ -2497,7 +2883,23 @@ ARMSX2's `GSTextureUpscaler` with the names changed.
    A touch overlay has **no guest semantics**, both are GPL-2.0-or-later, and
    the class names already match, so the contract is agreed before anyone
    starts. **xenia has no overlay at all**, so it gains a feature rather than
-   losing one, and **melonDS has `TouchVibrator`**, haptics nobody else ships.
+   losing one, and **melonDS has `TouchVibrator`**.
+
+**CORRECTED 2026-08-23: "haptics nobody else ships" is inverted.** Searched
+twice — once across all sources, then for host-only markers in **Kotlin and Java
+alone**, to keep guest rumble emulation out. **Seven of eight forks ship
+host-side haptics. xenia is the only one without.**
+
+**And there are two different features wearing one word.** melonDS's
+`TouchVibrator` is **overlay touch feedback** — user-settable strength, a fixed
+100 ms buzz, behind a `VibratorDelegate` with a **duration fallback when the
+device cannot vary amplitude**. eden's `YuzuVibrator` is **guest rumble routed to
+a physical device** — `getControllerVibrator(device)` against
+`getSystemVibrator()`, so rumble reaches the pad that caused it.
+
+**Neither substitutes for the other, so the contract needs two entries.** Take
+melonDS's delegate and amplitude fallback for touch feedback, and eden's
+per-device routing for rumble.
 
    **Cemu's design read, and the comparison resolves.** Its
    `OverlayInputConfig` is a 24-line enum of 21 elements, which is far smaller
@@ -2674,8 +3076,8 @@ Finding 5.
 | `compileSdk` | 37 | Matches `targetSdk`. |
 | Gradle | 9.6.1 or newer | **Measured 2026-08-23: seven distinct versions across eight forks, spanning 7.3.3 to 9.5.0.** Nothing in the fleet is on 9.6.1. |
 | C++ standard | C++20 | Verify each fork builds. melonDS declares C++17. |
-| Audio | **Oboe**, pinned | Three forks already use it. Replaces five vendored copies of cubeb. Version not yet chosen. |
-| Symbol visibility | **`-fvisibility=hidden`** | **Seven emulators share one global namespace.** Cemu leaves 66% of its headers at global scope, ARMSX2 59%, Vita3K 53%. One flag removes most of the collision surface. |
+| Audio | **Oboe `1.10.0`** | Three forks already use it. Replaces five vendored copies of cubeb. **Version read 2026-08-23 from eden's CPM cache — a real working Android arm64 pin, not a guess.** |
+| Symbol visibility | **`-fvisibility=hidden`** | **MEASURED FROM THE BINARIES 2026-08-23.** Exported symbols span **43x**: xenia **2,285**, ARMSX2 4,380, melonDS 12,255, azahar 62,507, Cemu 68,740, **Vita3K 98,550**. Colliding symbols per backend run **2,092 to 19,696**. The earlier header-scan percentages ranked the forks **wrongly** and are withdrawn. |
 
 Notes:
 
@@ -2742,6 +3144,39 @@ extension set.
 
 ### The standard row is incomplete: vendored libraries
 
+#### MEASURED 2026-08-23: every cross-fork collision is a dependency
+
+**Read from six forks' built `arm64-v8a` libraries with `llvm-nm`**, not from
+build files. **25,526 symbols are exported by two or more forks. Zero of them
+are emulator code** — searched across `Kernel`, `Core`, `Common`, `PPC`,
+`Latte`, `xenia`, `VU`, `melon`, `Vita3K`, `Cemu`, `Service`, `Pcsx2` and `GS`.
+
+**This supports the packed binary and reorders the work.** Seven emulator cores
+in one binary is not the problem. **Seven sets of vendored dependencies is**, and
+that is now measured rather than argued.
+
+**Three dependencies nobody had recorded:**
+
+- **OpenSSL**, in azahar, Cemu and Vita3K. **The single largest collider,
+  ~6,400 symbols**, and it is absent from the table below. Three TLS stacks is a
+  security question as well as a linking one.
+- **Teakra**, in azahar and melonDS. **The only genuine shared emulation
+  dependency found** — both emulate a Teak DSP, the 3DS's and the DSi's.
+- **rcheevos**, in ARMSX2 and melonDS. RetroAchievements.
+
+**And one hard blocker, not a merge conflict.** **60 colliding symbols are SDL's
+JNI bridge** — `JNI_OnLoad` plus the `Java_org_libsdl_app_*` families, in ARMSX2
+and Vita3K. **`JNI_OnLoad` cannot exist twice in one binary**, and it cannot be
+renamed, because the Android runtime looks it up by that exact name.
+
+**Limit: this is a lower bound.** Exported dynamic symbols only, so the forks
+with the smallest export sets under-report their own dependencies. **A gap in
+this list is not evidence a fork lacks a library.** eden is unmeasured because it
+does not build.
+
+See [`research_log/20260823_1508_symbol_collision_census.md`](research_log/20260823_1508_symbol_collision_census.md).
+
+
 | Library | Forks | Vendored by |
 | --- | --- | --- |
 | **`ffmpeg`** | **5** | Vita3K, eden, xenia, ARMSX2, rpcsx |
@@ -2751,7 +3186,7 @@ extension set.
 | `glslang` | 4 | azahar, Vita3K, xenia, rpcsx |
 | `xbyak`, `stb`, `glad`, `fmt`, `discord-rpc` | 4 each | |
 | `libadrenotools` | 3 | azahar, Vita3K, Cemu |
-| `dynarmic`, ARM JIT | 2 | azahar, Vita3K |
+| `dynarmic`, ARM JIT | **3** | azahar, Vita3K, **eden** |
 
 **FFmpeg is vendored five times.** It is enormous, and five copies in one
 binary is not a size problem but an impossibility.
@@ -2997,6 +3432,13 @@ bytecode, turning six engines into six small parsers.
 `ArtemisConverter.kt` and Vita3K `convert_vitacheat.py`.
 
 **Vita3K also has a content path resolver, and nobody else does.**
+**Checked twice 2026-08-23 and the mechanism holds** — searched for candidate
+enumeration, then for storage-root handling; every other hit was unrelated.
+**But eden solves the adjacent half and this should say so:**
+`utils/PathUtil.kt` converts a Storage Access Framework `content://` URI to a
+real path, **including removable SD volumes**. Vita3K answers *where is the
+content*; eden answers *what real path did the person just pick*. **The shared
+layer needs both.**
 `util/cheat_paths.h` enumerates roots, builds candidate paths and resolves one,
 searching **nine locations** for a single title: app-private storage, internal
 storage, SD cards, and three separate community conventions.
@@ -3013,8 +3455,65 @@ candidates, resolve, report which won.
 exists, so the badge is the resolver's result rather than a separate feature.
 That answers a question `app/SCREENS.md` left open.
 
-**Still unverified, and it decides the design:** whether `pnach` and AR codes
-map cleanly onto `dmnt` bytecode.
+**ANSWERED 2026-08-23 by reading three files.** **3DS: yes, by construction.**
+`dmnt_cheat_vm.h` marks three opcodes "not implemented by Gateway's VM", and
+**Gateway is the 3DS cheat system** — dmnt was built as a superset of it. Every
+Gateway opcode azahar documents maps to a dmnt one; only its block-write `E` is
+not one-to-one, and that compiles to a `ControlLoop`.
+
+**PS2: mostly, with three gaps.**
+
+| Gap | Fix |
+| --- | --- |
+| **No byte swap.** `dmnt_cheat_vm.cpp` has **zero** endianness handling, and **six of pnach's nine data types** are width-and-endianness | **add an opcode.** Small |
+| **No scheduling.** pnach's `place` field says apply-once-at-load or every-frame; dmnt runs the whole program per frame | **keep it out of the VM.** Carry it as metadata on the cheat |
+| **The region selector is guest knowledge.** pnach picks `EE` or `IOP`; dmnt has `MainNso`/`Heap`/`Alias`/`Aslr` | **backend-declared list**, not a shared enum |
+
+**The third gap is the same finding as texture classes and filter lists, for the
+third time.** The instruction set is shared; **the region namespace is declared
+by the backend.** `MemoryAccessType` must not become the shared type, for
+exactly the reason `GSTextureUpscaleAlgorithm` did not.
+
+**And there is a sixth format, which is not a format.** azahar's
+`docs/thor-cheat-gaps.md` records 3DS titles whose only cheats are **NTR `.plg`
+plugins — compiled ARM code, not codes.** Those compile to no bytecode at all.
+That scan also found **29 of 113 games with no cheat available**, which is the
+real content of the library's cheat badge.
+
+**ALL SIX FORMATS NOW READ, 2026-08-23.** AR DS, VitaCheat `.psv`, rpcs3 YAML
+and `.ncl` complete the survey.
+
+**One opcode dominates every real corpus.** Measured: `be32` is **5,467 of
+6,497** rpcs3 patch entries (**84%**), and `0` — a 32-bit write — is **60,091 of
+91,372** `.ncl` lines (**66%**), across 2,501 files. **The VM's complexity is
+entirely in the rare tail**, which is the number behind the tiered engine.
+
+**A fourth gap, and it is emulator knowledge rather than guest knowledge.**
+VitaCheat has `$A000`/`$A100`/`$A200` — **ARM code writes with JIT cache
+invalidation**. **dmnt cannot express this and it is not an oversight**:
+Atmosphere runs on real hardware, where there is no recompiler to invalidate.
+**A cheat engine that only writes data will silently do nothing on a recompiled
+guest**, or work until the block is next compiled. Vita3K is the only fork that
+has met this.
+
+**Endianness is confirmed a third time.** rpcs3's vocabulary is `be32`, `be16`
+and `bef32`, and **both PS2 and PS3 are big-endian guests**. `bef32` is **not** a
+fifth width — a float write is bit-identical to a 32-bit write once encoded, so
+the front end converts it and the VM never sees a float.
+
+**AR DS maps entirely**, including `0xC0` FOR / `0xD1` NEXT loops and a data
+register with nine arithmetic operations. **melonDS refuses `0xC4`**, a
+self-modifying-code trick, asking "does anything even use it??" — record it as
+refused, not missing.
+
+**Provenance is already solved in the PS3 formats.** `.ncl` carries an author per
+cheat; rpcs3 YAML carries `Author`, `Notes` and `Patch Version`, keyed by
+**`PPU-<hash>`** — 183 distinct hashes across 173 files. **Take that field list
+for the per-game fixes this document says lack one**, and note that a
+hash-keyed corpus is `DumpId` working in production.
+
+See [`research_log/20260823_1532_cheat_format_mapping.md`](research_log/20260823_1532_cheat_format_mapping.md)
+and [`research_log/20260823_1620_cheat_formats_all_six.md`](research_log/20260823_1620_cheat_formats_all_six.md).
 
 **rpcsx is GPL-2.0-only.** Take the idea, never the code.
 
@@ -3088,7 +3587,52 @@ has:
 - How much space the game uses in total. See
   [Storage and cache visibility](#9-storage-and-cache-visibility).
 
-The library is one list across every backend. It is not one list per emulator.
+**CHANGED 2026-08-23: the library is per console.** A console selector sits at
+the top and an **All** entry keeps the mixed view available. See
+[the working rules](#the-library-is-per-console-not-one-mixed-list).
+
+The library still spans every backend — one set of badges, one storage
+accounting, one override system. **Only the default view is split by console.**
+
+#### Game data, covers and their API
+
+**Specified 2026-08-23 in [`app/GAME_DATA.md`](app/GAME_DATA.md).** The question
+asked was whether to mimic EmulationStation. **The answer is to take its
+vocabulary and reject its data model.**
+
+Keep from ES: **named media roles** — `cover`, `logo`, `screenshot` — so the UI
+binds to a role and any art satisfying it works. Keep its small, boring
+metadata field list.
+
+Reject two ES choices, both foundational and both cheap to avoid now:
+
+- **Identity is the file path.** Move or rename a dump and the metadata, art,
+  cheats and overrides are orphaned. **The fleet already rejected this without
+  coordinating**: Vita3K keys cheats by `TITLEID`, ARMSX2 by disc serial, xenia
+  by an 8-hex-digit title id. **Three forks, three consoles, one answer. ES is
+  the outlier.**
+- **XML parsed at startup.** A large library stalls the first frame, which the
+  cheap-UI rule forbids.
+
+What replaces them:
+
+| Question | Answer |
+| --- | --- |
+| What is a game | `GameKey = (system, titleId)`. Stable forever. |
+| Which copy is this | `DumpId = contentHash`, separate and also needed |
+| Who computes them | **the backend**, because both are guest knowledge |
+| Where metadata comes from | four layers: user, scraped, bundled, derived |
+| How art is requested | **by role and display size**, never as a path |
+
+**`DumpId` is not a duplicate of `GameKey`.** A cheat targets a title; a code
+patch usually targets a specific build. That is the binding problem three forks
+solve separately.
+
+**The metadata layers are the settings resolver again**, deliberately: same
+sparse-override rule, same order, and that design already has tests behind it.
+
+**No video snaps.** A video role is per-frame decode and a full-screen fill
+behind a menu, which is the most expensive thing an ES theme does.
 
 ### 7. Guest accounts and guest system UI
 
@@ -3184,8 +3728,40 @@ It is a small interface with a large consistency payoff:
 - request a user selection, receive a user id
 - report an error the guest raised, receive an acknowledgement
 
-**Survey before designing it.** azahar has a working applet implementation and
-it has not been read.
+**READ 2026-08-23, and it is already the contract.** Do not design one; take
+azahar's. It is layered exactly as this project would need — the abstract
+interface in `src/core/frontend/applets/`, the guest HLE applet in
+`src/core/hle/applets/`, and Qt and Android implementations behind it. **It is
+GPL-2.0-or-later, so the code is usable, not only the design.**
+
+**The shape:** a config struct in, `Setup`/`Execute`, then `Finalize`, then
+`DataReady()` / `ReceiveData()` out. **Asynchronous by construction** — nothing
+blocks the guest thread waiting on a person.
+
+**Five things the three-call sketch above misses:**
+
+- **Validation is in the shared layer, in three phases.** `ValidationError` has
+  **twelve values**, split across `ValidateFilters` (as the person types),
+  `ValidateInput` (on submit) and `ValidateButton` (before closing). The rules
+  are guest knowledge; **when** to apply them is a UI decision, and the frontend
+  chooses.
+- **The guest can validate, so it is a round trip.** `Filters::enable_callback`
+  means the guest checks the input itself and `ShowError` carries its rejection
+  back to the person. **"Receive a string" cannot express this.**
+- **Button labels come from the guest.** `ButtonConfig` is
+  Single/Dual/Triple/None and the caller supplies `button_text`. The English
+  defaults are `"Ok"`, `"Cancel"` and **`"I Forgot"`** — a 3DS parental-controls
+  button no generic host dialog would predict. **The guest supplies the strings,
+  the host supplies the styling.**
+- **A default implementation is always registered.** `RegisterDefaultApplets`
+  installs a `DefaultKeyboard` and `DefaultMiiSelector`, so a guest request never
+  meets a missing frontend. **That is what lets a partially-implemented shell
+  still boot**, which matters more here than it did in azahar.
+- **The extension policy is written into the header**, in the same words this
+  project chose independently: anything missing "can be added here and filled in
+  by the backend HLE applet".
+
+See [`research_log/20260823_1548_azahar_applets_read.md`](research_log/20260823_1548_azahar_applets_read.md).
 
 ### 8. Universal hotkeys, save conventions and control overlays
 
@@ -3841,7 +4417,34 @@ database is large and importing it is slow enough to need a progress report.**
 It also has **`ui/layouteditor`, 2,925 lines** — a screen layout editor, which
 is [`app/SCREENS.md`](app/SCREENS.md) screen 11.
 
-**Storage aggregation remains the one screen with no prior art anywhere.**
+**CORRECTED 2026-08-23: GameThor has 2,136 lines of it.**
+`utils/ContainerStorageManager.kt` (994), its dialog (911) and
+`utils/StorageUtils.kt` (231). **The fourteenth absolute negative in this repo to
+be wrong**, missed because GameThor is Tier 2 and the census counted its files
+without reading them.
+
+**It already has:** `loadEntries()` aggregation, `getAvailableSpace` via
+`StatFs`, `getFolderSize` by tree walk, `formatBinarySize` in **KiB/MiB/GiB**
+rather than decimal units, `removeContainer` and `uninstallGameAndContainer`.
+
+**And it already has the category split in miniature** — `Entry` carries
+`containerSizeBytes` and `gameInstallSizeBytes` separately, with a
+`combinedSizeBytes`. **The Wine container is rebuildable and the game install is
+not**, which is exactly the distinction "a cache is an asset, not junk" turns on.
+
+**It also has something this design does not: `moveGame`**, with
+`canMoveToExternal` and `canMoveToInternal`. **On a handheld with an SD card,
+moving is the action a person actually wants** — deleting a 12 GB game is a loss,
+moving it is not. **Add it.**
+
+**What is genuinely still missing is narrower:** no fork breaks storage down by
+**nine categories with a `rebuildable` flag**. GameThor has two because a Wine
+game has two parts. **Take the screen, add the categories.**
+
+**Method for that narrower negative:** all eight forks were searched for
+`formatFileSize|StatFs|getUsableSpace|folderSize|calculateSize|space_info`, then
+GameThor's three storage files were read in full. **Every other hit was a memory
+card viewer, a game-list size label, or guest-side filesystem code.**
 
 See [`research_log/20260822_2233_fleet_frontend_census.md`](research_log/20260822_2233_fleet_frontend_census.md).
 
@@ -4050,6 +4653,58 @@ These are not settled. Do not assume an answer. Ask, or mark the assumption.
 2. **Dependency unification.** Which single version of Oboe, `imgui`, `fmt`,
    `glslang` and `vulkan-headers` does the fleet use? **The packed binary
    cannot link five copies**, and the audio half is answered — Oboe.
+
+   **ANSWERED IN PART 2026-08-23, from the built binaries.** The question has a
+   sharper shape than "pick one version of each".
+
+   **A dependency is safe when it versions its own ABI, not when it is C++.**
+
+   | Tier | Libraries | Why |
+   | --- | --- | --- |
+   | **safe to leave alone** | **fmt** | inline ABI namespace. **xenia is on `v6` and three forks on `v12`, and they cannot collide** — different mangling. ~142 colliding symbols against OpenSSL's ~6,400 |
+   | already unified | **libc++** | `std::__ndk1`, identical in all six. Supplied by the NDK |
+   | **must be unified** | **OpenSSL, zlib, SDL, libpng** | plain C. Same symbol names, different behaviour, nothing to separate them |
+   | **must be unified** | **imgui** | C++ **without** a versioned namespace, so 1.91.3 and 1.92.6 mangle identically |
+   | **must be unified** | **boost, glslang** | C++, also without a version namespace — plain `boost::archive`, `glslang::`, `TIntermNode`. **For these the version number is moot: any two copies collide** |
+
+   **Every plain-C dependency readable in two forks disagreed on version:**
+   OpenSSL **3.5.0** (Cemu) against **3.6.2** (Vita3K); SDL **3.5.0** (ARMSX2)
+   against **3.2.28** (Vita3K); imgui **1.92.6** against **1.91.3**; zlib
+   **1.3.1** against **1.3.2**.
+
+   **SDL is the sharpest case**, because it compounds the JNI blocker: ARMSX2 and
+   Vita3K both export `JNI_OnLoad` **and they are different SDL versions.**
+
+   **eden is measurable without building it.** Its `.cache/cpm/` is a resolved
+   dependency manifest from a real configure run — **28 packages with versions**.
+   OpenSSL **3.6.0**, fmt **12.1.0**, zlib **1.3.2**, boost **1.90.0**, Oboe
+   **1.10.0**, VMA **3.3.0**, Vulkan-Headers **1.4.345**.
+
+   **So OpenSSL is the most fragmented dependency in the fleet — three distinct
+   versions across three forks** (Cemu 3.5.0, eden 3.6.0, Vita3K 3.6.2), with
+   azahar carrying a fourth copy unread. **It is also the largest collider. Put
+   it first.**
+
+   **eden's Android build is narrower than its dependency list.** `ENABLE_CUBEB`
+   is **OFF** on Android so it uses Oboe; **SDL2 is forced off** and no file under
+   `src/android/` references SDL, so **eden does not add to the `JNI_OnLoad`
+   problem**; Discord depends on Qt, which is off. `ENABLE_WEB_SERVICE=1` is what
+   pulls OpenSSL in.
+
+   **Anomaly, unresolved:** the submodule table below records **Vita3K pinning
+   `glslang` at the same commit as azahar**, yet **Vita3K exports zero glslang
+   symbols** out of 98,550, while azahar exports 1,446 and Cemu 4,539. Either it
+   hides them or this configuration does not use it. **Worth knowing before
+   counting it as a collision.**
+
+   **Limit: a lower bound.** Only libraries embedding a printable version string
+   are readable this way, and azahar and melonDS yielded almost nothing. eden
+   does not build. See
+   [`research_log/20260823_1600_vendored_versions_from_binaries.md`](research_log/20260823_1600_vendored_versions_from_binaries.md).
+
+   **The submodule data below still stands and does not conflict.** Shared
+   ancestry produces agreement — azahar and Vita3K pin identical `glslang` and
+   `xxHash` commits — while independent vendoring produces drift.
 
    **First data, 2026-08-23.** Pinned commits read from each fork's git tree:
 

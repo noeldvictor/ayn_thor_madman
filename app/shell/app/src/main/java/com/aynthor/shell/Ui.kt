@@ -19,13 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-private val Bg = Color(0xFF0E1116)
-private val Panel = Color(0xFF161B22)
-private val Line = Color(0xFF2A313A)
-private val Text = Color(0xFFE6EDF3)
-private val Dim = Color(0xFF9BA7B4)
-private val Accent = Color(0xFF4C8DF6)
-private val Warn = Color(0xFFE3A008)
+// The palette lives in Theme.kt so every UI file shares one definition.
 
 private sealed interface Route {
     data object Library : Route
@@ -40,7 +34,19 @@ private sealed interface Route {
 fun ShellApp(activity: MainActivity) {
     var route by remember { mutableStateOf<Route>(Route.Library) }
 
-    MaterialTheme(colorScheme = darkColorScheme(background = Bg, surface = Panel)) {
+    // One store for the whole app, owned here rather than conjured by the
+    // CompositionLocal default. A second store would mean a second cache and
+    // a second memory budget, which is the thing this project refuses.
+    val media = remember { InMemoryMediaStore(FakeMediaSource) }
+
+    CompositionLocalProvider(LocalMediaStore provides media) {
+    ThorTheme {
+    MaterialTheme(
+        colorScheme = if (darkMode.value)
+            darkColorScheme(background = Bg, surface = Panel, onSurface = Text)
+        else
+            lightColorScheme(background = Bg, surface = Panel, onSurface = Text),
+    ) {
         Column(Modifier.fillMaxSize().background(Bg)) {
             TopBar(
                 route = route,
@@ -62,6 +68,8 @@ fun ShellApp(activity: MainActivity) {
             }
             StatusBar(activity)
         }
+    }
+    }
     }
 }
 
@@ -91,6 +99,32 @@ private fun TopBar(
         NavChip("Drivers", route is Route.Drivers, onDrivers)
         Spacer(Modifier.width(8.dp))
         NavChip("Systems", route is Route.Systems, onSystems)
+        Spacer(Modifier.width(14.dp))
+        ThemeToggle()
+    }
+}
+
+/**
+ * Light/dark switch.
+ *
+ * **Light is the default.** This exists so anybody can choose, not because the
+ * app is neutral about it — see Theme.kt.
+ */
+@Composable
+private fun ThemeToggle() {
+    val dark = darkMode.value
+    Box(
+        Modifier
+            .clip(RoundedCornerShape(6.dp))
+            .background(Panel)
+            .clickable { darkMode.value = !dark }
+            .padding(horizontal = 10.dp, vertical = 6.dp),
+    ) {
+        Text(
+            if (dark) "Dark" else "Light",
+            color = Dim,
+            fontSize = 12.sp,
+        )
     }
 }
 
@@ -122,51 +156,6 @@ private fun StatusBar(activity: MainActivity) {
 
 // ---------------------------------------------------------------- library
 
-@Composable
-private fun LibraryScreen(activity: MainActivity, onOpen: (Game) -> Unit) {
-    var sortBySize by remember { mutableStateOf(false) }
-    val games = remember(sortBySize) {
-        if (sortBySize) Fake.games.sortedByDescending { it.totalMb } else Fake.games
-    }
-
-    Column(Modifier.fillMaxSize()) {
-        Row(
-            Modifier.fillMaxWidth().padding(20.dp, 16.dp, 20.dp, 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text("Library", color = Text, fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
-            Spacer(Modifier.width(12.dp))
-            Text("${Fake.games.size} games across ${System.entries.size} systems", color = Dim, fontSize = 13.sp)
-            Spacer(Modifier.weight(1f))
-            NavChip(if (sortBySize) "Sorted by size" else "Sort by size", sortBySize) {
-                sortBySize = !sortBySize
-            }
-        }
-        LazyColumn(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
-            items(games) { g ->
-                GameRow(g) {
-                    activity.pushToScreen2(
-                        g.title,
-                        listOf(
-                            g.system.label + "  ·  " + g.system.backend,
-                            "",
-                            if (g.hasCheats) "Cheats available" else "No cheats",
-                            if (g.hasOverride) "Per-game override set" else "No override",
-                            if (g.hasPack) "HD pack installed" else "No HD pack",
-                            if (g.hasPatch) "Patch applied" else "No patch",
-                            "",
-                            "${g.totalMb} MB total",
-                            if (g.isDualScreen) "Dual screen title" else "Single screen title",
-                        ),
-                    )
-                    onOpen(g)
-                }
-                Spacer(Modifier.height(10.dp))
-            }
-            item { Spacer(Modifier.height(20.dp)) }
-        }
-    }
-}
 
 @Composable
 private fun GameRow(g: Game, onClick: () -> Unit) {
@@ -223,9 +212,21 @@ private fun Badge(label: String, color: Color = Dim) {
 @Composable
 private fun DetailScreen(activity: MainActivity, g: Game) {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) {
-        Text(g.title, color = Text, fontSize = 24.sp, fontWeight = FontWeight.SemiBold)
-        Spacer(Modifier.height(4.dp))
-        Text("${g.system.label}  ·  backend ${g.system.backend}", color = Dim, fontSize = 13.sp)
+        Row(verticalAlignment = Alignment.Bottom) {
+            // A third size for the same art, and a third cache entry. That is
+            // correct: this one is drawn large and must not be an upscaled
+            // list thumbnail.
+            CoverSlot(g, width = 116.dp, height = 158.dp, corner = 6.dp)
+            Spacer(Modifier.width(16.dp))
+            Column {
+                Text(g.title, color = Text, fontSize = 24.sp, fontWeight = FontWeight.SemiBold)
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    "${g.system.label}  ·  backend ${g.system.backend}",
+                    color = Dim, fontSize = 13.sp,
+                )
+            }
+        }
         Spacer(Modifier.height(20.dp))
 
         Section("Display and layout") {

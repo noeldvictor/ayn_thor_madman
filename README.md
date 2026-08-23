@@ -63,6 +63,23 @@ RetroArch is also the anti-pattern for usability here: cheats are not first
 class, hotkeys are not common across cores, and it demands study before it
 gives you a game.
 
+**What a core hands over is now an inventory, not a slogan.** See
+[`shared_layer/HOST_SIDE.md`](shared_layer/HOST_SIDE.md): the Vulkan device and
+allocator, the driver blob cache, the texture upload path, the present path and
+frame generation, the driver, the thread pool and cluster affinity, the spin and
+park primitive, the memory budget, the JNI boundary, dependencies and symbol
+visibility, audio, input and hotkeys, the touch overlay, haptics, system
+applets, dual-screen routing, storage and path resolution, settings and
+migrations, cheats and patches.
+
+**The core keeps its guest side and nothing else** — the ISA decoder, the guest
+GPU model, the guest memory map and the timing.
+
+**Measured 2026-08-23, and it is the first hard evidence the model works:**
+25,526 symbols are exported by two or more forks and **zero are emulator code**.
+Every collision is a vendored dependency. **Seven cores in one binary is not the
+risk; seven dependency sets are.**
+
 ## Storage and cache visibility
 
 Look at a game and see where its space went. One view, every system: game
@@ -226,16 +243,21 @@ map disagree.
 | `hardware_ref/thor/gpu/VULKAN_TIPS.md` | Practical rules for Vulkan on the Adreno 740. |
 | `hardware_ref/thor/cpu/CORTEX_X3_NOTES.md` | Codegen rules for the prime core, from the ARM guide. |
 | `hardware_ref/thor/cpu/CORE_COMPARISON.md` | Where the four cores disagree. They give conflicting advice. |
-| `.claude/skills/` | Local skills: `capability-check`, `thor-measure`, `extract-subsystem`. |
+| `.claude/skills/` | Local skills: `capability-check`, `thor-measure`, `extract-subsystem`, `supervise`. |
+| `tools/fleet_lint.py` | The standard row, executable. Reports; never modifies a fork. |
+| `tools/supervise.py` | Catches this repo's repeated unproductive cycles. |
 | `hardware_ref/console/` | Manuals for each emulated console. |
 | `console_lab/` | Experiments and speedups for one console only. |
 | `shared_layer/UNIFICATION.md` | **What unification actually means here. Unify what is forced; harvest what is chosen.** |
 | `shared_layer/PATTERNS.md` | The nine pipelines every emulator has. |
+| **`shared_layer/HOST_SIDE.md`** | **Every host-side service a core hands over, and who owns it instead.** |
+| `shared_layer/PROPAGATION.md` | Lessons one fork learned that the others have not received. |
 | `shared_layer/THOR_RENDER.md` | The render architecture for this device. |
 | `shared_layer/BACKEND_STANDARD.md` | What a backend must deliver to be part of one app. |
 | `shared_layer/OWNED.md` | What the shared layer owns. Empty today, on purpose. |
 | `DEVICE_QUEUE.md` | Everything waiting on the hardware, with a prediction for each run. |
 | `app/SCREENS.md` | The 14 screens, and the backend contract they imply. |
+| `app/GAME_DATA.md` | Game identity, metadata and cover art. Takes EmulationStation's vocabulary, rejects its data model. |
 | `app/shell/` | The Compose shell, with fake data. Builds and runs. |
 
 Compress any manual before you commit it. Prefer a link plus extracted notes
@@ -248,15 +270,34 @@ Name a log file `YYYYMMDD_HHMM_<slug>.md`.
 The forks stay in their own directories beside this repo. This repo tracks
 them. It does not contain them.
 
-Tier 1 targets: xenia-thor, rpcsx-ui-android-thor, Cemu-thor, azahar-thor,
-watermelon-DS-THOR, Vita3K-Thor and ARMSX2.
+Tier 1 targets: xenia-thor, Cemu-thor, azahar-thor, watermelon-DS-THOR,
+Vita3K-Thor and ARMSX2.
 
 Tier 2: GameThor and eden-thor.
+
+**PS3 is deferred, not cancelled.** `rpcsx-ui-android` is **GPL-2.0-only** and
+cannot share a binary with the GPL-3.0 forks. Dropping it makes every remaining
+licence compatible, so the app is GPL-3.0 and the loading model is an
+engineering decision again. **Keep harvesting ideas from it; do not link its
+code.**
 
 The full map, with paths and upstream sources, is in
 [`CLAUDE.md`](CLAUDE.md#the-fleet).
 
 ## Conventions
+
+**Working rules, set 2026-08-23. These override everything below them.**
+
+- **All work stays in this repo.** Do not modify a fork unless asked for that
+  fork by name. Read them, build them, measure them, and write what you learned
+  **here**. Measurement is not modification.
+- **Do not use the device.** Somebody else is testing on the Thor. Every device
+  experiment goes to [`DEVICE_QUEUE.md`](DEVICE_QUEUE.md) with a prediction and
+  waits. **Most of what this project needs is reading, measuring and building.**
+- **Light mode is the default.** Offer a theme switch, but build for light
+  first.
+- **The UI must be cheap.** Nothing animates unless a finger is on it. No blur,
+  no elevation shadows, minimal overdraw.
 
 - All writing uses ASD-STE100 Simplified Technical English. Be direct. Be
   concise.
@@ -266,6 +307,12 @@ The full map, with paths and upstream sources, is in
   that fork.
 - Some forks ban AI attribution in commits. Read the `AGENTS.md` of a fork
   before you commit to it.
+- **Run `python tools/supervise.py` before you report.** It catches the loops
+  this repo repeats: unverified negative claims, work leaking into a fork, a
+  queued experiment with no prediction, a session with no log.
+- **A negative claim needs two searches, with different words.** Every claim of
+  the form "no fork has this" that this repo has made has been wrong. The
+  running rate is **15 of 17**.
 
 ## Status: deep exploration
 

@@ -9,3 +9,7 @@ app/shell/local.properties
 
 # Captures and scratch
 *.png
+
+# Python bytecode from tools/
+__pycache__/
+*.pyc

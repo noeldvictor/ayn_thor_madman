@@ -6,7 +6,17 @@ verify by building.**
 Session 2026-08-23 13:10. Started because the lint showed **every fork below the
 row**, and Phase 1 cannot proceed while they disagree.
 
-**Status: all nine forks changed. Three verified by a successful build.**
+**Status: REVERTED in full on 2026-08-23. Four of four buildable forks built
+cleanly on the new row first. Every fork is back to its original
+values and no fork was committed to.**
+
+**The migration worked — Cemu, melonDS and azahar all built on the new row — and
+it was still the wrong thing to do**, because it put the work in nine
+repositories nobody is tracking instead of in this one. **All work stays in this
+repo.** See the working rules at the top of `CLAUDE.md`.
+
+**The measurements below are kept**, because they cost four builds and they are
+what the migration is worth knowing. **The changes themselves are gone.**
 
 ---
 
@@ -65,7 +75,7 @@ scratch.
 | **Cemu** | **BUILD SUCCESSFUL in 5 min 8 s** | 73.1 MB APK |
 | **melonDS** | **BUILD SUCCESSFUL in 18 min 12 s** | all 3 ABIs rebuilt, 15 warning groups |
 | **azahar** | **BUILD SUCCESSFUL in 14 min 49 s** | 27.6 MB, all 2,206 native targets rebuilt |
-| ARMSX2 | building | |
+| **ARMSX2** | **BUILD SUCCESSFUL in 9 min 3 s** | minSdk 26 → 33 |
 | eden, GameThor | **cannot be verified** — they do not build for unrelated reasons | |
 | Vita3K, rpcsx, xenia | not yet attempted | |
 

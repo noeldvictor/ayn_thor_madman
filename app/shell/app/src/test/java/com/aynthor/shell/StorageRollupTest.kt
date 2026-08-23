@@ -16,8 +16,8 @@ class StorageRollupTest {
 
     private fun game(title: String, vararg items: StorageItem) =
         Game(
-            title = title,
-            system = System.PS2,
+            key = GameKey(System.PS2, title),
+            meta = listOf(MetaLayer(MetaSource.BUNDLED, mapOf(MetaField.TITLE to title))),
             guestScreens = emptyList(),
             hasCheats = false,
             hasOverride = false,

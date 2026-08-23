@@ -28,6 +28,10 @@ Read this first. It is shorter than the requirements and it decides more.
 | decides where a guest screen appears | the app routes across two panels |
 | writes outside the paths the app gives it | storage accounting depends on it |
 | ships its own upscaler, cheat engine or patch engine | those are owned subsystems. See [`OWNED.md`](OWNED.md) |
+| **owns a JNI entry point** | **`JNI_OnLoad` cannot exist twice in one binary and cannot be renamed** — the Android runtime looks it up by that exact name. **Measured 2026-08-23: ARMSX2 and Vita3K both export it, and the whole `Java_org_libsdl_app_*` family, because both statically link SDL — at different major versions.** |
+| **synthesizes a present** | **frame generation belongs to the presenter.** It is one interpolate-against-extrapolate decision with a **latency** consequence, and it must be made once for the app, not per backend. ARMSX2 interpolates and holds a frame; xenia extrapolates and holds none |
+| **implements its own spin or park** | **one calibrated primitive.** `yield` is a measured no-op on this SoC at 0.36 ns and `ISB` costs 32x that, so a hand-tuned iteration count is not portable between backends |
+| **vendors a plain-C library silently** | **OpenSSL, zlib, SDL, libpng — and imgui, boost and glslang — carry no ABI version namespace**, so two copies collide whatever their versions. Declare every one. `fmt` is safe because it versions its own namespace |
 
 **Every one of these is something at least one fork does today.** The standard
 is a list of habits to remove more than a list of features to add.
@@ -65,6 +69,30 @@ is a list of habits to remove more than a list of features to add.
   path.
 
 ### 1.4 Declarations
+
+**Three added 2026-08-23, each from reading the fleet rather than from design.**
+
+**The guest floating-point environments, and their hash.** A backend that bakes
+an FP mode into generated code — which is the right way to keep `FPCR` out of
+the hot path — **must hash every baked environment into its block-cache key.**
+ARMSX2 does all three parts: EE `DIV`/`SQRT` bake `FPUFPCR` as an immediate,
+mVU gates the write, and mVU hashes all four environments into its sentinel.
+**Parts one and two without part three are a correctness bug.** The PS2 needs
+three environments, not one.
+
+**Whether a memory write targets code.** A cheat or patch that writes guest
+**code** must invalidate compiled blocks covering that range. **VitaCheat has
+`$A000`/`$A100`/`$A200` for exactly this**; Atmosphere's `dmnt` VM has no such
+opcode because it runs on real hardware with no recompiler. **A cheat engine
+that only writes data does nothing on a recompiled guest**, or starts working
+when the block is next compiled, which reads as a random failure.
+
+**The memory region namespace.** `EE` and `IOP` mean nothing to a Switch;
+`MainNso`, `Heap`, `Alias` and `Aslr` mean nothing to a PS2. **The cheat VM's
+instruction set is shared; the region list is declared by the backend** — the
+same rule as texture classes and upscale filters, reached a third time.
+
+
 
 The backend declares; the app renders. A backend that declares nothing still
 runs, with less UI.

@@ -192,6 +192,42 @@ structure designed for hardware with the opposite tradeoffs.
 
 ---
 
+## 11. Spin-wait: does parking on the address beat the ISB spin
+
+**AUDITED 2026-08-23 with no device.** See
+[`research_log/20260823_1454_spin_wait_audit.md`](research_log/20260823_1454_spin_wait_audit.md).
+Most of this question is already answered; **only two parts need hardware.**
+
+**Already measured, by rpcsx on this SoC.** `yield` 0.36 ns, `nop` 0.36 ns,
+`isb` 11.42 ns, armed `wfe` about 72 us. Spin wake latency ~0.44 us, futex wake
+~10 us. **Do not re-run any of that.**
+
+**What is left, and it is narrow:**
+
+**11a. Does eden's `yield` spin lock cost anything?** It is provably a `nop` and
+it sits on `k_slab_heap` and `KThread::m_context_guard`. **How often those
+contend is unknown**, and a lock that never contends costs nothing however it
+spins.
+
+**Prediction: below the noise floor.** A context guard is held briefly and the
+Switch guest is not heavily threaded on most titles. **Expect `FLAT`**, and
+treat that as the reason to fix it by deletion rather than by tuning.
+
+**11b. Does tier 1 beat tier 2 in a real title?** `SEVL`/`WFE` + `LDAXR` against
+the `ISB` spin, same fork, same scene.
+
+**Prediction: `FLAT` or `GFX-LOSS`, not a win.** Three results already point
+that way: xenia's own ISB A/B was `CONFOUNDED`, Cemu measured a time-based
+backoff as **worse**, and **rpcsx measured a real park as worse on a real
+title** — 58.3 fps to 50.0, reproducibly. **A microbenchmark win has not once
+survived contact with a frame here.**
+
+**Gate:** eden does not build on this box, so 11a is blocked on `pkg-config` and
+`glslangValidator` before it is blocked on the device.
+
+**Do not run either until something cheaper is exhausted.** The audit's value is
+already banked in the propagation ledger and does not depend on these.
+
 ## Not ready to run
 
 These need a decision or a build first, not device time.

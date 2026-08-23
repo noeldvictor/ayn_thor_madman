@@ -97,9 +97,16 @@ object StorageRollup {
     fun totalMb(games: List<Game>): Int = games.sumOf { it.totalMb }
 }
 
+/**
+ * One game in the library.
+ *
+ * **Identity is [key], never the title.** The title is a resolved metadata
+ * value, so correcting it moves nothing and breaks no override. See
+ * app/GAME_DATA.md.
+ */
 data class Game(
-    val title: String,
-    val system: System,
+    val key: GameKey,
+    val meta: List<MetaLayer>,
     val guestScreens: List<GuestScreen>,
     val hasCheats: Boolean,
     val hasOverride: Boolean,
@@ -107,9 +114,40 @@ data class Game(
     val hasPatch: Boolean,
     val storage: List<StorageItem>,
 ) {
+    val system: System get() = key.system
+    val title: String get() = MetadataResolver.displayTitle(key, meta)
+    val sortKey: String get() = MetadataResolver.sortKey(key, meta)
     val totalMb: Int get() = storage.sumOf { it.megabytes }
     val isDualScreen: Boolean get() = guestScreens.size > 1
 }
+
+/**
+ * Builds a fake entry.
+ *
+ * **The title ids below are illustrative placeholders in the right format, not
+ * verified serials.** Nothing reads them yet; they exist so the shell exercises
+ * identity-by-title rather than identity-by-name.
+ */
+private fun game(
+    system: System,
+    titleId: String,
+    title: String,
+    guestScreens: List<GuestScreen>,
+    hasCheats: Boolean,
+    hasOverride: Boolean,
+    hasPack: Boolean,
+    hasPatch: Boolean,
+    storage: List<StorageItem>,
+) = Game(
+    key = GameKey(system, titleId),
+    meta = listOf(MetaLayer(MetaSource.BUNDLED, mapOf(MetaField.TITLE to title))),
+    guestScreens = guestScreens,
+    hasCheats = hasCheats,
+    hasOverride = hasOverride,
+    hasPack = hasPack,
+    hasPatch = hasPatch,
+    storage = storage,
+)
 
 private fun single(w: Int, h: Int) =
     listOf(GuestScreen("screen", w, h, takesTouch = false, requiredByTitle = true))
@@ -123,8 +161,8 @@ private fun dual(tw: Int, th: Int, bw: Int, bh: Int) = listOf(
 object Fake {
 
     val games: List<Game> = listOf(
-        Game(
-            "Shadow of the Colossus", System.PS2, single(640, 448),
+        game(
+            System.PS2, "SCUS-97472", "Shadow of the Colossus", single(640, 448),
             hasCheats = true, hasOverride = true, hasPack = true, hasPatch = false,
             storage = listOf(
                 StorageItem("Game data", 4200, false),
@@ -135,8 +173,8 @@ object Fake {
                 StorageItem("Screenshots", 74, true),
             ),
         ),
-        Game(
-            "Blue Dragon", System.XBOX360, single(1280, 720),
+        game(
+            System.XBOX360, "4D5307E6", "Blue Dragon", single(1280, 720),
             hasCheats = false, hasOverride = true, hasPack = false, hasPatch = true,
             storage = listOf(
                 StorageItem("Game data", 7100, false),
@@ -146,8 +184,8 @@ object Fake {
                 StorageItem("Screenshots", 31, true),
             ),
         ),
-        Game(
-            "Star Fox Zero", System.WIIU, dual(854, 480, 854, 480),
+        game(
+            System.WIIU, "0005000010180600", "Star Fox Zero", dual(854, 480, 854, 480),
             hasCheats = true, hasOverride = true, hasPack = false, hasPatch = true,
             storage = listOf(
                 StorageItem("Game data", 3300, false),
@@ -156,8 +194,8 @@ object Fake {
                 StorageItem("Graphic packs", 6, false),
             ),
         ),
-        Game(
-            "Ever Oasis", System.N3DS, dual(400, 240, 320, 240),
+        game(
+            System.N3DS, "00040000001A2F00", "Ever Oasis", dual(400, 240, 320, 240),
             hasCheats = true, hasOverride = false, hasPack = true, hasPatch = false,
             storage = listOf(
                 StorageItem("Game data", 1700, false),
@@ -166,8 +204,8 @@ object Fake {
                 StorageItem("Shader cache", 130, true),
             ),
         ),
-        Game(
-            "The Legend of Zelda: Phantom Hourglass", System.NDS, dual(256, 192, 256, 192),
+        game(
+            System.NDS, "NTR-AZHE", "The Legend of Zelda: Phantom Hourglass", dual(256, 192, 256, 192),
             hasCheats = true, hasOverride = true, hasPack = true, hasPatch = false,
             storage = listOf(
                 StorageItem("Game data", 62, false),
@@ -176,8 +214,8 @@ object Fake {
                 StorageItem("Shader cache", 44, true),
             ),
         ),
-        Game(
-            "Gravity Rush", System.VITA, single(960, 544),
+        game(
+            System.VITA, "PCSE00021", "Gravity Rush", single(960, 544),
             hasCheats = true, hasOverride = false, hasPack = false, hasPatch = false,
             storage = listOf(
                 StorageItem("Game data", 2600, false),
@@ -185,8 +223,8 @@ object Fake {
                 StorageItem("Shader cache", 520, true),
             ),
         ),
-        Game(
-            "Tokyo Xanadu eX+", System.PC, single(1920, 1080),
+        game(
+            System.PC, "steam-329310", "Tokyo Xanadu eX+", single(1920, 1080),
             hasCheats = false, hasOverride = true, hasPack = false, hasPatch = true,
             storage = listOf(
                 StorageItem("Game data", 12400, false),

@@ -77,11 +77,19 @@ and found not to transfer.
 | 7 | A persisted enum is **append-only forever**; group in the UI, not the numbering | ARMSX2 | GPL-3 | shared layer | contract | **READY** |
 | 8 | Validate the pipeline cache header and **log which field disagreed** | ARMSX2 | GPL-3 | shared device layer | test on a synthetic blob | **READY** |
 | 9 | A `Presentation` is **not torn down** when the activity stops; re-attach every resume | ARMSX2 | GPL-3 | app shell | **applied**, device-verify queued | **DONE**, unverified |
-| 10 | `yield` is a **no-op** on ARM; use `ISB` for spin backoff | rpcs3 → xenia | idea | every fork with a spin loop | A/B on device | **BLOCKED** — needs builds |
+| 10 | `yield` is a **no-op** on ARM — **measured 0.36 ns, identical to `nop`**, on this SoC | rpcs3 bench | idea | every fork | already measured | **DONE**, as a fact |
+| 10b | **Do not swap `yield` for `ISB` alone.** `ISB` costs **32x** a `yield`, so it multiplies every hand-tuned backoff. rpcsx **+23%**, xenia **`CONFOUNDED`**, Cemu's time-based attempt **worse on the Thor** | rpcsx, xenia, Cemu | idea | every fork | **the three A/Bs already exist** | **DONE**, as a refusal |
 | 11 | Pass **real target features** to the compiler and to LLVM | xenia | BSD | six forks | build-flag guard | **READY** |
 | 12 | A **content path resolver** must search many roots; users put files anywhere | Vita3K | GPL-2+ | app shell | **unit test — written** | **DONE** |
 | 13 | A driver picker should **advise**, not list — verdicts, not options | rpcsx | **GPL-2 only** | shared driver manager | **unit test — written, on the real file names** | **DONE** |
 | 14 | Mark fork divergence at line level with a **`NOTE(thor):`** comment | xenia | BSD | every fork | lint | **READY** |
+| 21 | **Park on the address**: `SEVL`/`WFE` + `LDAXR` beats any spin. Reached **independently twice** — ARMSX2 `MonitoredWait` and dynarmic `EmitSpinLockLock` | **dynarmic** | **0BSD** | shared layer, eden | unit test on wake correctness | **READY** — source is 0BSD and already in three forks' trees |
+| 22 | **Never `CLREX` on the way out** of a monitored wait — clearing the monitor is itself a wake event. Measured **3.5 wake-ups per wait against 6708** with one added | ARMSX2 | GPL-3 | anything using tier 1 | wake-count assertion | **READY** |
+| 23 | **Calibrate the spin budget at run time** rather than fixing an iteration count, so the cost of the backoff instruction stops mattering | ARMSX2 `MeasurePauseTime` | GPL-3 | shared layer | unit test on the calibration loop | **READY** |
+| 24 | eden's `Common::SpinLock` still spins on `yield` in **`k_slab_heap`** and **`KThread::m_context_guard`**, while dynarmic's correct one is **already in the same binary**. The fix is a **DELETE** | audit | — | eden | build after removal | **BLOCKED** — eden does not build |
+| 25 | **Bake the guest FP environment into the compiled block as an immediate**, so recompiled code never reads `FPCR` | ARMSX2 | GPL-3 | xenia, any ARM64 backend | block-cache reuse test | **READY** |
+| 26 | **Hash the FP environment into the block-cache key.** Baking a mode in (25) makes the block wrong when the mode changes; ARMSX2's mVU sentinel is the guard | ARMSX2 | GPL-3 | anything doing 25 | **unit test — written** | **DONE** |
+| 27 | A guest can have **more FP mode registers than ARM64 has** — Xenon `FPSCR` + `VSCR.NJ` against one `FPCR`. An `FPCR` write that changes control fields **introduces a barrier** | xenia | BSD | any ARM64 backend | switch census | **READY** |
 
 ### Guest-side and render-side. These need the target to build.
 

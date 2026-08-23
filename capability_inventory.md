@@ -826,6 +826,46 @@ states the corpus is for AI-driven renderer cases.
 **Read `renderer_cases/README.md` and `case.template.json` before designing
 the shared harness.** Do not design a new format first.
 
+## Vendored dependencies — MEASURED FROM THE BINARIES 2026-08-23
+
+**Read with `llvm-nm` from six forks' built `arm64-v8a` libraries**, not from
+build files. See
+[`research_log/20260823_1508_symbol_collision_census.md`](research_log/20260823_1508_symbol_collision_census.md).
+
+**25,526 symbols are exported by two or more forks, and zero are emulator
+code.** Every collision is a vendored dependency.
+
+**Three that no earlier survey recorded:**
+
+| Dependency | Forks | Why it matters |
+| --- | --- | --- |
+| **OpenSSL** | azahar, Cemu, Vita3K | **the largest single collider, ~6,400 symbols.** Three TLS stacks is a security question, not only a linking one |
+| **Teakra** | **azahar, melonDS** | **the only genuine shared emulation dependency in the fleet.** Both emulate a Teak DSP — the 3DS's and the DSi's |
+| **rcheevos** | ARMSX2, melonDS | RetroAchievements. A product-level feature that wants one implementation |
+
+**Teakra is the entry this inventory exists for.** Two forks, two different
+consoles, one DSP core, and neither knows the other has it.
+
+**SDL is a hard blocker rather than a duplicate.** ARMSX2 and Vita3K both
+statically link it, so both export `JNI_OnLoad` and the whole
+`Java_org_libsdl_app_*` family. **`JNI_OnLoad` cannot exist twice in one binary
+and cannot be renamed**, because the Android runtime looks it up by that name.
+
+**Exported-symbol counts, which set the collision surface:**
+
+| Fork | Exported | Colliding |
+| --- | --- | --- |
+| **xenia** | **2,285** | **2,092** |
+| ARMSX2 | 4,380 | 3,845 |
+| melonDS | 12,255 | 6,055 |
+| azahar | 62,507 | 16,170 |
+| Cemu | 68,740 | 13,580 |
+| **Vita3K** | **98,550** | **19,696** |
+
+**Limit: a lower bound.** Exported dynamic symbols only, so the forks with the
+smallest export sets under-report their own dependencies. **A gap here is not
+evidence a fork lacks a library.** eden is unmeasured because it does not build.
+
 ## Tooling
 
 | Capability | Fork | Quality | Notes |
