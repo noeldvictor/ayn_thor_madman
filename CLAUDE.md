@@ -251,9 +251,14 @@ Direct the exploration at these:
 
 - The open items in [Open decisions](#open-decisions).
 - The survey gaps in [`capability_inventory.md`](capability_inventory.md).
-  Cemu-thor, eden-thor and GameThor have no capability recorded at all.
-- Control overlays, save conventions, thread and cluster affinity, audio
-  latency and frame pacing are not surveyed in any fork.
+  **Updated 2026-08-22 with measured frontend and native censuses**, so the
+  worst gaps are closed. GameThor still has no capability recorded.
+- **Audio: surveyed 2026-08-23 and answered.** Three forks already use Oboe;
+  standardise on it. Latency itself is still unmeasured.
+- **Control overlays: surveyed.** See
+  [How to build the shared layer](#how-to-build-the-shared-layer), item 0.
+- Save conventions, thread and cluster affinity, and frame pacing are still not
+  surveyed in any fork.
 - Clean build times for every fork. Only melonDS-android has been built, and
   that was incremental.
 
@@ -2416,6 +2421,7 @@ Finding 5.
 | `compileSdk` | 37 | Matches `targetSdk`. |
 | Gradle | 9.6.1 or newer | The newest already in the fleet. |
 | C++ standard | C++20 | Verify each fork builds. melonDS declares C++17. |
+| Audio | **Oboe**, pinned | Three forks already use it. Replaces five vendored copies of cubeb. Version not yet chosen. |
 
 Notes:
 
@@ -2461,6 +2467,26 @@ extension set.
 
 **FFmpeg is vendored five times.** It is enormous, and five copies in one
 binary is not a size problem but an impossibility.
+
+**The cubeb half is now answered: standardise on Oboe.** Surveyed 2026-08-23.
+**Three forks already chose it independently** — ARMSX2
+(`Host/OboeAudioStream.cpp`), eden (`audio_core/sink/oboe_sink.cpp`) and melonDS
+(`MelonDSAudio.cpp`, plus `MicInputOboeCallback.cpp` for the DS microphone).
+
+Oboe selects AAudio on Android 8.1 and later and handles the device-specific
+latency tuning a hand-written driver has to redo. cubeb reaches Android through
+its own backends, which is a layer that exists to serve desktop portability —
+the cost [Foundation](#foundation) point 1 refuses.
+
+**Three independent choices agreeing is stronger evidence than any one of
+them**, the same reasoning as the touch overlay API surviving two divergences.
+
+So the vendored-cubeb problem is **four conversions, not a design decision**:
+xenia off its own Android driver, Vita3K off SDL audio, azahar and Cemu off
+cubeb. rpcsx is out of the binary anyway.
+
+**Nothing here is measured.** See
+[`research_log/20260823_0005_audio_backends.md`](research_log/20260823_0005_audio_backends.md).
 
 `discord-rpc` is vendored four times and is Discord Rich Presence. On a
 handheld emulator it is weight that probably should not ship.
