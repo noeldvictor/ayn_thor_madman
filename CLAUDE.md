@@ -716,10 +716,33 @@ attachments. Vita3K is also a format-keyed lookup.
 A shared render graph therefore **adds** planning nobody has, rather than
 replacing tuned structure. That is a much smaller commitment than assumed.
 
-**But do the cheap version first.** Correcting load and store operations per
-backend is one struct filled in differently, it moves bandwidth and resolve
-count directly, and it needs no shared layer. If that moves nothing, a graph
-automating the same decision will also move nothing.
+**But do the cheap version first, and one fork already did it.**
+
+**Cemu defaults depth and stencil to `DONT_CARE`** and only promotes them to
+load and store when the case needs it. **eden loads and stores depth
+unconditionally.** That is the exact optimisation, already written, in one
+fork, unknown to the others.
+
+| Fork | Colour ops | Depth ops | Subpasses | Dynamic rendering |
+| --- | --- | --- | --- | --- |
+| eden-thor | LOAD / STORE | LOAD / STORE | 1, fixed | no |
+| Cemu-thor | LOAD / STORE | **DONT_CARE default** | — | **yes** |
+| Vita3K-Thor | not read | not read | not read | no |
+| azahar-thor | not read | not read | plus 2 Anime4K passes | no |
+
+**Nobody merges passes. Nobody uses input attachments. Only Cemu defaults depth
+to `DONT_CARE`.**
+
+Two more findings:
+
+- **Cemu already supports `KHR_dynamic_rendering`**, through
+  `InitDynamicRenderingData()` and a `VkRenderingInfoKHR`. Nothing else in the
+  fleet does, and dynamic rendering changes what a shared graph would even look
+  like.
+- **azahar gives Anime4K two dedicated full-screen render passes**,
+  `anime4k_xy_renderpass` and `anime4k_luma_renderpass`. On a tiler each is a
+  load and a store of the whole target unless carefully arranged. **The
+  flagship feature has a known pass cost and nobody has priced it.**
 
 What the header deliberately does **not** settle: **render pass structure stays
 with the backend for now**, pending that experiment. THOR_RENDER.md commitment 2 wants a shared render graph that

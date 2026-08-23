@@ -128,3 +128,84 @@ and store experiment has run.
 2. Read Cemu and azahar render pass construction. Neither was found by the
    search used here, so they name things differently and are still unread.
 3. Only then decide whether the shared layer plans passes.
+
+## Cemu and azahar, read
+
+Both name their pass construction differently, which is why the first search
+missed them.
+
+### Cemu is better than eden on depth, and it is a free win
+
+`src/Cafe/HW/Latte/Renderer/Vulkan/CachedFBOVk.cpp`:
+
+```cpp
+m_vkColorAttachments[i].loadOp  = VK_ATTACHMENT_LOAD_OP_LOAD;
+m_vkColorAttachments[i].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+
+m_vkDepthAttachment.loadOp    = VK_ATTACHMENT_LOAD_OP_DONT_CARE;   // default
+m_vkDepthAttachment.storeOp   = VK_ATTACHMENT_STORE_OP_DONT_CARE;  // default
+m_vkStencilAttachment.loadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+m_vkStencilAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+
+// then, conditionally:
+m_vkDepthAttachment.loadOp  = VK_ATTACHMENT_LOAD_OP_LOAD;
+m_vkDepthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+```
+
+**Cemu defaults depth and stencil to `DONT_CARE` and only promotes them to
+load and store when the case needs it.** eden loads and stores depth
+unconditionally.
+
+That is the exact optimisation the cheap experiment proposes, already
+implemented in one fork. **It is a free win to propagate**, and it is the
+clearest example yet of the project's thesis: one fork solved it, the others
+never heard.
+
+### Cemu already supports dynamic rendering
+
+`CachedFBOVk` carries `InitDynamicRenderingData()`, `GetRenderingInfo()` and a
+`VkRenderingInfoKHR`, so it can run through `KHR_dynamic_rendering` as well as
+classic render passes. Nothing else in the fleet appears to.
+
+It also tracks which pipelines depend on an FBO, under a spinlock, so pipelines
+can be invalidated when the FBO changes.
+
+### azahar gives Anime4K its own render passes
+
+`src/video_core/renderer_vulkan/vk_blit_helper.h`:
+
+```cpp
+vk::RenderPass anime4k_xy_renderpass;
+vk::RenderPass anime4k_luma_renderpass;
+```
+
+Its pass cache is called `RenderManager`, which is why a search for
+"render_pass" missed it.
+
+**Anime4K costs two extra full-screen render passes here.** On a tiler each is
+a load and a store of the whole target unless carefully arranged. That is a
+concrete, measurable cost attached to the project's flagship feature, and it is
+a strong candidate for subpass merging.
+
+## Four forks, four different answers
+
+| Fork | Pass cache keyed on | Colour ops | Depth ops | Subpasses | Dynamic rendering |
+| --- | --- | --- | --- | --- | --- |
+| eden-thor | formats, samples | LOAD / STORE | LOAD / STORE | 1, fixed | no |
+| Cemu-thor | FBO identity | LOAD / STORE | **DONT_CARE by default** | — | **yes** |
+| Vita3K-Thor | format, 3 bools | not read | not read | not read | no |
+| azahar-thor | `RenderManager` | not read | not read | plus 2 Anime4K passes | no |
+
+**Nobody merges passes. Nobody uses input attachments. Only Cemu defaults depth
+to `DONT_CARE`.**
+
+## Revised next steps
+
+1. **Propagate Cemu's depth default.** It is already written, already correct
+   for a tiler, and eden does the opposite. Check ARMSX2, Vita3K and azahar
+   too.
+2. **Measure azahar's two Anime4K passes.** The flagship feature has a known
+   pass cost and nobody has priced it.
+3. **Read Cemu's dynamic rendering path.** It is the only one, and dynamic
+   rendering changes what a shared graph would even look like.
+4. Read Vita3K and azahar load and store ops, still unknown.
