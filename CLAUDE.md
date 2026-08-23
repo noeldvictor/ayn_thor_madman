@@ -2672,7 +2672,7 @@ Finding 5.
 | `minSdk` | 33 | The device reports API 33. |
 | `targetSdk` | 37 | Android 17, released 2026-06-16. |
 | `compileSdk` | 37 | Matches `targetSdk`. |
-| Gradle | 9.6.1 or newer | The newest already in the fleet. |
+| Gradle | 9.6.1 or newer | **Measured 2026-08-23: seven distinct versions across eight forks, spanning 7.3.3 to 9.5.0.** Nothing in the fleet is on 9.6.1. |
 | C++ standard | C++20 | Verify each fork builds. melonDS declares C++17. |
 | Audio | **Oboe**, pinned | Three forks already use it. Replaces five vendored copies of cubeb. Version not yet chosen. |
 | Symbol visibility | **`-fvisibility=hidden`** | **Seven emulators share one global namespace.** Cemu leaves 66% of its headers at global scope, ARMSX2 59%, Vita3K 53%. One flag removes most of the collision surface. |
@@ -3873,6 +3873,31 @@ xenia-thor until last. They are the most expensive to build.
 
 **Nothing can be shared until this phase ends.** Seven C++ runtimes cannot
 share native code.
+
+### The measured spread, 2026-08-23
+
+**Read from each fork's wrapper rather than assumed.**
+
+| Fork | Gradle | JDK needed |
+| --- | --- | --- |
+| **xenia** | **7.3.3** | — |
+| GameThor | 8.12.1 | — |
+| eden | 8.13 | 17 |
+| azahar | 8.14.5 | **17** |
+| Cemu | 9.3.1 | 21 |
+| Vita3K | 9.4.1 | 21 |
+| ARMSX2 | 9.4.1 | **17** |
+| melonDS | 9.5.0 | 21 |
+| **standard row** | **9.6.1+** | — |
+
+**Seven distinct Gradle versions, and no fork is on the row's value.** The
+spread is 7.3.3 to 9.5.0 — **two major versions** — and at least two JDKs are
+required across the fleet.
+
+**That is larger than "the newest already in the fleet" implied**, and it is the
+real content of Phase 1. **azahar's own `AGENTS.md` instructs keeping it on
+8.14.5**, so moving it is a decision against a fork's standing instruction, not
+just a version bump.
 
 ### Phase 2 — extract the GPU driver manager
 
