@@ -265,7 +265,24 @@ Direct the exploration at these:
   affinity; **melonDS and Vita3K set none at all**, so their threads land
   wherever the kernel puts them. See
   [`research_log/20260823_0030_thread_affinity.md`](research_log/20260823_0030_thread_affinity.md).
-- Frame pacing is still not surveyed in any fork.
+- **Frame pacing: surveyed 2026-08-23, and it is the one host subsystem with no
+  incumbent.** **No fork uses Swappy. No fork uses `VK_GOOGLE_display_timing`.**
+  Every fork picks a Vulkan present mode and stops. Verified with a second
+  search; the single build-file hit was Discord's `game_sdk`, not Google's.
+  See [`research_log/20260823_0040_frame_pacing.md`](research_log/20260823_0040_frame_pacing.md).
+
+  **This inverts the audio result exactly.** Three forks adopted Google's audio
+  library independently; **zero adopted its frame-pacing library.** Same
+  platform, same vendor, opposite outcome.
+
+  **It matters because FIFO is vsync, not pacing.** A 20 ms frame at 60 Hz
+  misses its vsync and alternates 16.6, 33.3, 16.6 — and that judder is more
+  visible than a stable 30. Swappy exists to pick a stable divisor and hold it.
+  **That is the emulator case on a handheld.**
+
+  **So it is the cheapest subsystem in the queue to own**: nothing to extract,
+  nothing to reconcile, no licence question. It belongs with the presenter,
+  which is already where the two-guest-screen question lands.
 - Clean build times for every fork. Only melonDS-android has been built, and
   that was incremental.
 
