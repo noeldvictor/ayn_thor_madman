@@ -118,10 +118,55 @@ algorithm identity.
    separate algorithm entries.
 3. **Do not add `Quilez` to it.** It belongs to the present-time filter list,
    which is a different pipeline stage and a different setting key.
-4. **Check `Anime4K (DoG)`.** melonDS names the technique — Difference of
-   Gaussians — where ARMSX2 names only `Anime4K`. If those are different
-   implementations, the tier axis may need to carry the variant too. **Not
-   read.**
+4. **`Anime4K` checked, and it changes the conclusion above.** See below.
+
+---
+
+## Read afterwards: the algorithm names are not a shared vocabulary
+
+**The two forks use the name `Anime4K` for two unrelated techniques.**
+
+| | ARMSX2 | melonDS |
+| --- | --- | --- |
+| What it is | **a neural network** | **a 3x3 texel kernel** |
+| Evidence | `anime4k_x2.a2nn`, `anime4k_x4.a2nn`, `GSTextureUpscalerNN.cpp` | `Anime4KLiteTexel(a..i, subx, suby)`, built on `MMPXLiteTexel` |
+| Sees | the whole texture | nine texels |
+
+melonDS's is a hand-written pixel-art kernel with thin-detail protection that
+borrows the name. **It is not Anime4K.**
+
+**And its modes compose each other.** `CrispGradientTexel` blends
+`Anime4KLiteTexel` with `SuperSAIStrongTexel`, then sharpens against a weighted
+neighbourhood. `CrispEdgeAATexel` is built the same way, and there is a separate
+`HeavyFilterTexel` / `FirstStageHeavyTexel` / `Recursive4xHeavyTexel` path.
+
+**So melonDS's list is not a list of published algorithms at different cost
+points. It is a set of hand-tuned recipes composed from primitives.**
+
+### This kills the shared enum, not just flattens it
+
+The conclusion earlier in this log — algorithm axis plus tier axis — **is not
+enough.** Two axes still assume the algorithm names mean the same thing in both
+forks, and they do not.
+
+**A shared enum keyed on names would silently merge a neural network with a
+nine-texel kernel**, and a user picking "Anime4K" would get something different
+per backend with no way to tell.
+
+**The filter list must be declared by the backend, not enumerated by the shared
+layer.** `CLAUDE.md` already states exactly this argument for texture classes:
+
+> **Texture classes are a declared list, not an enum.** ARMSX2 has two, melonDS
+> three, Cemu none. **A fixed enum would impose one emulator's taxonomy on the
+> rest.**
+
+**The same sentence is true of filters, word for word**, and Phase 4 currently
+says the opposite. What the shared layer owns is the **routing** — which class
+goes to which filter — and the UI. **The filter list itself is backend
+knowledge**, exactly like the class list.
+
+**ARMSX2's enum stays valuable as a vocabulary and a set of grouping
+comments.** It stops being the shared type.
 
 ## Not verified
 

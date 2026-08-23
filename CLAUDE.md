@@ -3701,9 +3701,29 @@ it, the fan-out in [Agentic acceleration](#agentic-acceleration) does damage.
 
 The flagship feature. It is safe to attempt only after phase 3.
 
-**CORRECTED 2026-08-22 after reading both sets.** Base the shared **algorithm**
-axis on ARMSX2 `GSTextureUpscaleAlgorithm`, which is 24 entries grouped by the
-art they suit with a note on when each is wrong. Keep the class list per-fork.
+**CORRECTED TWICE. There is no shared algorithm enum.** The filter list is
+**declared by the backend**, exactly like the texture class list, for exactly
+the same reason.
+
+**The names are not a shared vocabulary.** ARMSX2's `Anime4K` is a **neural
+network** — `anime4k_x2.a2nn`, `GSTextureUpscalerNN.cpp`. melonDS's `Anime4K
+lite` is a **nine-texel kernel** built on `MMPXLiteTexel`. **Same name, unrelated
+techniques.** A shared enum keyed on names would merge them silently, and a
+person choosing "Anime4K" would get something different per backend with no way
+to tell.
+
+melonDS's modes also **compose each other** — `CrispGradientTexel` blends its
+Anime4K-lite with `SuperSAIStrongTexel` and sharpens — so its list is a set of
+hand-tuned recipes, not published algorithms at different cost points.
+
+**This repo already made this argument, for classes:** *a fixed enum would
+impose one emulator's taxonomy on the rest.* **It is true of filters word for
+word.**
+
+So the shared layer owns the **routing** — which class goes to which filter —
+and the UI. **The filter list is backend knowledge.** ARMSX2's
+`GSTextureUpscaleAlgorithm` stays valuable as a vocabulary and for its grouping
+comments; it stops being the shared type.
 
 **Two corrections to the earlier instruction:**
 
