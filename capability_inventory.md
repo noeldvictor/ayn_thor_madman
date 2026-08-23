@@ -138,6 +138,46 @@ a cheat list; eden's is the better model for **executing** one.
 
 **Take both. They solve different halves.**
 
+### Vita3K has a content path resolver, and nobody else does
+
+`util/cheat_paths.h`:
+
+```cpp
+std::vector<fs::path> get_vitacheat_roots(base, shared, pref);
+std::vector<fs::path> get_vitacheat_candidate_files(base, shared, pref, title_id);
+std::optional<fs::path> find_vitacheat_file(base, shared, pref, title_id);
+```
+
+Its README lists the locations it searches for one title:
+
+```
+cheats/<TITLEID>.psv                    cheats/db/<TITLEID>.psv
+app shared storage cheats/...           app shared storage cheats/db/...
+ux0/vitacheat/db/<TITLEID>.psv          /sdcard/cheats/psvita/<TITLEID>.psv
+/storage/<card>/cheats/psvita/...       /storage/<card>/VitaCheat/db/...
+/storage/<card>/Roms/psvita/cheats/...
+```
+
+**Nine locations, spanning internal storage, app-private storage, SD cards and
+three separate community conventions.**
+
+**This is the real Android problem and only one fork models it.** A person's
+content is wherever they put it, or wherever the guide they followed told them
+to put it. Every other fork assumes one path.
+
+**It generalises past cheats.** The app needs exactly this resolver for HD
+packs, mods, translations, saves and ROMs, per system. **Take the shape:
+enumerate roots, build candidates, resolve, and report which candidate won.**
+
+Two details worth keeping:
+
+- **The badge falls out of the resolver.** "When a matching file exists, the
+  game shows a `C` cheat badge in the app list." The library badge is not a
+  separate feature; it is the resolver's result.
+- **The README scopes what may ship:** "legally redistributable offline
+  single-player cheat files". That is the cheat-database licence question,
+  already answered by one fork with a stated policy.
+
 ### rpcsx: a flat typed poke, and a converter
 
 `util/cheat_info.h`, 33 lines:

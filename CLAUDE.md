@@ -2394,6 +2394,23 @@ bytecode, turning six engines into six small parsers.
 **Two forks already convert formats**, so this works in practice: rpcsx
 `ArtemisConverter.kt` and Vita3K `convert_vitacheat.py`.
 
+**Vita3K also has a content path resolver, and nobody else does.**
+`util/cheat_paths.h` enumerates roots, builds candidate paths and resolves one,
+searching **nine locations** for a single title: app-private storage, internal
+storage, SD cards, and three separate community conventions.
+
+**That is the real Android problem.** A person's content is wherever they put
+it, or wherever the guide they followed said to. Every other fork assumes one
+path.
+
+**It generalises past cheats.** The app needs the same resolver for HD packs,
+mods, translations, saves and ROMs. Take the shape: enumerate roots, build
+candidates, resolve, report which won.
+
+**The library badge falls out of it.** Vita3K shows a `C` badge when a match
+exists, so the badge is the resolver's result rather than a separate feature.
+That answers a question `app/SCREENS.md` left open.
+
 **Still unverified, and it decides the design:** whether `pnach` and AR codes
 map cleanly onto `dmnt` bytecode.
 
