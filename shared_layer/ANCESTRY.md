@@ -142,6 +142,46 @@ And a working frontend around them: `DirectoryInitialization`, `DocumentsTree`,
 Either works in a GPL-3.0 shared layer, and **azahar's is the more permissive
 source**, so prefer it.
 
+### Measured drift: the code is gone, the design survived
+
+**Diffed on 2026-08-22, and it corrects the framing above.**
+
+| File | azahar | eden | differing lines |
+| --- | --- | --- | --- |
+| `AbstractSetting.kt` | 13 | 31 | 34 |
+| `SwitchSetting.kt` | 43 | 34 | 53 |
+| `SliderSetting.kt` | 78 | 42 | 98 |
+| `HeaderSetting.kt` | 9 | 13 | 14 |
+| `SettingsViewModel.kt` | **11** | **143** | 142 |
+
+**Every differing-line count exceeds the file it came from.** Whitespace was
+stripped before comparing, so this is not formatting. **Essentially no literal
+line survives in common.**
+
+`SettingsViewModel.kt` is the clearest case: 11 lines against 143. They share a
+name and nothing else.
+
+### So this is a design duplication, not a code duplication
+
+**Extraction here is a rewrite guided by two references, not a merge.** That is
+less work saved than "90 shared files" implied, and the earlier framing in this
+document was too strong.
+
+What survives is still worth a great deal:
+
+- **The type hierarchy is proven twice.** An abstract setting, typed
+  subclasses, a view holder per type. Two teams kept that shape through years
+  of independent divergence, which is stronger evidence than either fork's
+  version alone.
+- **The naming is agreed**, so the contract needs no negotiation.
+- **Two reference implementations** show which parts each team found worth
+  changing, and where they diverged is where the design was under-specified.
+
+This is exactly what the document predicted: everyone copies once, then
+diverges forever. **Here the divergence is complete.** The prediction was right
+and the consequence is larger than expected: after enough years, shared
+ancestry stops meaning shared code and starts meaning only shared design.
+
 ### Why this is the largest finding in the survey
 
 Every earlier candidate was one subsystem. This is a frontend.
@@ -151,7 +191,7 @@ Every earlier candidate was one subsystem. This is a frontend.
 | LRU cache | not duplication at all |
 | GPU driver manager | four concerns, one subsystem |
 | Touch overlay | 2,369 lines, one subsystem |
-| **azahar and eden frontend** | **90 files, including 40 of settings** |
+| **azahar and eden frontend** | **90 files by name, but the code has fully diverged** |
 
 It was invisible to every feature-based search and took one filename
 comparison to find. **That is the method working.**
@@ -221,8 +261,10 @@ three integrations of one AMD library.
 
 ## What is still unknown
 
-- **How far each copy has drifted.** Vita3K's overlay and azahar's started as
-  one file; nobody has diffed them.
+- **How far the touch overlays have drifted.** The azahar and eden settings
+  files were diffed and had diverged completely. Vita3K's overlay and azahar's
+  have not been diffed, and the settings result suggests they will have
+  diverged too.
 - **Whether the ancestors have fixes worth back-porting.** Dolphin's overlay
   has twelve years of improvement that Vita3K never received. That is free work
   sitting upstream of a fork nobody thinks of as having an upstream.

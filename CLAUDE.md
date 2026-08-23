@@ -1476,6 +1476,17 @@ source.
 It was invisible to every feature-based search and took one filename comparison
 to find.
 
+**Measured drift, and it tempers this.** Diffing the shared settings files
+showed the code has fully diverged: `SettingsViewModel.kt` is 11 lines in
+azahar and 143 in eden, and every differing-line count exceeds its own file
+even with whitespace stripped. **Almost no literal line survives in common.**
+
+So this is a **design** duplication, not a code duplication, and extraction is
+a rewrite guided by two references rather than a merge. What survives is still
+valuable: the type hierarchy is proven twice, the naming is agreed so the
+contract needs no negotiation, and **where the two diverged is where the
+original design was under-specified.**
+
 ```sh
 git -C <fork> grep -hoiE 'Copyright [0-9-]* (Dolphin|Citra|yuzu|PCSX2|RPCS3|melonDS) [A-Za-z]*'   | sort | uniq -c | sort -rn
 ```
