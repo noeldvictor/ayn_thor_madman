@@ -3648,7 +3648,48 @@ Wi-Fi adb rules:
   logic, or the hint is tuned against an unknown.
 - **Cross-run comparison is untrustworthy.** Scene complexity swings several
   times a second, so two separate runs are not comparable. Use an in-place
-  alternating A/B inside one run, on a busy frame.
+  alternating A/B inside one run, on a busy frame. **Prefer A/B/A** where a live
+  toggle exists.
+- **THE NOISE FLOORS, MEASURED.** rpcsx measured the spread of **one**
+  configuration re-run:
+
+  | workload | spread |
+  | --- | --- |
+  | gated title screen | **+/-0.2%** |
+  | restored savestate | **+/-5%** |
+  | pressing through cutscenes | **~+/-50%, unusable** |
+
+  > **A claim smaller than the floor of its workload is not a result.**
+
+  **Check every prediction in [`DEVICE_QUEUE.md`](DEVICE_QUEUE.md) against
+  these.** A 3% win on a savestate run is noise.
+- **Never quote n=1.** One arm read **10351 mW against 7545** and was reported as
+  a win.
+- **Report `[min..max]`, not the mean. Overlapping ranges mean "not
+  distinguishable".**
+- **Each arm needs a fresh process.** Device properties are read once into a
+  static and cached for the process lifetime — **the same trap as the per-game
+  driver override needing a restart.**
+- **Run a harness from a frozen copy.** Editing a script while bash executes it
+  killed a run with `unexpected EOF` **at a line with no syntax error**.
+- **Measure the thread, not the process.** One fork's `rsx::thread` is **0.51 of
+  2.90 cores**, so a lever saving 30% of that thread moves the process total by
+  5% and hides in the noise.
+- **`unknown[+X]` in a profile is the JIT arena, not a symbol.** All recompiled
+  guest code collapses onto one entry. **Never quote a percentage against it as
+  if it were a function.**
+- **Check whether a `grep` was truncated before concluding something is absent.**
+  A `head -12` hid an entire upstream subsystem. **This is this repo's most
+  repeated failure, and another fork wrote the rule first.**
+- **Stop after two failed or inconclusive guesses in one subsystem.** The next
+  move is instrumentation, dumps, RenderDoc or Ghidra — **not a third guess.**
+- **A diagnostic toggle is not a fix.** A prop, a draw skip or a forced path is
+  not a fix until it becomes emulator-semantics code and passes regression
+  checks.
+
+  All of the above from rpcsx `thor-measurement-validity` and Vita3K
+  `vita3k-render-experiment-gate`. See
+  [`research_log/20260823_1848_fleet_skills_mined.md`](research_log/20260823_1848_fleet_skills_mined.md).
 - **`CONFOUNDED` is a verdict.** A number that cannot be trusted gets labelled,
   not discarded and not promoted to a win.
 - **Temperature proves the run happened.** No heating means an idle or menu

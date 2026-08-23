@@ -855,6 +855,30 @@ formalises applies to GameThor alone.
 
 See [`research_log/20260823_1642_ir_in_emulators_literature.md`](research_log/20260823_1642_ir_in_emulators_literature.md).
 
+## Experiment ledgers — THREE FORKS BUILT ONE INDEPENDENTLY
+
+**Read 2026-08-23. Three-way convergence, which is this repo's strongest
+signal.**
+
+| Fork | Mechanism | Storage |
+| --- | --- | --- |
+| **xenia** | `tools/exp_ledger.py` — verdicts `DEAD`/`FLAT`/`WIN`/`GFX-LOSS`/`CONFOUNDED`/`OPEN` | SQLite |
+| **Vita3K** | `debug_knowledge.py` + `renderer_experiment.py` — packets with hypothesis, scene and baseline artifact | SQLite |
+| **rpcsx** | `thor-experiment-ledger`, two ledgers | — |
+
+**Vita3K's adds duplicate detection before the run**: it checks the planned
+hypothesis against past attempts and refuses a repeat unless instrumentation is
+added or a condition changed.
+
+**And its "stop after two failed or inconclusive guesses in one subsystem" is
+the supervision layer this repo built from the AVO paper on the same day.** It
+already existed in the fleet.
+
+**Skills census, corrected.** The earlier counts were files. **rpcsx has 18
+distinct skills, Vita3K has 9, xenia has 37** — `CLAUDE.md` said 29.
+
+See [`research_log/20260823_1848_fleet_skills_mined.md`](research_log/20260823_1848_fleet_skills_mined.md).
+
 ## Hardware-instruction repurposing — AUDITED 2026-08-23
 
 **Using a unit named for one job to do another. The fleet does it once.**
