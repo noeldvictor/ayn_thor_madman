@@ -21,6 +21,38 @@ capability row somebody else wrote.
 | Six forks duplicating a driver picker | four concerns: install, launch wiring, remote catalogue, capability detection, suitability assessment |
 | Shared texture cache hashing | guest-specific; it hashes guest formats and palettes |
 | Seven Vulkan device layers | **genuinely duplicated**, because device setup has no guest semantics |
+| Eight pipeline caches | **genuinely duplicated**, and the shape is fixed by the Vulkan API |
+| Two upscale algorithm sets | **two different axes**: ARMSX2 by algorithm, melonDS by cost tier |
+| Seven forks setting thread affinity | **three of those hits were GUEST kernel code** |
+
+### Separate host-side from guest-side before you count
+
+**An emulator implements the guest's API as a feature**, so a search for a host
+mechanism finds the emulated console's version of it.
+
+Searching for `sched_setaffinity` and `CPU_SET` returned seven forks. Cemu's hit
+was the Wii U `coreinit` thread API, azahar's was a 3DS kernel syscall, and
+rpcsx's was Orbis kernel emulation. **Three of seven were the guest.** A fourth
+was inside a vendored library's test app.
+
+**The corrected answer was different in kind**: four forks set host affinity and
+**two set none at all**.
+
+### Ask where the boundary already is
+
+**Before designing a boundary, check whether a fork has already drawn one.**
+Measured across the fleet on 2026-08-22:
+
+| Layer | Separated by | Everyone else |
+| --- | --- | --- |
+| Vulkan device | **xenia, `ui/vulkan/` vs `gpu/vulkan/`** | fused into the renderer |
+| Code cache | **xenia, `a64_code_cache_posix.cc`** | fused into the emitter |
+| Pipeline cache | **nobody** | fused into guest pipeline state |
+
+**Where one fork has already separated it, the extraction is "take that module,
+then unpick the others from their own version".** The second half is per-fork
+and is where the cost actually is. Say so in the plan, because "merge seven
+implementations" describes the wrong work.
 
 Ask three questions and answer them in writing:
 
@@ -108,14 +140,22 @@ returns.
 
 ## Order by risk, not by value
 
+0. **Things nobody has built.** They have no incumbent, nothing to reconcile
+   and no licence question, so they are the cheapest of all. **Frame pacing is
+   the example**: no fork uses Swappy or Vulkan display timing.
 1. Things with no guest semantics at all. The Vulkan device layer qualifies:
    instance creation, device selection, queues and allocation cannot encode
-   guest behaviour.
-2. The GPU driver manager, composed from its four owners.
-3. The shader and pipeline cache. Measurable, user-visible, no renderer
-   internals needed.
-4. Texture upload. The flagship feature lives here.
-5. Code translation. Last. The deepest reach into a core.
+   guest behaviour. **Take xenia's; it already separated it, and it is BSD.**
+2. The GPU driver manager, composed from its four owners. **Folds into 1.**
+3. **The driver pipeline cache blob only.** The shader translation cache in the
+   same files is guest-specific and stays. The blob dies on a driver swap; the
+   translation cache survives one.
+4. Texture upload. The flagship feature lives here. **It needs two axes** —
+   algorithm and cost tier — because the two forks that built it chose
+   different ones.
+5. **The code cache, not code translation.** There is no shared recompiler.
+   Executable memory, W^X and icache invalidation are host-side and are about
+   2% of a backend, so this **folds into 1** rather than standing alone.
 
 ## Expect maintenance wins, not frame wins
 
@@ -125,3 +165,21 @@ is six bugs.
 
 **Where an extraction claims frames, prove it per subsystem against the
 ledger.** Do not promise a speedup a shared renderer has never delivered.
+
+## Price the cost to the test harness
+
+**Fixtures are savestates.** A change that alters guest state layout invalidates
+every fixture for that backend at once — the golden images survive, but nothing
+can reach the scene that made them.
+
+**This will happen**, because extraction changes backends on purpose, and
+ARMSX2 already carries a `SaveStateLegacy.cpp` from the last time its format
+moved.
+
+So before converting a fork:
+
+- Check whether the change touches serialised guest state.
+- If it does, **regenerate the fixtures in the same commit**, and make the
+  harness fail loudly on a version mismatch. **A quietly wrong fixture is worse
+  than a missing one**, because its golden-image diff reads as a rendering
+  regression.
