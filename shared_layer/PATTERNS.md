@@ -19,6 +19,9 @@ The contract is written against the pattern, never against one fork's version.
 
 ## The eight pipelines
 
+**Nine since 2026-08-23**, when audio was promoted from a list of vendored
+backends to a pipeline of its own.
+
 Every emulator in the fleet does these. The guest hardware differs; the
 pipeline does not.
 
@@ -192,6 +195,18 @@ display, layout, aspect handling, frame pacing and the present path.
 
 **Not shared:** how many screens the guest has and what each contains.
 
+**Surveyed 2026-08-23: frame pacing has no incumbent anywhere.** **No fork uses
+Swappy. No fork uses `VK_GOOGLE_display_timing`.** Every fork selects a Vulkan
+present mode and stops; azahar and melonDS use `Choreographer`, which is the
+vsync signal and not the pacing policy.
+
+**`FIFO` is vsync, not pacing.** A 20 ms frame at 60 Hz misses its vsync and
+alternates 16.6, 33.3, 16.6 — judder that is more visible than a stable 30.
+
+**This makes presentation the cheapest pipeline in the catalogue to take**:
+nothing to extract, nothing to reconcile, no licence question. ARMSX2's
+`FrameGenPacer` is the only prior art and it paces generated frames only.
+
 **Contract:** a backend declares its guest screens with a name, a size, an
 aspect, whether it takes touch, and whether the game needs it. The app owns
 the routing. See `../CLAUDE.md`, Dual-screen routing.
@@ -268,6 +283,42 @@ Two patch systems already exist. Choose one:
 
 ---
 
+## 9. Audio
+
+**Added 2026-08-23.** This catalogue listed audio only as a set of vendored
+backends, which is why it was not a pipeline.
+
+Every fork turns guest audio samples into host audio output.
+
+| Android path | Forks |
+| --- | --- |
+| **Oboe** | **ARMSX2, eden, melonDS** |
+| its own Android driver | xenia |
+| SDL, reaching AAudio | Vita3K |
+| cubeb | rpcsx, azahar, Cemu |
+
+**Shared:** the host stream, buffer sizing, the latency policy, device change
+and route change handling, and the mixer.
+
+**Not shared:** guest sample format, guest channel layout, guest mixing
+semantics and the guest's own audio timing, which is often tied to guest
+interrupts.
+
+**Contract:** the backend produces interleaved PCM at a declared rate and
+channel count; the shared layer owns the stream and tells the backend how much
+it needs and when.
+
+**This pipeline is the fleet's one clear case of convergence.** Three forks
+independently chose Oboe, which is Google's recommended low-latency path,
+without coordinating. **Everywhere else in this catalogue, independent forks
+diverged.** Standardise on Oboe: it also resolves the five vendored copies of
+cubeb that block the packed binary.
+
+**Nothing about latency is measured.** This records which library each fork
+calls.
+
+---
+
 ## Support patterns
 
 Smaller, and the easiest possible proof that extraction works.
@@ -327,11 +378,33 @@ None of this is emulation. All of it is written more than once.
 
 ## Gaps in this catalogue
 
-- Memory mapping is barely surveyed.
-- Audio is listed only as backends, not as a pipeline.
-- No fork's implementation has been read in depth for pipelines 3 to 7. The
-  names came from file listings.
-- GameThor is absent. It translates an API rather than emulating hardware, so
-  it may not fit these pipelines at all. That difference is worth
-  understanding, because the xenia experiment ledger argues translation beats
-  emulation on this device.
+- Memory mapping is **still** barely surveyed.
+- **Audio: closed 2026-08-23.** It is now pipeline 9.
+- **Pipelines 3 to 7 are partly read now, not listed.** Read since this was
+  written: the pipeline cache, the code cache, thread affinity, save
+  conventions, frame pacing and the upscale algorithm sets. **Shader
+  translation and memory mapping remain listed rather than read.**
+- **GameThor: surveyed 2026-08-23**, and the difference is real. It translates
+  Direct3D to Vulkan through DXVK and runs Windows binaries under Wine, so it
+  has no guest CPU to recompile and no guest GPU to model. **Pipelines 1, 3 and
+  4 do not apply to it at all.**
+
+  **It is also the existence proof the xenia ledger cites** — RE2 Remake running
+  on this same Thor through GameNative and DXVK — for the argument that
+  translating an API beats emulating hardware here.
+
+  **And it contributed a pattern this catalogue lacked:** per-game **host config
+  fixes**, 29 of them behind six typed kinds, which change an environment
+  variable or a launch argument and touch no guest state. That belongs in
+  pipeline 8 and is now the fourth thing called a "patch".
+
+## Two rules this catalogue earned on 2026-08-23
+
+**Search the mechanism, not the category.** Looking for `*pipeline_cache*`
+missed two forks; looking for `vkCreatePipelineCache` found all eight. The same
+failure happened for storage and for hotkeys.
+
+**Separate host-side from guest-side before counting.** An emulator implements
+the guest's API **as a feature**, so searching for `sched_setaffinity` returned
+the Wii U `coreinit` thread API, a 3DS kernel syscall and Orbis kernel
+emulation. **Three of seven hits were the guest.**
