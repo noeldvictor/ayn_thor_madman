@@ -259,6 +259,48 @@ Three forks record ancestry by vendoring rather than by header:
 `GSUpscaler::FSR1` and rpcsx has `Emu/RSX/Program/Upscalers/FSR1`. Three forks,
 three integrations of one AMD library.
 
+## The newest edge, and it is happening now: ARMSX2 to ARMSX3
+
+Found 2026-08-22 while checking an unrelated negative. **It is the most recent
+copy event in the fleet and nothing recorded it.**
+
+`ps3-thor/rpcs3-upstream/android/armsx3-ui/app/src/main/java/` contains the
+package **`com.armsx2`**. ARMSX3's Android frontend is **ARMSX2's Android
+frontend, vendored whole**, package name included.
+
+Roughly 35 top-level Kotlin files carry across — `BackupManager`, `OverlayRepo`,
+`ShaderRepo`, `TextureCatalog`, `TexturePackInstaller`, `SecondScreen`,
+`DiscordPresence`, `PlayTime`, `BatteryWatcher`, `DeviceTier`, `GpuInfo`,
+`CustomDriver` — plus the whole `config`, `data`, `i18n`, `input`, `navigation`,
+`runtime` and `ui` trees. The PS3-specific addition is visible as
+**`Ps3PatchRepo.kt`** sitting beside them.
+
+### Why this one matters more than the 2008 Dolphin edge
+
+Every other edge in this document is archaeology. **This one is current.**
+
+- **melonDS carries Dolphin code from 2008.** That is a copy made before agentic
+  coding existed, and the argument was that copying is an old habit.
+- **ARMSX3 copied ARMSX2's frontend in 2026.** Same fleet, same year, same
+  author. **The habit is not historical.**
+
+That is the thesis stated in `CLAUDE.md` — *agentic coding accelerates
+duplication* — observed directly rather than inferred. It also means the fleet
+now has **two copies of the settings hub, the overlay repository, the shader
+repository, the texture catalogue and the second-screen panel**, and they will
+diverge on the same schedule everything else did.
+
+### It does not change the licence position
+
+ARMSX3 is GPL-2.0-only and stays out of the app. **The frontend being ARMSX2's
+work does not rescue it**, because the licence problem was always the core, not
+the frontend: 84 frontend files against 1510 native ones, of which 874 come from
+rpcs3.
+
+**If anything it sharpens the earlier measurement.** Rebuilding the frontend
+discards 5% of the fork, and it now turns out that 5% was largely ours to begin
+with.
+
 ## What is still unknown
 
 - ~~Whether the ancestors have fixes worth back-porting.~~ **Answered below.**

@@ -179,17 +179,20 @@ is conversion rather than invention.
 | cheat engine | eden VM, azahar manager, rpcsx flat |
 | code patcher | Cemu assembler, xenia TOML |
 | guest accounts | six of eight |
-| storage accounting | **nobody** |
-| resolve and LRZ reporting | **nobody** |
-| one hotkey set | **nobody** |
+| second-screen `Presentation` | **ARMSX2**, 707 lines, naming the Thor |
+| hotkey set and binding UX | **ARMSX2** `SysHotkey` enum + `captureHotkey` |
+| storage measurement | melonDS, ARMSX2, Cemu, azahar, GameNative |
+| **storage aggregation per game, per category** | **nobody** |
+| **resolve and LRZ reporting** | **nobody** |
 
-**The last three rows have no prior art in the fleet.** They are also the rows
-the product promise rests on, so they are the work. Everything above them is
-conversion.
+**The three negatives here survived a second search with different words.** An
+earlier version of this table claimed three different rows had no prior art;
+**all three were wrong**, and two were already built in ARMSX2. See
+[`../research_log/20260822_2154_second_search_three_negatives.md`](../research_log/20260822_2154_second_search_three_negatives.md).
 
-**Apply the repo's own rule before trusting the three negatives.** Each was
-searched once. A negative is worth recording only after a second search with
-different words, and six negatives in this repo have already been reversed.
+**Search for the mechanism, not the category.** The failed searches used the
+feature name. "storage" misses `walkTopDown` and `usableSpace`, because nobody
+names a function after the category it belongs to.
 
 ---
 

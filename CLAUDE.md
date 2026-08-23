@@ -2793,6 +2793,17 @@ and menu use the same input on every backend, always.
 A backend does not get to define its own hotkey. The app owns the hotkey layer
 and tells the backend what happened.
 
+**ARMSX2 already has the action list and the binding interaction. Take them.**
+`ControllerMappings.SysHotkey` is an enum, and `HotkeysTab.kt` renders from
+`SysHotkey.entries`: menu, quick save and load, slot cycle, texture-dump toggle,
+fast forward, resolution up and down, achievements, close game. Binding arms on
+a row tap and captures the next controller button through
+`ControllerMappings.captureHotkey`, so it needs no keyboard and no key names.
+
+**It was split out of the Pad tab so hotkeys are "easy to find".** That is this
+project's own usability complaint, fixed independently inside the fleet before
+this repo existed.
+
 ### 9. Storage and cache visibility
 
 **Look at a game and see where its space went.** One view, every system, every
@@ -2882,7 +2893,25 @@ The app owns the routing. The user picks a layout per game, and the choice is
 a per-game override like any other. See
 [The game library and per-game overrides](#6-the-game-library-and-per-game-overrides).
 
-**Read 2026-08-22: two forks already ship this. Do not design it.**
+**Read 2026-08-22: three forks already ship this. Do not design it.**
+
+**ARMSX2 `SecondScreen.kt` is 576 lines plus 131 of `SecondScreenTiles.kt`, and
+it names the Thor.** It is not a guest screen router; it is an app panel on the
+second display, which is the other half of
+[Screen-2 when the game is single-screen](#screen-2-when-the-game-is-single-screen).
+**It carries three lessons `app/shell/` needs and does not have:**
+
+- **Do not put Compose inside a `Presentation`.** A `Presentation` has its own
+  Window and decor view, and a `ComposeView` needs the ViewTree lifecycle and
+  saved-state owners attached to that decor view first. Get it wrong and it
+  **throws at inflate time, on hardware almost nobody testing this has.**
+- **A `Presentation` is not torn down when the activity stops.** ARMSX2 shipped a
+  bug where the panel stayed up with a stale FPS reading while the user was
+  elsewhere. Drive it from `onResume` and `onPause`.
+- **Re-attach on every resume, not only on a foreground change**, because a
+  dual-screen handheld lets a person move the app to the other display.
+
+It also registers a `DisplayManager.DisplayListener` for add and remove.
 
 azahar `display/ScreenLayout.kt` has a **`SecondaryDisplayLayout` with eight
 modes**: `NONE`, `TOP_SCREEN`, `BOTTOM_SCREEN`, `SIDE_BY_SIDE`,
