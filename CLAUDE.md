@@ -2117,7 +2117,62 @@ has:
 
 The library is one list across every backend. It is not one list per emulator.
 
-### 7. Universal hotkeys, save conventions and control overlays
+### 7. Guest accounts and guest system UI
+
+**Two different things, and only one of them was designed.**
+
+| | Host per-game profile | Guest user account |
+| --- | --- | --- |
+| What | our settings override | who the console thinks is playing |
+| Owned by | the app | the guest OS |
+| Examples | upscale factor for this game | Mii, NNID, PSN id, gamertag, Switch user |
+
+They are orthogonal. See
+[The game library and per-game overrides](#6-the-game-library-and-per-game-overrides)
+for the first. This section is the second.
+
+Three forks have a guest account system, each different:
+
+| Fork | Implementation |
+| --- | --- |
+| Cemu-thor | `src/Cafe/Account/Account.cpp`, `Account.h`, `AccountError.h` |
+| azahar-thor | `MiiSelector.kt`, `MiiSelectorDialogFragment.kt`, `mii_selector.cpp` |
+| eden-thor | `ProfileAdapter.kt` |
+
+Nothing found in xenia-thor, Vita3K-Thor or rpcsx-ui-android, though the search
+was for names and those forks may use other ones.
+
+### Guest system applets: UI the guest asks the host to show
+
+azahar's Mii selector is an **applet**. The guest OS calls out and expects the
+host to present a picker, then hands back a result.
+
+**This is a whole category the screen list missed.** Every console in the fleet
+has some of it:
+
+- profile and account pickers
+- software keyboards
+- avatar and Mii selectors
+- error and system dialogs
+
+**In a unified app these must be rendered by the app, in the app's style.**
+Seven backends each drawing their own system dialogs is exactly the
+inconsistency this project exists to remove, and a person should not be able to
+tell which backend asked.
+
+**Contract consequence.** A backend needs a way to request host UI and receive
+a result. That is not in
+[`shared_layer/thor_backend.h`](shared_layer/thor_backend.h) and it should be.
+It is a small interface with a large consistency payoff:
+
+- request a text entry, with a prompt and constraints, receive a string
+- request a user selection, receive a user id
+- report an error the guest raised, receive an acknowledgement
+
+**Survey before designing it.** azahar has a working applet implementation and
+it has not been read.
+
+### 8. Universal hotkeys, save conventions and control overlays
 
 **One hotkey set works on every system.** This is a requirement, not a
 convenience. Save state, load state, fast forward, rewind, screenshot, overlay
@@ -2126,7 +2181,7 @@ and menu use the same input on every backend, always.
 A backend does not get to define its own hotkey. The app owns the hotkey layer
 and tells the backend what happened.
 
-### 8. Storage and cache visibility
+### 9. Storage and cache visibility
 
 **Look at a game and see where its space went.** One view, every system, every
 category.
@@ -2183,7 +2238,7 @@ app owns those paths.
 Also show the totals across the whole library, sorted by size. The first
 question is usually "which game should I delete", not "how big is this one".
 
-### 9. Dual-screen routing
+### 10. Dual-screen routing
 
 **The Thor has two internal touch displays. Three systems in the fleet are
 dual-screen. No other frontend can do this properly.**
@@ -2631,8 +2686,9 @@ Do it in this order:
    extensions a backend may declare. This falls out of steps 1 to 4 rather
    than being argued in advance.
 
-**Read `xenia-thor` first.** It has the most complete Android shell in the
-fleet: `GameProfiles`, `GameOptimizationsActivity`, `GamePatchManager`,
+**Read `xenia-thor` for its feature list, not its shape.** It is the most
+complete shell in the fleet and the worst structured: 12,313 lines of Java,
+Activity-per-manager, a menu tree. Its files: `GameProfiles`, `GameOptimizationsActivity`, `GamePatchManager`,
 `ContentInstaller`, `ControllerMappingActivity`, `CrashReporter`. Start from
 what it learned. See [`capability_inventory.md`](capability_inventory.md).
 
@@ -2707,7 +2763,8 @@ Base the shared algorithm enum on ARMSX2 `GSTextureUpscaleAlgorithm`. Add
 ### Later
 
 - The game library, cover art and per-game overrides. Survey xenia-thor
-  `GameProfiles.java` first. It is the most complete Android shell in the
+  `GameProfiles.java` first. It is the most complete Android shell in the fleet
+  and the worst structured; take the features, not the navigation. It is the
   fleet.
 - Cheat database unification.
 - Mod and translation loading.

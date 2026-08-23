@@ -1,6 +1,6 @@
 # The app shell: screens and what they demand
 
-**Track A step 1.** The screen list, and for each screen what it needs from a
+**Track A step 1.** The screen list, now 16 entries, and for each screen what it needs from a
 backend. The backend contract falls out of the last column. It is not argued
 in advance.
 
@@ -197,14 +197,47 @@ Cemu already ships a Thor-written per-game profile for Star Fox Zero.
 
 **Needs:** the guest controller shape, and which guest inputs exist.
 
-## 13. Systems
+## 13. Guest accounts
+
+**Missed in the first pass.** Xbox 360, PS3, Wii, Wii U, Switch and 3DS all
+have a notion of who is playing, and it is not the same thing as a per-game
+override.
+
+Shows the guest users a backend knows about, which one is active, and lets one
+be created or picked. Per system, because a Mii is not a PSN id.
+
+**Needs:** the guest users a backend can enumerate, and a way to set the active
+one.
+
+Three forks already have this: Cemu `Account.cpp`, azahar `MiiSelector`, eden
+`ProfileAdapter`. Read all three before designing.
+
+## 14. Guest system UI
+
+**The guest asks the host to show something, and waits for an answer.**
+
+azahar's Mii selector is an applet: the guest OS calls out, expects a picker,
+and receives a result. Every console has some of this — software keyboards,
+avatar pickers, account selectors, error dialogs.
+
+**The app renders all of it, in the app's style.** A person should not be able
+to tell which backend asked. Seven backends each drawing their own system
+dialogs is the inconsistency this project exists to remove.
+
+**Needs:** a request-and-result channel. Text entry with a prompt and
+constraints, user selection, error acknowledgement.
+
+**Rule:** a guest applet request blocks the guest. Show it immediately and do
+not queue it behind an animation.
+
+## 15. Systems
 
 Which backends are present, their versions, and PS3 as an optional separate
 install.
 
 **Needs:** the backend's identity and version.
 
-## 14. Diagnostics
+## 16. Diagnostics
 
 Not for a normal session, and it must exist.
 
@@ -232,6 +265,8 @@ Every backend must provide:
 | Counters | what it can report for the performance readout |
 | Cheats | formats accepted, toggleable while running or not |
 | Patches | format accepted, apply at load only or not |
+| Guest users | enumerate them, set the active one |
+| Guest system UI | request text, a user selection, or an error acknowledgement |
 
 A backend may additionally **declare extensions**, and the app shows the UI
 only when present. Cemu declares graphic packs. melonDS declares three filter
