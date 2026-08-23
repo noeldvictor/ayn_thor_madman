@@ -1650,6 +1650,51 @@ What is present and useful: **`asimddp`** gives `SDOT` and `UDOT`; **`sha3`**
 gives `EOR3` and `BCAX`, which are nominally crypto but serve as three-input
 bitwise operations in guest vector lowering.
 
+#### AUDITED 2026-08-23: the fleet barely repurposes hardware at all
+
+**Using a named-for-crypto unit for a different job is a real technique. This
+fleet uses one instance of it, and that instance is `DEAD`.**
+
+**Counting mnemonics gave a completely wrong picture; reading the hits fixed
+it.** eden's `CRC32`, `AESE` and `PMULL` matches are **dynarmic decoding the
+guest's own crypto instructions** — its guest ISA is the host ISA, so every ARM64
+mnemonic appears there. melonDS's `CRC32` is **an encoding table** in Dolphin's
+emitter. Cemu's `AESE` is **genuine crypto**, Wii U content decryption. xenia's
+`FJCVTZS` is **a feature-flag definition** used nowhere.
+
+**The one genuine instance is xenia's `EOR3`/`BCAX`**, six files — and its
+ledger records `EOR3/BCAX fusion for VMX bitwise chains` as **`DEAD`,
+2026-08-06.**
+
+**A second, non-crypto case was also chased and closed.** `TBX2` costs about
+**2x** `TBL2` on this SoC — 0.377 ns against 0.178 on the A715 — and xenia found
+its SHUFB lowering used the slower one. **The fix measured null**: `TBL2` plus an
+`ORR` came out 0.555 against 0.555.
+
+**The best unexploited candidate is carryless multiply for texture swizzle.**
+Unswizzling a console texture is **bit deinterleaving**, which is what `PMULL`
+does in one instruction. **Every fork has a large swizzle surface and none uses
+it** — xenia 71 files, Cemu 49, Vita3K 47, azahar 45, ARMSX2 33, **`PMULL`
+host-side uses: zero.** It also sits in **pipeline 2**, so it would land in a
+hot shared path rather than one backend's lowering. **Unproven — no fork's
+swizzle code has been read.**
+
+**Hardware `CRC32` is unused everywhere** (searched twice), **but do not assume a
+win.** The ~20x in the literature is software CRC32 against hardware, **not
+CRC32 against xxHash**, and the fleet already uses xxHash heavily. **Where it
+plausibly pays is short keys** — `crc32cx` hashes 8 bytes per instruction — which
+means **block validation, not texture hashing**. ARMSX2 validates recompiler
+blocks with a software CRC32 in `iR3000A.cpp` and `iR5900.cpp`.
+
+**`FJCVTZS` is not applicable. Record it and move on.** `FEAT_JSCVT` exists to
+give **x86 and JavaScript** float-to-int semantics on ARM. **Our guests are
+PowerPC, MIPS and ARM.** Rosetta and FEX need it; we do not.
+
+**The warning matters as much as the opportunity.** The technique is largely
+untried here — **and both times anyone did try it, the result was null.**
+
+See [`research_log/20260823_1755_hardware_instruction_repurposing.md`](research_log/20260823_1755_hardware_instruction_repurposing.md).
+
 **Check `/proc/cpuinfo` before trusting an ARM manual.** A core's guide
 describes what the core can implement, not what the vendor shipped.
 
