@@ -110,6 +110,9 @@ and found not to transfer.
 | rpcs3's SVE2 work | **every fork** | **The device exposes no SVE.** Dead here regardless of guest. |
 | `EOR3`/`BCAX` three-input bitwise | **Cemu** | Espresso's bitwise work is **scalar GPR**, not vector. |
 | Dolphin's newer vector instructions | melonDS | **Dolphin never added `SDOT` or `EOR3` either.** The whole lineage lacks them; melonDS is not behind. |
+| **`EOR3`/`BCAX` fusion for VMX bitwise chains** | **everyone** | **Measured `DEAD` on the device**, xenia ledger 2026-08-06. The instructions are used; **fusing them into chains does not pay.** |
+| **`TBL2`+`ORR` instead of `TBX2` for SHUFB** | **everyone** | **Measured null**: 0.555 against 0.555 on the A715. `TBX2` does cost ~2x `TBL2` (0.377 against 0.178), but the rewrite does not recover it. |
+| **`FJCVTZS` / `FEAT_JSCVT`** | **every fork** | Exists for **x86 and JavaScript** float-to-int semantics. **Our guests are PowerPC, MIPS and ARM.** Rosetta and FEX need it; we do not. |
 
 ---
 

@@ -429,6 +429,37 @@ controlled comparison this fleet allows.
 **There is no same-guest IR-against-no-IR pair anywhere in the fleet**, so a
 cross-fork number measures the guest as much as the IR. **Say so in any result.**
 
+## 14. Carryless multiply for texture swizzle — READ FIRST, do not build
+
+**The best unexploited hardware-repurposing candidate in the fleet**, and the
+only one that would land in a **shared** hot path rather than one backend's
+lowering.
+
+**Unswizzling a console texture is bit deinterleaving. `PMULL` does that in one
+instruction. Zero forks use it**, across 33 to 71 swizzle files each.
+
+**The next step is not a device run and not a patch. It is reading one fork's
+swizzle code.** The counts above are file matches; nobody has opened them.
+
+**Three outcomes, and two of them close the question with no device at all:**
+
+| What the code turns out to be | Verdict |
+| --- | --- |
+| a **lookup table** | **`PMULL` probably loses.** A table hit in L1 beats an instruction that needs operand setup |
+| **already hand-vectorised** | **nothing to win** |
+| **scalar bit math in a loop** | **the candidate is live** — then measure |
+
+**Prediction if it does reach the device: `FLAT`.** Two reasons, both from this
+repo's own record. **Both previous instruction-level cleverness attempts here
+measured null** — `EOR3`/`BCAX` fusion `DEAD`, `TBL2`-for-`TBX2` 0.555 against
+0.555. And **texture swizzle happens once per texture upload, not per frame**,
+so it is amortised by the texture cache that every fork already has.
+
+**The honest case for doing it anyway** is that it is in **pipeline 2**, the
+shared upload path, so a win would be a win for every backend at once. **That is
+a structural argument, not an instruction-level one**, and structural arguments
+are the ones with a track record here.
+
 ## Not ready to run
 
 These need a decision or a build first, not device time.

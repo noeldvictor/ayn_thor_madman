@@ -144,6 +144,33 @@ in.
 | azahar-thor | `custom_textures/custom_tex_manager` |
 | xenia-thor | `src/xenia/gpu/`, plus `texture_dump.cc` |
 
+### The swizzle surface is large and unvectorised — AUDITED 2026-08-23
+
+**Console textures are stored swizzled** — Morton order, tiled, or a
+vendor-specific interleave — and **unswizzling is bit deinterleaving.**
+
+**Carryless multiply (`PMULL`) implements bit deinterleaving in one
+instruction. No fork uses it.**
+
+| Fork | Files matching swizzle / morton / tile / detile | **`PMULL` host-side uses** |
+| --- | --- | --- |
+| **xenia** | **71** | **0** |
+| Cemu | 49 | 0 |
+| Vita3K | 47 | 0 |
+| azahar | 45 | 0 |
+| ARMSX2 | 33 | 0 |
+
+**This is the best unexploited hardware-repurposing candidate in the fleet**,
+and it is the only one that would land in a **shared** hot path rather than in a
+single backend's instruction lowering.
+
+**Unproven, and the next step is to read rather than to build.** The counts are
+file matches. **No fork's swizzle code has been opened** to see whether it is
+scalar bit math, a lookup table, or already vectorised by hand. **If it is a
+table, `PMULL` may lose.**
+
+See [`../research_log/20260823_1755_hardware_instruction_repurposing.md`](../research_log/20260823_1755_hardware_instruction_repurposing.md).
+
 **Read 2026-08-22.** See
 [`../research_log/20260822_2015_texture_cache_read.md`](../research_log/20260822_2015_texture_cache_read.md).
 

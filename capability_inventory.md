@@ -855,6 +855,34 @@ formalises applies to GameThor alone.
 
 See [`research_log/20260823_1642_ir_in_emulators_literature.md`](research_log/20260823_1642_ir_in_emulators_literature.md).
 
+## Hardware-instruction repurposing — AUDITED 2026-08-23
+
+**Using a unit named for one job to do another. The fleet does it once.**
+
+| Fork | Genuine repurposing | Everything else the search matched |
+| --- | --- | --- |
+| **xenia** | **`EOR3`/`BCAX` as three-input bitwise in VMX lowering, 6 files** | `FJCVTZS` is a feature-flag definition, used nowhere |
+| eden | **none** | `CRC32`, `AESE`, `PMULL` are **dynarmic decoding the guest's own instructions** — its guest ISA is the host ISA |
+| melonDS | **none** | `CRC32` is **an encoding table** in Dolphin's `Arm64Emitter.cpp` |
+| Cemu | **none** | `AESE`/`AESD` are **genuine crypto**, Wii U content decryption |
+| azahar | **none** | `crc32` is feature detection, IPS checksums, a UDP checksum |
+| ARMSX2 | **none** | `crc32` is game-serial ID and **software recompiler block validation** |
+| Vita3K | **none** | — |
+
+**Counting mnemonics gives the wrong answer here.** Reading every hit is what
+separated one real instance from six false ones.
+
+**Both attempts to date measured null.** `EOR3`/`BCAX` fusion is **`DEAD`**
+(xenia ledger, 2026-08-06). The `TBL2`+`ORR` rewrite of SHUFB came out
+**0.555 against 0.555** on the A715, even though `TBX2` genuinely costs ~2x
+`TBL2` (0.377 against 0.178).
+
+**Unexploited and worth reading before proposing:** carryless multiply for
+texture swizzle. **Zero host-side `PMULL` uses across five forks with 33 to 71
+swizzle files each.**
+
+See [`research_log/20260823_1755_hardware_instruction_repurposing.md`](research_log/20260823_1755_hardware_instruction_repurposing.md).
+
 ## Vendored dependencies — MEASURED FROM THE BINARIES 2026-08-23
 
 **Read with `llvm-nm` from six forks' built `arm64-v8a` libraries**, not from

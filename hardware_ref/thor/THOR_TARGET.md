@@ -48,6 +48,23 @@ Every number here is either measured on the device or cited to its source.
 -mtune=cortex-x3
 ```
 
+**AUDITED 2026-08-23: these flags are permission, and the permission is barely
+used.** Enabling `+sha3` does not make a compiler emit `EOR3`; somebody must
+write the intrinsic. **Across the fleet, exactly one place does** — xenia's
+`EOR3`/`BCAX` in VMX lowering — **and its follow-up measured `DEAD`.**
+
+**Every other match for a crypto mnemonic is something else**: dynarmic decoding
+the **guest's** crypto instructions, an encoding table in Dolphin's emitter,
+genuine AES in Cemu's Wii U content decryption, or a feature-flag definition.
+
+**`+crc` is enabled and the `CRC32` instruction is used nowhere** — searched
+twice. **`FJCVTZS` is not applicable at all** and should not be added to this
+line: it exists for x86 and JavaScript float-to-int semantics, and no guest here
+has them.
+
+**Set the flags anyway.** They cost nothing, and without them the intrinsics
+will not compile when somebody does write them.
+
 ### Do not target `armv9-a`
 
 The X3, A715, A710 and A510 are all ARMv9 cores. **The SoC is not usable as
