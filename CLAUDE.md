@@ -682,6 +682,40 @@ instance API 1.3.0, device API 1.3.128, vendor ID `0x5143`, GPU clocks from
 **Read it before writing any device setup.** The capabilities are already
 measured on this hardware.
 
+#### The native contract
+
+[`shared_layer/thor_backend.h`](shared_layer/thor_backend.h) is the C++ half,
+drafted 2026-08-22. Nothing implements it; it exists so the architecture can be
+argued against something concrete.
+
+What it settles:
+
+- **The backend never creates a device.** It receives `DeviceHandles` and
+  `DeviceFacts` and stores them. The queue is shared and carries a lock,
+  because melonDS already learned it needs one.
+- **The texture key is opaque.** The backend computes it, because hashing a
+  texture means hashing guest formats and a guest palette. ARMSX2 and melonDS
+  key on data plus palette; Cemu keys on physical address. The shared layer
+  must not care.
+- **Texture classes are a declared list, not an enum.** ARMSX2 has two,
+  melonDS three, Cemu none. A fixed enum would impose one emulator's taxonomy
+  on the rest.
+- **Every decline reason is separate.** ARMSX2 learned that "nothing got
+  upscaled" has half a dozen causes needing different fixes.
+- **The upscaler stays outside the cache.** Following ARMSX2 over melonDS,
+  because a shared upscaler cannot own seven caches' lifetimes.
+- **Resolves and LRZ breaks are reported, not inferred.** They are the most
+  common way to lose frames on a tiler.
+
+What it deliberately does **not** settle: **render pass structure stays with
+the backend.** THOR_RENDER.md commitment 2 wants a shared render graph that
+plans GMEM residency. Taking pass structure from a backend before measuring
+would be the exact mistake this project keeps finding in its own plans, and the
+FlexRender behaviour means the GPU can leave tiled mode mid-frame regardless.
+
+Five open questions are recorded in the header itself, including who owns the
+swapchains when a backend presents two guest screens.
+
 #### Why this ordering is safer than it looks
 
 Building a device layer with no consumer is how an API comes out wrong. The

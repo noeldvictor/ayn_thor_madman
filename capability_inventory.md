@@ -16,16 +16,40 @@ Quality values:
 | `built` | Compiles and passes a self-test. Not run on the device. |
 | `design` | A document exists. No code. |
 
-**Read status matters.** A row recorded from a file listing is a hypothesis.
-A row recorded after reading the implementation is a finding. When they were
-read, the LRU cache entries turned out to be three different designs rather
-than one duplication. Mark rows you have actually read.
+## Read status
+
+**A row recorded from a file listing is a hypothesis. A row recorded after
+opening the file is a finding.** Six claims in this repo were wrong because a
+listing cannot tell you what a file does. Each section below carries its read
+status.
+
+| Marker | Meaning |
+| --- | --- |
+| **READ** | The implementations were opened and compared. The conclusion is evidence. |
+| **LISTED** | Found by `git ls-files` or grep. The name suggests a capability. **Nobody has opened it.** |
+| **PARTIAL** | Some implementations read, others only listed. The line says which. |
+
+**Never plan an extraction against a LISTED row.** Reading has reversed the
+conclusion every time it was tried on one:
+
+| Row | Was | After reading |
+| --- | --- | --- |
+| LRU cache | "same structure, three times" | three designs for three constraints |
+| GPU driver pickers | "same feature, six times" | four different concerns |
+| Texture cache hashing | "shared" | guest-specific |
+| Driver GPU validation | "no fork does this" | rpcsx `GpuDriverAdvisor` does |
+| On-device MCP | "design only" | xenia has a working server |
+| Thor hardware profile | "to be designed" | rpcsx `ThorPerformanceProfile` exists |
 
 Surveyed 2026-08-22. **The first version of this file was wrong.** It covered
 two forks and implied the rest had nothing. Read every "not surveyed" line
 below as a gap in the survey, never as an absence in the fork.
 
-## Texture filtering and upscaling
+## Texture filtering and upscaling — PARTIAL
+
+**READ:** ARMSX2 `GSTextureUpscaler` header, `GSTextureUpscaleAlgorithm` enum, melonDS
+`VulkanFilterMode` and `HdFilterTarget`. **LISTED only:** the azahar shader set,
+rpcsx upscalers, librashader integrations, melonDS plane filter shaders.
 
 **Four forks implement this independently.** None share code.
 
@@ -52,7 +76,10 @@ azahar `xbrz_freescale` is a free-scale variant. ARMSX2 does not have one.
 Not surveyed for texture filtering: Cemu-thor, xenia-thor, Vita3K-Thor,
 eden-thor.
 
-## HD texture packs and custom textures
+## HD texture packs and custom textures — PARTIAL
+
+**READ:** azahar `material.h` in full. **LISTED only:** Cemu `GraphicPack2`,
+melonDS content-hash format, xenia `texture_dump`.
 
 | Capability | Fork | Quality | Notes |
 | --- | --- | --- | --- |
@@ -66,7 +93,11 @@ eden-thor.
 Cemu `GraphicPack2` is the most capable format in the fleet. It combines
 texture replacement, shader replacement and runtime ASM patching in one thing.
 
-## Cheats
+## Cheats — LISTED
+
+**No cheat implementation has been opened.** Five forks, five formats, and the
+claim that they differ is inference from format names. Read before planning
+any unification.
 
 **Five forks support cheats. Each uses a different format.**
 
@@ -87,7 +118,10 @@ texture replacement, shader replacement and runtime ASM patching in one thing.
 `ai_cheat_helper_switch` is a separate repo. **Not surveyed. No capability is
 claimed for it.**
 
-## Mods and patches
+## Mods and patches — LISTED
+
+**Nothing opened.** The xenia `.patch.toml` intents come from a skill
+description, not from the patcher source.
 
 | Capability | Fork | Quality | Notes |
 | --- | --- | --- | --- |
@@ -96,7 +130,7 @@ claimed for it.**
 | Game patch manager and UI | xenia-thor | shipped | `GamePatchManager.java`, plus its activity. |
 | Runtime ASM patching | Cemu-thor | shipped | `GraphicPack2PatchesApply`, with its own parser. |
 
-## GPU driver management — READ, and it is four concerns not six copies
+## GPU driver management — READ
 
 **This section previously said "same feature six times, no variation to
 preserve." That was wrong.** Read on 2026-08-22. See
@@ -128,7 +162,9 @@ Recorded three times in this repo that no fork does this. It does.
 
 **Take it. Do not rewrite it.**
 
-## Thor hardware profile
+## Thor hardware profile — READ
+
+rpcsx `ThorPerformanceProfile` header and core-mask comment read directly.
 
 | Capability | Fork | Quality | Notes |
 | --- | --- | --- | --- |
@@ -141,7 +177,10 @@ purpose, because restricting the process to the big cores drags Java, audio and
 compiler threads onto the same cores as emulation work. xenia found the
 opposite failure. Two forks, two findings, neither aware of the other.
 
-## Per-game profiles and the app shell
+## Per-game profiles and the app shell — LISTED
+
+**Nothing opened.** xenia is called the most complete Android shell in the
+fleet on the strength of its file names alone.
 
 | Capability | Fork | Quality | Notes |
 | --- | --- | --- | --- |
@@ -155,7 +194,11 @@ opposite failure. Two forks, two findings, neither aware of the other.
 xenia-thor has the most complete Android shell in the fleet. Survey it before
 you design the app UI.
 
-## Vulkan device layers — seven, and genuinely duplicated
+## Vulkan device layers — PARTIAL
+
+**READ:** melonDS `VulkanContext` header in full. **LISTED only:** the other
+six. The duplication claim rests on the fact that device setup cannot carry
+guest semantics, which is an argument rather than a reading.
 
 Verified 2026-08-22. Every fork built its own. **Unlike the LRU caches and the
 driver pickers, this cannot be guest-specific**: creating an instance, choosing
@@ -179,7 +222,12 @@ Board `kalama`, instance API 1.3.0, device API 1.3.128, vendor `0x5143`, GPU
 clocks 680 MHz to 124.8 MHz, target recorded as **Thor Max**. Read it before
 writing device setup.
 
-## Shader caches
+## Shader caches — PARTIAL
+
+**READ:** Cemu `LatteShaderCache.h`, which is three lines and only exposes
+per-title cache version functions, and Vita3K `pipeline_cache.h` structure.
+**LISTED only:** eden `vk_pipeline_cache` and `shader_cache`, azahar disk
+shader cache, ARMSX2 backends.
 
 | Capability | Fork | Quality | Notes |
 | --- | --- | --- | --- |
@@ -188,7 +236,11 @@ writing device setup.
 Not surveyed elsewhere. Most forks probably have one. Shader compile stutter is
 a Thor-wide problem and this table is nearly empty. Close that gap.
 
-## Test and QA infrastructure
+## Test and QA infrastructure — PARTIAL
+
+**READ:** melonds_HD_2 `renderer_cases` README and `case.json`, the
+`xenia-experiment-ledger` skill. **LISTED only:** `pcsx2-gsrunner`, the xenia
+trace tooling, the Vita3K suite scripts, azahar `movie.cpp`.
 
 Items exist in five forks. No fork holds more than three. Nothing is shared.
 
@@ -250,7 +302,10 @@ the shared harness.** Do not design a new format first.
 | ARM64 review, per cluster | ARMSX2 | design | Not benchmarked on the device. |
 | ARM reference manuals | ARMSX2 | shipped | `docs/reference/arm/`. Move to `hardware_ref/thor/cpu/`. |
 
-## Thor measurement and optimisation harness
+## Thor measurement and optimisation harness — PARTIAL
+
+**READ:** `power_affinity_ab.sh` and `bd_adpf_ab.sh` headers, the MCP server
+README and tool list. **LISTED only:** the other 130-odd scripts.
 
 `xenia-thor/tools/thor/` holds **137 scripts**: 88 PowerShell, 32 shell, 8
 python, 8 `.mjs` workflows, plus `mcp/`. It is the most developed Thor-specific
@@ -275,7 +330,11 @@ work in the fleet and was unrecorded until 2026-08-22.
 | Agent goal loop | xenia-thor | shipped | `thor_codex_goal_loop.ps1`. |
 | Multi-agent workflows | xenia-thor | shipped | 8 `wf_*.mjs`, including `wf_arm64_adreno_research.mjs`. |
 
-## Performance hints, pacing, affinity and audio
+## Performance hints, pacing, affinity and audio — PARTIAL
+
+**READ:** Cemu `AndroidPerformanceHints.h`, the xenia ADPF and affinity script
+headers. **LISTED only:** the Oboe integrations, melonDS `AudioLatency`, eden
+`vsync_manager`.
 
 | Capability | Fork | Quality | Notes |
 | --- | --- | --- | --- |
@@ -289,7 +348,10 @@ work in the fleet and was unrecorded until 2026-08-22.
 
 Nothing found in azahar-thor, Vita3K-Thor or GameThor.
 
-## Cemu-thor
+## Cemu-thor — LISTED
+
+**Only `AndroidPerformanceHints.h` was opened.** Everything else in this
+section is from file names.
 
 Cemu had no capability recorded before 2026-08-22.
 
@@ -302,7 +364,10 @@ Cemu had no capability recorded before 2026-08-22.
 | Per-game controller profile | shipped | `bin/controllerProfiles/CemuThor_StarFoxZero_StarFox64ish.xml`. |
 | Audio, full AX | shipped | `snd_core/ax_*`. |
 
-## Agent skills and experiment discipline
+## Agent skills and experiment discipline — PARTIAL
+
+**READ:** all 29 skill descriptions, plus the `xenia-experiment-ledger` and
+`xenia-thor-autonomous-driver` bodies. **LISTED only:** the other 27 bodies.
 
 `xenia-thor/.agents/skills/` holds **29 skills**. This is the prior art for the
 whole AI-first pillar. Port these rather than writing new ones.
