@@ -93,11 +93,65 @@ melonDS content-hash format, xenia `texture_dump`.
 Cemu `GraphicPack2` is the most capable format in the fleet. It combines
 texture replacement, shader replacement and runtime ASM patching in one thing.
 
-## Cheats — LISTED
+## Cheats — PARTIAL
 
-**No cheat implementation has been opened.** Five forks, five formats, and the
-claim that they differ is inference from format names. Read before planning
-any unification.
+**READ:** eden `cheat_engine.h`, azahar `cheats.h`. **LISTED only:** Vita3K
+VitaCheat, rpcsx overlay, Cemu graphic pack patches, the three azahar cheat
+databases.
+
+Two forks, two architectures, and **eden's generalises**.
+
+### eden runs cheats on a virtual machine, and the host interface is tiny
+
+`DmntCheatVm` executes Atmosphere cheat bytecode. The emulator supplies
+`StandardVmCallbacks`:
+
+```cpp
+void MemoryReadUnsafe(VAddr address, void* data, u64 size);
+void MemoryWriteUnsafe(VAddr address, const void* data, u64 size);
+u64  HidKeysDown();
+void PauseProcess();
+void ResumeProcess();
+void DebugLog(u8 id, u64 value);
+void CommandLog(std::string_view data);
+```
+
+**Six calls, and not one of them is Switch-specific.** Read guest memory, write
+guest memory, ask which buttons are held, pause, resume, log.
+
+**Every backend in the fleet can implement that.** So a shared cheat engine is:
+the VM shared, the callbacks per backend. Same split as everywhere else — the
+shared side holds the algorithm, the backend supplies guest knowledge.
+
+This is the strongest cheat architecture in the fleet and it was not designed
+for sharing. It generalises by accident, because a cheat VM has to be
+abstracted from the machine anyway.
+
+### azahar keeps a list of polymorphic cheat objects
+
+`Cheats::CheatEngine` with `CheatBase`, `AddCheat`, `RemoveCheat`,
+`UpdateCheat`, `GetCheats`, `Connect(process_id)`, guarded by a `shared_mutex`.
+
+More conventional and less general: the cheat is an object with behaviour
+rather than data interpreted by a VM. It is the better model for **managing**
+a cheat list; eden's is the better model for **executing** one.
+
+**Take both. They solve different halves.**
+
+### The format problem is separate from the execution problem
+
+At least six formats are in the fleet: `mch` (melonDS), `pnach` (ARMSX2),
+`ncl` (rpcsx), graphic packs (Cemu), Atmosphere `dmnt` (eden), and the 3DS
+AR-code sources azahar bundles.
+
+**A VM does not care.** A per-format front end can compile several of these
+into one VM's bytecode, which turns six formats into six small parsers rather
+than six engines.
+
+**Unverified.** Whether `pnach` and AR codes map cleanly onto `dmnt` bytecode
+has not been checked, and that check decides whether this works.
+
+## Survey gaps
 
 **Five forks support cheats. Each uses a different format.**
 
