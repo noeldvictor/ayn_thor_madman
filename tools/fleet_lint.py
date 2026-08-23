@@ -340,8 +340,49 @@ def check_host_tools(fork, _root, _build_file, _native):
     return FAIL, f"missing from PATH: {', '.join(missing)}{hint}"
 
 
+# The standard row in CLAUDE.md. minSdk 33 is exact: the device reports API 33
+# and a lower value buys nothing for a one-device app.
+ROW_MIN_SDK = 33
+ROW_TARGET_SDK = 37
+ROW_COMPILE_SDK = 37
+
+
+def check_sdk_levels(_fork, root, build_file, _native):
+    """SDK levels against the standard row.
+
+    A lower minSdk costs compatibility code for devices this app will never run
+    on -- the same portability tax as a second ABI, paid in API guards instead
+    of object files.
+    """
+    if build_file is None:
+        return SKIP, "no app build file mapped"
+    text = _read(os.path.join(root, build_file))
+    if text is None:
+        return SKIP, f"{build_file} not found"
+
+    def level(name):
+        m = re.search(name + r"\s*=?\s*\(?\s*(\d{2})", text)
+        return int(m.group(1)) if m else None
+
+    mn, tg, cp = level("minSdk"), level("targetSdk"), level("compileSdk")
+    if mn is None and tg is None and cp is None:
+        return SKIP, "no SDK levels found in this file"
+
+    off = []
+    if mn is not None and mn < ROW_MIN_SDK:
+        off.append(f"minSdk {mn} < {ROW_MIN_SDK}")
+    if tg is not None and tg < ROW_TARGET_SDK:
+        off.append(f"targetSdk {tg} < {ROW_TARGET_SDK}")
+    if cp is not None and cp < ROW_COMPILE_SDK:
+        off.append(f"compileSdk {cp} < {ROW_COMPILE_SDK}")
+    if off:
+        return WARN, "; ".join(off)
+    return PASS, f"minSdk {mn}, targetSdk {tg}, compileSdk {cp}"
+
+
 CHECKS = [
     ("host-tools", check_host_tools),
+    ("sdk-levels", check_sdk_levels),
     ("abi", check_abi),
     ("target-features", check_target_features),
     ("namespaces", check_namespaces),

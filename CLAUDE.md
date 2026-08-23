@@ -2669,8 +2669,8 @@ Finding 5.
 | --- | --- | --- |
 | NDK | `29.0.14206865` | Latest stable r29. Installed on this box. |
 | ABI | `arm64-v8a` only | The device reports `arm64-v8a`. |
-| `minSdk` | 33 | The device reports API 33. |
-| `targetSdk` | 37 | Android 17, released 2026-06-16. |
+| `minSdk` | 33 | The device reports API 33. **Measured 2026-08-23: the fleet spans 24 to 30 and no fork meets it.** eden's 24 carries compatibility paths for Android 7. |
+| `targetSdk` | 37 | Android 17, released 2026-06-16. **Only ARMSX2 is on it.** The rest span 28 to 36. |
 | `compileSdk` | 37 | Matches `targetSdk`. |
 | Gradle | 9.6.1 or newer | **Measured 2026-08-23: seven distinct versions across eight forks, spanning 7.3.3 to 9.5.0.** Nothing in the fleet is on 9.6.1. |
 | C++ standard | C++20 | Verify each fork builds. melonDS declares C++17. |
