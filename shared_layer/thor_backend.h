@@ -169,10 +169,15 @@ class Backend {
   // STAYS WITH THE BACKEND for now. THOR_RENDER.md commitment 2 wants a shared
   // render graph that plans GMEM residency, which would take this away.
   //
-  // That is not done here because it is unmeasured, and because the Adreno
-  // FlexRender feature means the GPU can leave tiled mode mid-frame anyway.
-  // Taking pass structure from a backend before measuring would be the exact
-  // mistake this project keeps finding in its own plans.
+  // Read 2026-08-22: taking it away costs nothing, because no fork plans
+  // passes. eden keys its render pass cache on formats and sample count only,
+  // then hardcodes LOAD_OP_LOAD, STORE_OP_STORE, one subpass, zero input
+  // attachments and no resolve attachments. Vita3K is also format-keyed.
+  //
+  // So a shared graph would be ADDITIVE. It is still not done here, for a
+  // different and smaller reason: the cheap experiment has not run. Correcting
+  // load and store ops per backend is one struct filled in differently and it
+  // moves the same numbers. Do that first.
   virtual void BeginFrame() = 0;
   virtual void RecordFrame(VkCommandBuffer cb) = 0;
   virtual void EndFrame() = 0;

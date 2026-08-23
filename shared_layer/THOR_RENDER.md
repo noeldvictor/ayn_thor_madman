@@ -75,8 +75,26 @@ The render graph must:
   the most common way to lose frames on this part.
 
 **A backend describes what it needs to draw. The graph decides the passes.**
-This is the one place where the shared layer takes something a backend owns
-today, and it needs measurement per backend before it is taken.
+
+**Read 2026-08-22: this takes nothing away, because no fork plans passes.**
+
+eden keys its render pass cache on attachment formats and sample count alone,
+then fills the rest in as constants: `LOAD_OP_LOAD`, `STORE_OP_STORE`,
+`subpassCount = 1`, zero input attachments, no resolve attachments. Vita3K is
+also a format-keyed lookup. Both are caches, not plans.
+
+So the graph is **additive**, not a replacement for tuned structure. There is
+no tuned structure. See
+[`../research_log/20260822_2130_render_pass_construction.md`](../research_log/20260822_2130_render_pass_construction.md).
+
+**Do the cheap version first.** Correct the load and store operations before
+building any graph. `LOAD_OP_LOAD` on an attachment the pass fully overwrites
+should be `DONT_CARE` or `CLEAR`; `STORE_OP_STORE` on an attachment nobody
+reads should be `DONT_CARE`. That is one struct filled in differently, it is
+measurable as bandwidth and resolve count, and it needs no shared layer.
+
+If correcting the ops moves nothing, a graph that automates the same decision
+will also move nothing. Learn that cheaply.
 
 ### 3. LRZ is a planned resource
 

@@ -707,8 +707,22 @@ What it settles:
 - **Resolves and LRZ breaks are reported, not inferred.** They are the most
   common way to lose frames on a tiler.
 
-What it deliberately does **not** settle: **render pass structure stays with
-the backend.** THOR_RENDER.md commitment 2 wants a shared render graph that
+**The render graph question is now settled enough to act on.** Read on
+2026-08-22: **no fork plans render passes.** eden keys its pass cache on
+attachment formats and sample count alone, then hardcodes `LOAD_OP_LOAD`,
+`STORE_OP_STORE`, one subpass, zero input attachments and no resolve
+attachments. Vita3K is also a format-keyed lookup.
+
+A shared render graph therefore **adds** planning nobody has, rather than
+replacing tuned structure. That is a much smaller commitment than assumed.
+
+**But do the cheap version first.** Correcting load and store operations per
+backend is one struct filled in differently, it moves bandwidth and resolve
+count directly, and it needs no shared layer. If that moves nothing, a graph
+automating the same decision will also move nothing.
+
+What the header deliberately does **not** settle: **render pass structure stays
+with the backend for now**, pending that experiment. THOR_RENDER.md commitment 2 wants a shared render graph that
 plans GMEM residency. Taking pass structure from a backend before measuring
 would be the exact mistake this project keeps finding in its own plans, and the
 FlexRender behaviour means the GPU can leave tiled mode mid-frame regardless.
