@@ -272,6 +272,45 @@ relocation against a loaded module, branch-range checking (`VALUE_ERROR` is
 and it is the one to build the shared engine from. xenia `.patch.toml` and
 ARMSX2 `pnach` are both flatter formats.
 
+### xenia's patcher: BSD, TOML, flat values
+
+`src/xenia/patcher/`, four files, **BSD licensed**. `PatchDataValue` is a sized
+byte array with a templated constructor; patches are authored in TOML, parsed
+with `cpptoml` in this fork and `tomlplusplus` upstream.
+
+**Flat byte patches, no symbols, no expressions, no relocation.** Far simpler
+than Cemu's and far more permissively licensed.
+
+### The split mirrors the cheat finding exactly
+
+| | Format, authoring | Engine, execution |
+| --- | --- | --- |
+| **Cheats** | six formats, two converters exist | eden's bytecode VM |
+| **Patches** | xenia `.patch.toml`, **BSD**, plus Ghidra emitter | Cemu's symbolic assembler, MPL-2.0 |
+
+**Take xenia's TOML as the authoring surface and Cemu's resolver as the
+engine.** TOML is human-readable, already has a Ghidra emitter in
+`emit_patch_toml.py`, and is BSD. Cemu's resolver has the symbol table,
+expressions, relocation and multi-pass resolution that flat values cannot
+express.
+
+Both licences work in a GPL-3.0 app, so capability decides the engine and
+readability decides the format. **Neither needs writing.**
+
+### A convention worth adopting: `NOTE(thor):`
+
+xenia's `patch_db.h` carries:
+
+```cpp
+// NOTE(thor): the upstream patcher parses with tomlplusplus; this fork ships
+// cpptoml instead, so the TOML node types in the private signatures below are
+// cpptoml's.
+```
+
+**A marked annotation for every place the fork diverges from upstream.** That
+is the provenance rule applied at line level, and it makes a later re-base
+survivable. Adopt it fleet-wide.
+
 ### Binding a patch to the right game build
 
 Two forks solve this differently and both were unrecorded:

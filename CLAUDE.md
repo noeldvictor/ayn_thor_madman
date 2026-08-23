@@ -1687,6 +1687,24 @@ later. Its errors include branch targets out of range and variable conflicts.
 **Build the shared patch engine from Cemu's.** xenia `.patch.toml` and ARMSX2
 `pnach` are flatter formats and can compile into it.
 
+**Read 2026-08-22, and the split mirrors the cheat finding exactly.** xenia's
+patcher is four files, **BSD licensed**, TOML-authored, with flat sized-byte
+values and no symbols or expressions.
+
+| | Format, authoring | Engine, execution |
+| --- | --- | --- |
+| Cheats | six formats, two converters exist | eden's bytecode VM |
+| Patches | xenia `.patch.toml`, BSD, Ghidra emitter | Cemu's symbolic assembler |
+
+**Take xenia's TOML as the authoring surface and Cemu's resolver as the
+engine.** Both licences work in a GPL-3.0 app, so capability decides the engine
+and readability decides the format. Neither needs writing.
+
+**Adopt xenia's `NOTE(thor):` convention.** Its `patch_db.h` marks every place
+the fork diverges from upstream, including why: upstream parses with
+`tomlplusplus`, this fork ships `cpptoml`. **That is the provenance rule at
+line level, and it makes a later re-base survivable.**
+
 **Binding a patch to the right game build** is solved by two forks and nobody
 else: Cemu matches a loaded `RPLModule`, rpcsx keeps a `PatchHashRepository`.
 Elsewhere a patch can silently apply to the wrong build.
