@@ -48,6 +48,39 @@ functions of which none is implemented.**
 
 **That difference is knowable from the dump alone.**
 
+## BUILT 2026-08-23: the emulator half exists now
+
+**`tools/hle_coverage.py` extracts it, and
+`shared_layer/data/hle_coverage.json` is the artifact.**
+
+**12,833 HLE functions indexed across three backends, 9,784 stubbed — 76%.**
+
+| Backend | Functions | Stubbed | Modules | How coverage is read |
+| --- | --- | --- | --- | --- |
+| **Vita3K** | **7,377** | 85% | 149 | `STUBBED` / `UNIMPLEMENTED` inside each `EXPORT(` block |
+| **eden** | **4,986** | 68% | 59 | **the emulator declares it** — see below |
+| **Cemu** | 470 | 18% | 32 | `assert_dbg()`, `debugBreakpoint()`, logged "unsupported" |
+
+**eden's signal is the best in the fleet, because it is explicit.** Its service
+tables read:
+
+```cpp
+{0, D<&IManagerForSystemService::CheckAvailability>, "CheckAvailability"},
+{2, nullptr, "EnsureIdTokenCacheAsync"},
+```
+
+**A `nullptr` handler *is* the declaration that the function is unimplemented.**
+No marker-grepping, no inference — **the emulator states it, function by
+function, with the guest's own name attached.** That is exactly the shape static
+triage needs, and eden produced it without anybody asking.
+
+**The first probes were wrong and the numbers moved a lot.** eden first read as
+**222 functions** because the probe looked for a C++ method signature rather than
+the service tables; Cemu read as **0% stubbed** because it does not use
+`UNIMPLEMENTED` at all. **Both were under-detection, not coverage.** The rule
+from earlier today applies: **when a tool and the code disagree, read the actual
+line.**
+
 ## What it buys
 
 **1. A compatibility signal with no run.** The library badge in
@@ -105,8 +138,8 @@ which is exactly what a compatibility ledger is.
 
 ## What is not claimed
 
-- **Nothing is built.** The parse of Vita3K's HLE layer was done once, by hand,
-  for this document.
+- **The emulator half is built. The game half is not.** No import table has been
+  read, so the score cannot yet be computed for any title.
 - **No import table has been read.** The game side is unmeasured; only the
   emulator side is.
 - **The 85% figure counts functions containing a marker anywhere in their
