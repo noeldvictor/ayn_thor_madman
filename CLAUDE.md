@@ -5409,6 +5409,31 @@ Take these, in this order:
 2. The Vita3K-Thor on-device regression suite and its savestate fixture runner.
    It already runs on the Thor.
 
+   **BUT DO NOT MAKE SAVESTATE FIXTURES THE GENERAL MECHANISM. Measured
+   2026-08-24: three backends cannot supply a deterministic scene at all.**
+
+   | Fork | Savestate | Input replay |
+   | --- | --- | --- |
+   | ARMSX2 | full, versioned | candidate |
+   | melonDS, azahar | yes | azahar has `core/movie.cpp` |
+   | Vita3K, rpcsx | yes | no |
+   | **xenia** | **exists and deadlocks** | candidate |
+   | **Cemu** | **none** — its only `SaveState` is `SaveStateToConfig()` in the graphic-packs GUI | **none** |
+   | **eden** | **none** — `CoreError.ErrorSavestate` is an enum value the core never raises | weak |
+
+   **The noise floors make this decisive.** Without a savestate or a replay, the
+   only route to a scene is pressing through cutscenes, measured at **~+/-50%**.
+   **A harness that runs on five backends and silently skips three reads as a
+   passing suite.**
+
+   **Two consequences.** The paused agent loop stops being a nice capability and
+   becomes **the only deterministic route for three backends**. And **xenia's
+   save-state deadlock belongs in the queue** — its own audit calls fixing it the
+   highest-leverage unblock it has, and this repo had not recorded it.
+   `DEVICE_QUEUE.md` entry 20.
+
+   See [`research_log/20260824_0255_three_backends_cannot_be_measured.md`](research_log/20260824_0255_three_backends_cannot_be_measured.md).
+
    **A cost of the savestate fixture, priced 2026-08-23 and not priced before.**
    A change that alters guest state layout **invalidates every fixture for that
    backend at once**. The golden images survive, but nothing can reach the scene

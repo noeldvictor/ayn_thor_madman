@@ -675,6 +675,38 @@ stop.** Compare frames against a reference.
 manual-derived levers are thirteen for thirteen refuted, and **the depth
 round-trip may not be where this backend's frames go.** Profile first.
 
+## 20. Fix xenia's save-state deadlock — NO DEVICE NEEDED, and it unblocks others
+
+**Listed here because it gates device work, not because it needs the device.**
+
+xenia's own audit records it:
+
+> the save-state path is itself blocked (`SaveToFile` hangs in
+> `kernel_state_->Save`, a global-lock deadlock during `Pause` /
+> `GetObjectsByType`). **THE META-FIX: fix the save-state hang -> load the same
+> BD foliage scene deterministically -> unblocks the A/B for VRS *and* ROAA
+> *and* bindless on BD.**
+
+**Its own fork calls this the highest-leverage GPU-validation unblock available,
+and this repo's plan does not mention it.**
+
+**Why it matters beyond xenia.** Three backends have no deterministic scene:
+Cemu and eden have no savestate at all, and xenia's deadlocks. **Without one, the
+only route to a scene is pressing through cutscenes, whose measured noise floor
+is about +/-50%.** See
+[`research_log/20260824_0255_three_backends_cannot_be_measured.md`](research_log/20260824_0255_three_backends_cannot_be_measured.md).
+
+**It is a lock-ordering bug with a named location.** It can be diagnosed by
+reading, and any fix is xenia work — **which the standing rule forbids unless
+that fork is asked for by name.** Recorded so it is not lost.
+
+**Expected signature: `SaveToFile` returns instead of hanging, and a restored
+state reaches the same scene twice.** Then the workload noise floor drops from
+the cutscene band to the savestate band, about +/-5%.
+
+**Prediction: `OPEN`.** A global-lock deadlock during pause may be a symptom of
+the object model rather than of the save path.
+
 ## Not ready to run
 
 These need a decision or a build first, not device time.

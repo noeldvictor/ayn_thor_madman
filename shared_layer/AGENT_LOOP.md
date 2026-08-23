@@ -196,3 +196,23 @@ scene, open the pause menu, change algorithm, screenshot, compare, repeat".
   not read. **Whether each fork can cheaply report "decoder active" is unknown.**
 - **Vision-model accuracy on emulated console UI is unmeasured**, and menu text
   at 240p is not a favourable case.
+
+## Not a feature for three backends. The only route.
+
+**Added 2026-08-24 after checking the savestate assumption.**
+
+**Cemu and eden have no guest savestate at all, and xenia's deadlocks.** Cemu's
+only `SaveState` match is `SaveStateToConfig()` in its graphic-packs GUI; eden's
+is `CoreError.ErrorSavestate`, an enum value nothing in the core ever raises.
+
+**So for three of eight backends there is no existing way to reach a scene
+deterministically**, and the remaining route — pressing through cutscenes — has a
+measured noise floor of about **+/-50%**.
+
+> **This document presents the loop as an improvement on the fleet's measurement
+> problem. For Cemu, eden and xenia it is not an improvement. It is the only
+> route.**
+
+That reorders its priority: it stops being an interesting capability and becomes
+the enabling condition for measuring three backends at all. See
+[`../research_log/20260824_0255_three_backends_cannot_be_measured.md`](../research_log/20260824_0255_three_backends_cannot_be_measured.md).

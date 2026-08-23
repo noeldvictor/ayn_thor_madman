@@ -144,6 +144,35 @@ CAPABILITIES = {
         ],
         "known": "Unknown. Hotkeys.kt declares a REWIND action with no backend behind it.",
     },
+    "savestate": {
+        "question": "Does the fork serialise and restore full guest state?",
+        "probes": [
+            ("the noun", r"SaveState|savestate|save_state"),
+            ("the serialiser", r"DoState|do_state|serialize.*context|StateSerializer"),
+            ("versioning", r"state.?version|STATE_VERSION|SAVESTATE_VERSION"),
+            ("the archive format", r"\.sstate|\.p2s|\.state|StateWrapper"),
+        ],
+        "known": "CLAUDE.md records eden, Vita3K and xenia savestate code as found by NEITHER earlier search.",
+    },
+    "thermal_and_power": {
+        "question": "Does the fork react to thermal headroom or report power?",
+        "probes": [
+            ("Android ADPF", r"ADPF|PerformanceHint|getThermalHeadroom|PowerManager"),
+            ("thermal vocabulary", r"[Tt]hermal|throttl"),
+            ("battery and power", r"BatteryManager|current_now|charge_counter|POWER_SUPPLY"),
+            ("cpu frequency", r"scaling_cur_freq|cpufreq|setPerformanceMode"),
+        ],
+        "known": "CLAUDE.md: ADPF is disabled on this device by persisted config. Fork support unsurveyed.",
+    },
+    "deterministic_input_replay": {
+        "question": "Can the fork record and replay an exact input stream?",
+        "probes": [
+            ("the movie file", r"movie\.cpp|MovieRecord|PlayMovie|RecordMovie"),
+            ("input log", r"input.?log|InputRecording|replay.*input|input.*replay"),
+            ("frame counter binding", r"frame.?count.*input|rerecord|re-record"),
+        ],
+        "known": "azahar has core/movie.cpp. xenia wrote a doc arguing AGAINST movies.",
+    },
     "frame_pacing": {
         "question": "Does the fork pace presentation, beyond choosing a present mode?",
         "probes": [
