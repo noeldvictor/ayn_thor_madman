@@ -187,6 +187,29 @@ because anyone copied anyone.** That is why every "these look the same"
 candidate shrank when read: **seven answers to one question are not one answer
 written seven times.**
 
+### The smallest clean example: audio backends
+
+The Vulkan device layer makes the argument at a scale that is hard to hold.
+**Audio makes it in one screen.**
+
+| Fork | Audio backends | Behind |
+| --- | --- | --- |
+| **eden** | **cubeb, null, oboe, sdl2** | `sink.h` |
+| **ARMSX2** | **Cubeb, Oboe, SDL** | `AudioStream.h` |
+
+**Four implementations and a dispatch layer, to answer one question: which
+platform is this.**
+
+**The Thor is one platform.** The DELETE result is **one sink and no dispatch
+layer at all** — smaller than any single fork's audio code, not the union of
+seven.
+
+**Nothing here is duplicated between the forks.** eden's `oboe_sink.cpp` and
+ARMSX2's `OboeAudioStream.cpp` are two files doing the same job, and merging
+them saves almost nothing. **Deleting the other six backends and the two
+dispatch layers saves the actual weight**, and it is the operation nobody had
+named.
+
 ### So merging them is the wrong operation
 
 `THOR_RENDER.md` already reached this for renderers: extracting from seven

@@ -210,10 +210,74 @@ def check_libretro(_fork, root, _build_file, native):
     return PASS, "no libretro glue"
 
 
+def check_audio(_fork, root, _build_file, _native):
+    """Standardise on Oboe.
+
+    Three forks chose it independently — ARMSX2, eden, melonDS — which is the
+    fleet's one clear case of convergence rather than divergence. cubeb reaches
+    Android through its own backends, a layer that exists to serve desktop
+    portability. And the packed binary cannot link five copies of cubeb.
+    See research_log/20260823_0005_audio_backends.md
+    """
+    oboe = cubeb = False
+    for dirpath, dirs, files in os.walk(root):
+        rel = dirpath.replace("\\", "/")
+        # Oboe and cubeb are themselves vendored, so look for the fork's OWN
+        # use of them rather than for the library's own source.
+        if re.search(r"/(oboe|cubeb)/", rel, re.I):
+            dirs[:] = []
+            continue
+        if VENDOR_RE.search(rel):
+            continue
+        for name in files:
+            if not name.endswith((".cpp", ".cc", ".h", ".hpp")):
+                continue
+            text = _read(os.path.join(dirpath, name)) or ""
+            if "oboe::" in text or "OboeStream" in text:
+                oboe = True
+            if "cubeb_stream" in text or "cubeb_init" in text:
+                cubeb = True
+        if oboe and cubeb:
+            break
+    if oboe and not cubeb:
+        return PASS, "Oboe only"
+    if oboe and cubeb:
+        # eden carries cubeb, null, oboe and sdl2 behind sink.h; ARMSX2 carries
+        # Cubeb, Oboe and SDL behind AudioStream.h. That abstraction exists to
+        # serve desktop AND Android. A Thor-only app needs Oboe and no
+        # dispatch layer at all -- the DELETE operation, at its smallest.
+        return WARN, "Oboe AND cubeb — a backend abstraction the Thor does not need"
+    if cubeb:
+        return WARN, "cubeb — five copies cannot link into one binary"
+    return SKIP, "no audio backend recognised"
+
+
+def check_frame_pacing(_fork, root, _build_file, _native):
+    """Nobody paces frames, and FIFO is vsync rather than pacing.
+
+    A 20 ms frame at 60 Hz misses its vsync and alternates 16.6/33.3 — judder
+    more visible than a stable 30. No fork uses Swappy or display timing.
+    See research_log/20260823_0040_frame_pacing.md
+    """
+    for dirpath, _dirs, files in os.walk(root):
+        if VENDOR_RE.search(dirpath.replace("\\", "/")):
+            continue
+        for name in files:
+            if not name.endswith((".cpp", ".cc", ".h", ".hpp", ".kt", ".gradle",
+                                  ".kts")):
+                continue
+            text = _read(os.path.join(dirpath, name)) or ""
+            if "SwappyVk" in text or "VK_GOOGLE_display_timing" in text:
+                return PASS, "paces frames explicitly"
+    return WARN, "no Swappy, no display timing — present mode only"
+
+
 CHECKS = [
     ("abi", check_abi),
     ("target-features", check_target_features),
     ("namespaces", check_namespaces),
+    ("audio", check_audio),
+    ("frame-pacing", check_frame_pacing),
     ("libretro", check_libretro),
 ]
 
