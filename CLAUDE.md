@@ -1816,7 +1816,18 @@ ARMSX2's `GSTextureUpscaler` with the names changed.
    starts. **xenia has no overlay at all**, so it gains a feature rather than
    losing one, and **melonDS has `TouchVibrator`**, haptics nobody else ships.
 
-   Compare Cemu's independent config-driven design before extracting.
+   **Cemu's design read, and the comparison resolves.** Its
+   `OverlayInputConfig` is a 24-line enum of 21 elements, which is far smaller
+   but bakes the Wii U controller in: `BUTTON_ZL`, `BUTTON_ONE`, and
+   `BUTTON_BLOW_MIC`, which is not a button at all.
+
+   **Take the generic drawables from the Dolphin lineage and the declared
+   element list from Cemu — but declared by the backend, not hardcoded.** That
+   is the contract's existing guest input row, reached independently.
+
+   `BUTTON_BLOW_MIC` is the edge case worth keeping: an element declaration
+   needs a **kind** as well as a name, because not every overlay element is a
+   button.
 
 1. The GPU driver manager. **Read on 2026-08-22: it is four concerns, not six
    copies.** Compose the shared version from the fork that does each best.

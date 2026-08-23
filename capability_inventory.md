@@ -690,7 +690,7 @@ code, diverged.
 
 | Fork | Approach | Notable |
 | --- | --- | --- |
-| Cemu-thor | config-driven: `OverlayInputConfig.kt`, `InputOverlayDefaultConfigs.kt`, `CanvasOnTouchListener.kt` | an independent design, worth comparing before extracting |
+| Cemu-thor | data-driven: a 24-line enum plus default configs and a touch listener | **read; see below** |
 | melonDS-android | `EmulatorOverlayTracker.kt`, **`TouchVibrator.kt`** | **haptics on touch. Nobody else has it.** |
 | eden-thor | overlay assets under `dist/icons/overlay/` | art, not logic |
 | xenia-thor | **nothing.** One research note, `20260527-151500-android-ingame-menu-overlay-controller-start.md` | would gain the feature outright |
@@ -701,6 +701,46 @@ forks ship one that does not.
 
 **xenia has no touch overlay at all**, despite having the largest Android
 shell. Extraction would give it a feature rather than replacing one.
+
+### Cemu's design, read: the comparison resolves
+
+`OverlayInputConfig.kt` is **24 lines**, a flat enum of 21 overlay elements:
+
+```kotlin
+BUTTON_A, BUTTON_B, BUTTON_ONE, BUTTON_TWO, BUTTON_C, BUTTON_Z, BUTTON_HOME,
+BUTTON_L, BUTTON_L_STICK_CLICK, BUTTON_MINUS, BUTTON_PLUS, BUTTON_R,
+BUTTON_R_STICK_CLICK, BUTTON_X, BUTTON_Y, BUTTON_ZL, BUTTON_ZR,
+BUTTON_BLOW_MIC, JOYSTICK_LEFT, JOYSTICK_RIGHT, DPAD
+```
+
+Two designs, and they are not really competing:
+
+| | Dolphin lineage | Cemu |
+| --- | --- | --- |
+| Shape | a class per drawable type | an enum of element identities |
+| Size | 1000+ lines each | 24 lines plus configs |
+| Generality | **generic drawables** | **guest-specific list** |
+
+**Cemu's enum bakes the Wii U controller into the overlay.** `BUTTON_ZL`,
+`BUTTON_ONE` and `BUTTON_TWO` are Nintendo, and `BUTTON_BLOW_MIC` is not a
+button at all. The Dolphin lineage keeps its drawables generic and maps them
+elsewhere.
+
+**Take both halves, from the side that got each right:**
+
+- **Generic drawables from the Dolphin lineage.** A button, a dpad and a
+  joystick are universal shapes.
+- **A declared element list from Cemu's idea** — but **declared by the
+  backend**, not hardcoded, because only the backend knows its guest
+  controller.
+
+That is exactly the contract's existing guest input row: the backend declares
+its controller shape, the shared layer renders it. **The overlay survey
+independently arrived at the contract this repo already wrote.**
+
+`BUTTON_BLOW_MIC` is the useful edge case. A shared overlay must handle an
+element that is not a button, so the declaration needs a kind as well as a
+name.
 
 ## Survey gaps
 
