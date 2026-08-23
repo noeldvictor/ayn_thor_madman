@@ -72,7 +72,7 @@ duplication before it moves.**
 
 | # | Candidate | State | Note |
 | --- | --- | --- | --- |
-| 0 | **Vulkan device layer** | **read, proven** | Seven forks each built one. Three vendor an allocator separately. **Cannot be guest-specific**, and the packed binary requires it |
+| 0 | **Vulkan device layer** | **read, measured, scoped** | See below. Take xenia's; it is the only fork that already separated device from renderer, and it is BSD |
 | 1 | **Touch overlay** | **read, proven** | azahar and Vita3K ship the same four classes from the same 2013 Dolphin ancestor. Eight method names survived twelve years of independent drift |
 | 2 | **GPU driver manager** | **read** | Four concerns, not six copies. Folds into the device layer rather than standing alone |
 | 3 | Shader and pipeline cache | not read | Measurable, user-visible, no renderer internals needed |
@@ -81,6 +81,47 @@ duplication before it moves.**
 | 6 | Code patch engine | **read** | Cemu's symbolic assembler as the engine, xenia's TOML as the authoring format |
 | 7 | Texture upload and per-class routing | partially read | The flagship feature. Safe only after the test harness |
 | 8 | Code translation | not read | Last. The deepest reach into a core |
+
+### Candidate 0 is scoped: take xenia's `ui/vulkan/`
+
+Measured 2026-08-22. See
+[`../research_log/20260822_2255_native_census_and_device_layer.md`](../research_log/20260822_2255_native_census_and_device_layer.md).
+
+**The framing "seven forks each built a device layer" is true and misleading.**
+Six of them built it *inside a renderer*. Only xenia built it as a module.
+
+| Fork | Device creation lives in | Separated? |
+| --- | --- | --- |
+| **xenia** | **`ui/vulkan/`, its own directory** | **yes** |
+| ARMSX2 | `GSDeviceVK.cpp` | no |
+| Cemu | `VulkanRenderer.cpp`, 4,465 lines | no |
+| Vita3K | `renderer/src/vulkan/renderer.cpp` | no |
+| eden | `vulkan_common/vulkan_wrapper.cpp` | partly |
+| melonDS | `VulkanContext.cpp` | partly |
+| azahar | `renderer_vulkan/vk_platform.cpp` | partly |
+| rpcsx | `vkutils/device.cpp`, `instance.cpp` | yes, but GPL-2.0-only |
+
+**xenia's `src/xenia/ui/vulkan/` against `src/xenia/gpu/vulkan/` is exactly the
+line this project draws between shared and not-shared, already expressed as a
+directory.** Nobody has to be persuaded of the boundary.
+
+**Size: 11,471 lines, or about 7,000 once `vulkan_immediate_drawer.cc` is
+dropped** — the app is Compose and does not need Vulkan-drawn UI. Instance plus
+device alone is about 2,400.
+
+**Licence: BSD.** Per the rule above, this leaves the shared module usable by
+anything, including a separately distributed GPL-2.0-only PS3 backend. Taking
+the same code from ARMSX2 or eden would make it GPL-3.0 and close that door.
+
+**So the work is not merging seven implementations.** It is taking one module,
+then unpicking six renderers from their own device creation. **The second half
+is per-fork and is the real cost.**
+
+**Open, and it is the largest single file.** `vulkan_presenter.cc` is 3,879
+lines and owns the swapchain. The unanswered question in
+[`thor_backend.h`](thor_backend.h) — who owns the swapchains when a backend
+presents two guest screens — lands exactly here, and xenia's answer covers one
+swapchain only.
 
 ### Rejected candidates
 

@@ -675,6 +675,19 @@ assumed:
 
 Three of them vendor a memory allocator separately.
 
+**MEASURED 2026-08-22, and it changes the shape of the job.** Six of the seven
+built the device layer **inside a renderer**. Only xenia built it as a module:
+`src/xenia/ui/vulkan/` against `src/xenia/gpu/vulkan/` is the shared and
+not-shared line already expressed as a directory. Cemu's `VulkanRenderer.cpp` is
+4,465 lines doing both; ARMSX2's `GSDeviceVK.cpp` is the same shape.
+
+**Take xenia's.** It is 11,471 lines, about 7,000 once its Vulkan-drawn UI is
+dropped, and it is **BSD**, so the shared module stays usable by anything.
+
+**The extraction is therefore not "merge seven implementations". It is "take one
+module, then unpick six renderers from their own device creation".** The second
+half is per-fork and is where the cost actually is.
+
 **Unlike every other candidate, this one cannot be guest-specific.** Creating an
 instance, choosing a physical device, setting up queues and allocating memory
 have no guest semantics. That is why this is genuine duplication where the LRU
