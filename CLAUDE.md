@@ -980,13 +980,58 @@ from seven portable renderers "yields the union of seven sets of compromises".
 **That generalises.** Delete the machinery serving variability this device does
 not have, and what remains is **smaller than any one fork's version**.
 
-**The CPU half has a recent citation.** arXiv:2501.03427 argues QEMU's TCG pays
-for an IR that exists for retargetability, and that a **direct guest-to-host
-translator for a fixed pair** removes it — up to **35x** in a proof of concept.
-**The stated tradeoff is portability, which this project already gave up.**
-Measured here: **xenia carries a full HIR and eden's dynarmic carries an IR;
-ARMSX2, Cemu and melonDS do not.** xenia's exists because xenia also targets
-x86_64.
+**The CPU half has a recent citation, and it is weaker than it was quoted as.**
+arXiv:2501.03427 argues QEMU's TCG pays for an IR that exists for
+retargetability, and that a **direct guest-to-host translator for a fixed pair**
+removes it. **The stated tradeoff is portability, which this project already
+gave up.** Measured here: **xenia carries a full HIR and eden's dynarmic carries
+an IR; ARMSX2, Cemu and melonDS do not.** xenia's exists because xenia also
+targets x86_64.
+
+**THE 35x FIGURE IS WITHDRAWN, 2026-08-23.** Read in full: the proof of concept
+`riscv-um` is a **Rust simulator, not a binary translator** — direct translation
+is the paper's *future work*. Its benchmark is `benchgen`, **2 million
+instructions of rotating `add`, `sub` and `sll`**. It implements **RV64I only**,
+and only the opcodes the benchmark uses, with **no memory protection**. The one
+results table gives **77 ms against QEMU's 246 ms, which is 3.2x**, and that
+could not be reconciled with the 35x headline. **Do not repeat the number.**
+
+**Far better evidence is already in the fleet, and it is a natural experiment.**
+**Box64 and FEX-Emu solve the identical problem — x86-64 guest, ARM64 host — and
+made opposite IR choices.** **GameThor ships Box64** (0.3.2, 0.3.4, 0.3.6, with
+a presets dialog and env-var tuning), so **this repo already contains a
+production no-IR direct translator and had not recorded it.**
+
+**Box64 refutes the standard argument for an IR.** The usual defence is that an
+IR gives optimisation passes somewhere to live. **Box64 runs them over the guest
+instruction stream** — four passes plus substeps for jump destinations, **dead
+code elimination** and **flag propagation via Kildall's algorithm**, so it
+computes only the flags a later instruction reads. **What an IR provides is a
+place to hang per-instruction metadata, and for a fixed pair the guest stream
+plus annotations is enough.**
+
+**But the strongest argument FOR an IR is correctness, not portability.**
+Risotto (ASPLOS '23) **found real translation errors in QEMU** emulating x86 on
+ARM, then **formalised QEMU's IR memory model** and proved its fence mappings
+correct. **That is only possible because there is one IR to formalise.**
+**Deleting an IR must say where the verification goes instead.**
+
+**And this fleet is not exposed to that problem.** Risotto's case is
+**strong-on-weak**. **No guest here has a stronger memory model than the ARM64
+host** — MIPS, PowerPC and ARM guests are not stronger, and eden's guest is
+ARM64 itself. **The one exception is GameThor's x86-64 through Box64**, which
+already owns the problem. **Do not import fence-insertion machinery**; it serves
+variability this device does not have.
+
+**Static recompilation's win is not the absence of an IR.** arXiv:2605.08419
+(May 2026) translates x86-64 to AArch64 **fully statically with no runtime
+component** and reaches only **parity with QEMU's user-mode JIT** on SPECint
+2006, at **substantial code size expansion**. **So the large N64Recomp-style
+wins come from handing whole programs to an optimising compiler**, which needs
+per-game decompilation and symbols — **a cost this project cannot pay across
+eight systems.**
+
+See [`research_log/20260823_1642_ir_in_emulators_literature.md`](research_log/20260823_1642_ir_in_emulators_literature.md).
 
 **This does not say delete xenia's HIR.** 35x is one proof of concept on one
 pair, and an IR buys optimisation passes and a place to put correctness. **It

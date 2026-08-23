@@ -826,6 +826,35 @@ states the corpus is for AI-driven renderer cases.
 **Read `renderer_cases/README.md` and `case.template.json` before designing
 the shared harness.** Do not design a new format first.
 
+## GameThor ships a production no-IR binary translator — READ 2026-08-23
+
+**Box64**, x86-64 guest on ARM64 host. Versions **0.3.2, 0.3.4 and 0.3.6**
+including bionic builds, with a `Box64PresetsDialog` and a
+`box64_env_vars.json` for per-game tuning.
+
+**This repo had not recorded it**, and it is the most directly relevant piece of
+evidence in the fleet for the IR question.
+
+**Box64 has no intermediate representation.** It translates x86 to ARM64 in four
+passes over the **guest instruction stream**, with substeps for jump
+destinations, **dead code elimination** and **flag propagation using Kildall's
+algorithm** — so it computes only the flags a later instruction actually reads.
+
+**That refutes the standard defence of an IR**, which is that optimisation passes
+need somewhere to live. They need per-instruction metadata, not an IR.
+
+**FEX-Emu is the control.** Same guest, same host, **and it does use a custom
+IR**. Two production systems, one problem, opposite choices — **the cleanest
+natural experiment available on this question, and neither has been benchmarked
+by us.**
+
+**Box64 is also the fleet's only strong-on-weak memory case.** Every other guest
+here — MIPS, PowerPC, ARM, ARM64 — is not more strongly ordered than the ARM64
+host. **x86-64 is**, so the fence-insertion problem Risotto (ASPLOS '23)
+formalises applies to GameThor alone.
+
+See [`research_log/20260823_1642_ir_in_emulators_literature.md`](research_log/20260823_1642_ir_in_emulators_literature.md).
+
 ## Vendored dependencies — MEASURED FROM THE BINARIES 2026-08-23
 
 **Read with `llvm-nm` from six forks' built `arm64-v8a` libraries**, not from

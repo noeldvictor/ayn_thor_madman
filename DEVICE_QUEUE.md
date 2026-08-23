@@ -228,6 +228,82 @@ survived contact with a frame here.**
 **Do not run either until something cheaper is exhausted.** The audit's value is
 already banked in the propagation ledger and does not depend on these.
 
+## 12. What does an IR cost on this device
+
+**Two forks carry one and three do not.** xenia has a full HIR; eden's dynarmic
+has an IR; **ARMSX2, Cemu and melonDS translate without one.** Nobody has
+measured what the IR costs here.
+
+**This is the only device experiment in this queue with a published mechanism
+behind it**, rather than a hunch. See
+[`research_log/20260823_1642_ir_in_emulators_literature.md`](research_log/20260823_1642_ir_in_emulators_literature.md).
+
+**Do the cheap half first, and it needs no device.** Count host instructions
+emitted per guest instruction for the same guest block, in a fork with an IR and
+one without. **That is a disassembly count, exactly like the target-features
+work**, and it separates *does the IR change the code* from *is it slower*.
+
+**Prediction: `FLAT` for the device half.** Three reasons. **The IR's cost is at
+translation time, not run time**, so it shows up as first-run stutter rather than
+steady-state frames — and this project already owns that through the shader and
+code caches. **The literature's headline numbers do not survive reading**: the
+35x is a 3-opcode loop against a simulator, and a fully-static translator reaches
+only parity with QEMU's JIT on SPECint. **And xenia's own ledger records
+incremental CPU levers as `DEAD` or `FLAT` repeatedly.**
+
+**What would change the answer:** a title that recompiles constantly — heavy
+self-modifying code or frequent cache flushes — where translation throughput is
+the bottleneck. **Name such a title before running this**, or the run measures
+steady state and reports the prediction back.
+
+**Do not rewrite an IR out of a fork on this evidence.** Risotto shows the IR
+carries the memory-model verification, and nothing here says where that goes
+instead.
+
+### LEDGER QUERIED, and it changes this entry
+
+`python <xenia>/tools/exp_ledger.py check "IR"` returns **146 matches**;
+`"backend"` returns 28. **Three findings apply directly.**
+
+**1. The infrastructure exists and has been run once.** xenia has **three** code
+paths — the a64 direct backend, an LLVM backend, and the HIR feeding them — and
+`cpu_backend_llvm` is a live flag. `llvm_residency_ladder_thor` (2026-07-24) is
+the **first run ever with it actually on.**
+
+**2. That run is `CONFOUNDED`, and the confound is the one this queue already
+names.** VdSwap/s read 7.8 / 8.1 / 9.9 / 8.1 / 8.1 across the ladder, but the
+apparent +27% was **a different scene** — BD's intro advances at a rate that
+depends on emulation speed, so a fixed wall-clock sample lands on a different
+frame per run. **The fix is already designed**: `bd_fixed_frames_bench.ps1`,
+timing a **fixed frame range** of the deterministic no-input intro, content-
+matched by construction. **Use it, or this entry will come back `CONFOUNDED`
+too.**
+
+**3. Its side findings are recorded as solid and are the real value.** The LLVM
+backend runs on the Thor with **0 faults and no regression**; lowering coverage
+is complete at `LLVMbegin == LLVMmap == 1865`; and there is **a systematic
+hole** — 30-plus functions fall back to a64, **all of them `mul_add`/`mul_sub`**
+from the deliberate `cpu_backend_llvm_lower_vmaddfp=false` workaround. **Every
+`vmaddfp`-using function is therefore excluded from LLVM, from residency, and
+from the AOT object cache.** Fixing `vmaddfp` is a **coverage** lever before it
+is a correctness fix.
+
+**So the cheap first step is not a device run at all: fix the `vmaddfp`
+fallback**, then re-measure coverage by counting `LLVMfallback` in a log. **No
+device needed.**
+
+### And the ledger already cites Box64
+
+`cpu_10x_stack_ab_thor` names its next step as *"the per-call-site host return
+trampoline (**Box64 CALLRET/SEP analogue**)"*. **xenia was already reading Box64
+as a design reference**, which is a fleet cross-pollination this repo had not
+recorded — and it strengthens the case for reading Box64 properly before
+deciding anything about IRs.
+
+**One related lever is already dead.** `EOR3/BCAX fusion for VMX bitwise chains`
+is **`DEAD`** as of 2026-08-06. **xenia uses the device's vector features and
+that particular fusion still did not pay.**
+
 ## Not ready to run
 
 These need a decision or a build first, not device time.
