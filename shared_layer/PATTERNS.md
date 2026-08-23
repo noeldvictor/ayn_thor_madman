@@ -42,14 +42,77 @@ Below, each pipeline lists what each fork calls its version.
 
 ## 1. Code translation
 
-Four forks generate ARM64 code from a different guest ISA.
+**Six recompilers, not four**, once dynarmic's two frontends are counted.
 
-| Fork | Guest ISA | Implementation |
-| --- | --- | --- |
-| xenia-thor | PowerPC, Xenon | `src/xenia/cpu/backend/a64/`, `a64_code_cache` |
-| Cemu-thor | PowerPC, Espresso | `Cafe/HW/Espresso/Recompiler/BackendAArch64/` |
-| melonDS-android | ARM7 and ARM9 | `melonDS-android-lib/src/ARMJIT_A64/` |
-| ARMSX2 | MIPS, EE and IOP | `common/emitter/` |
+| Fork | Guest ISA | Implementation | IR |
+| --- | --- | --- | --- |
+| xenia-thor | PowerPC, Xenon | `src/xenia/cpu/backend/a64/`, `a64_code_cache` | **HIR**, 6,605 lines |
+| Cemu-thor | PowerPC, Espresso | `Cafe/HW/Espresso/Recompiler/BackendAArch64/` | **IML**, 6,327 lines |
+| eden-thor | **ARM64**, Switch | `src/dynarmic/` A64 frontend | **dynarmic IR**, 7,382 lines |
+| azahar, Vita3K | ARM32 | `dynarmic` A32 frontend | **dynarmic IR**, shared |
+| melonDS-android | ARM7 and ARM9 | `melonDS-android-lib/src/ARMJIT_A64/` | **none** — direct |
+| ARMSX2 | MIPS, EE and IOP | `pcsx2/arm64/` | **none** — direct |
+
+### MEASURED 2026-08-23: IR expansion, device-free, from emitter source
+
+**Stage A of instruction inflation — guest instruction to IR operation —
+counted statically across every IR-based recompiler in the fleet.**
+
+| Frontend | Guest to host | Emitters | **Median** | Mean |
+| --- | --- | --- | --- | --- |
+| **Cemu IML** | PowerPC to ARM64 | 121 | **2.0** | 3.32 |
+| **dynarmic A64** | **ARM64 to ARM64** | 304 | **4.0** | 5.24 |
+| **xenia HIR** | PowerPC to ARM64 | 270 | **5.0** | 5.94 |
+| **dynarmic A32** | ARM32 to ARM64 | 607 | **5.0** | 6.42 |
+
+**The result that decides it: dynarmic expands 4x when the guest ISA IS the host
+ISA.** ARM64 to ARM64 is the easiest translation problem that exists, and it
+still costs four IR operations per guest instruction. **Meanwhile Cemu does
+PowerPC to ARM64 — a genuinely different machine — in two.**
+
+> **Expansion is a property of the IR's register model, not of the distance
+> between guest and host.**
+
+**The mechanism is one design choice, visible in a single opcode.**
+
+**SSA over a context** — xenia's HIR and dynarmic's IR — makes every operand a
+load and every result a store:
+
+```cpp
+Value* v = f.Add(f.LoadGPR(i.XO.RA), f.LoadGPR(i.XO.RB));   // xenia: 4 ops
+f.StoreGPR(i.XO.RT, v);
+```
+
+**Virtual registers** — Cemu's IML — make the same instruction one:
+
+```cpp
+ppcImlGenContext->emitInst().make_r_r_r(PPCREC_IML_OP_ADD, regD, regA, regB);
+```
+
+`_GetRegGPR` returns a reference and emits nothing.
+
+**And xenia already confirmed the consequence on hardware.** Its
+`cpu_backend_llvm_context_residency` flag says the IR has **"~99 ctx memory ops
++ 1 alloca = NO register residency (the guest thread is memory-bound)"**. **Those
+context memory ops are exactly the loads and stores counted above** — so a
+static source count and a device measurement agree.
+
+**Limits, and they matter.** This is **stage A only**: the optimiser and
+register allocator collapse much of it, so final host inflation may differ. The
+count is **static and unweighted**, counts every branch inside an emitter, and
+**undercounts helpers**. Opcode sets differ between frontends. **Nothing here is
+timed.** See
+[`../research_log/20260823_1712_ir_expansion_measured.md`](../research_log/20260823_1712_ir_expansion_measured.md).
+
+### The overlap, restated
+
+**dynarmic is the largest genuine overlap in this pipeline and the catalogue
+missed it.** **Three forks vendor it** — eden in-tree, Vita3K and azahar as
+submodules — so **one IR already serves three backends and two guest ISAs.**
+
+**That is the only place in the fleet where a code-translation component is
+already shared**, and it was reached without coordination, exactly like Oboe and
+the touch overlay.
 
 **Shared:** the code cache, its eviction policy, its memory protection, the
 flush protocol, and cluster-aware placement of generated code. The Thor has

@@ -1,4 +1,4 @@
-# IR expansion measured, device-free: xenia 5.0, Cemu 2.0
+# IR expansion measured, device-free: 2.0 to 5.0 IR ops per guest instruction
 
 **Goal: measure instruction inflation per fork, as
 [`CLAUDE.md`](../CLAUDE.md) now asks after the literature survey.**
@@ -107,6 +107,54 @@ expansion survives to run time as memory traffic.
 measurable cost here** — and it is a cost of *this IR's register model*, not of
 having an IR. **Cemu has an IR too and does not pay it.**
 
+## dynarmic measured too, and it settles the question
+
+**Added the same session.** dynarmic has two frontends and three forks vendor
+it, so this covers the rest of the fleet's IR-based translation.
+
+| Frontend | Guest to host | Emitters | **Median** | Mean | p90 | Max |
+| --- | --- | --- | --- | --- | --- | --- |
+| **Cemu IML** | PowerPC to ARM64 | 121 | **2.0** | 3.32 | 6 | 22 |
+| **dynarmic A64** | **ARM64 to ARM64** | 304 | **4.0** | 5.24 | 8 | 48 |
+| **xenia HIR** | PowerPC to ARM64 | 270 | **5.0** | 5.94 | 10 | 39 |
+| **dynarmic A32** | ARM32 to ARM64 | 607 | **5.0** | 6.42 | 13 | 31 |
+
+Non-vector subsets, the fairer comparison: **Cemu 2.0 median / 2.48 mean**,
+**xenia 5.0 / 6.02**, **dynarmic A64 5.0 / 6.57**.
+
+**dynarmic's counting includes its emitting helpers** — `X()`, `V()`, `SP()`,
+`ShiftReg()`, `ExtendReg()` — because those are its equivalents of xenia's
+`LoadGPR` and `StoreGPR`. Counting only `ir.*` would have undercounted it
+against xenia and produced a false result.
+
+### The decisive number
+
+**dynarmic expands 4x when the guest ISA is the host ISA.**
+
+ARM64 to ARM64 is the easiest translation problem that exists — no ISA
+mismatch, no endianness, no register-width change, the same memory model — and
+it still costs **four IR operations per guest instruction.**
+
+**Cemu, translating PowerPC to ARM64, costs two.**
+
+> **Expansion is a property of the IR's register model, not of the distance
+> between guest and host.**
+
+**Two of the three IRs here are SSA over a context** — xenia's HIR and
+dynarmic's IR — and both land at 4 to 5. **The one that is virtual-register
+based lands at 2.** The correlation is with the register model, and it is
+perfect across four frontends.
+
+### And it corrects the catalogue
+
+`PATTERNS.md` listed **four** recompilers. **There are six**, once dynarmic's
+A64 and A32 frontends are counted, and **three forks vendor dynarmic** — eden
+in-tree, azahar and Vita3K as submodules.
+
+**That makes dynarmic the only code-translation component already shared in this
+fleet**, serving three backends and two guest ISAs, reached without
+coordination — the same shape as Oboe and the touch overlay.
+
 ## Next
 
 - **Stage B and C need one device run**, already queued as
@@ -115,5 +163,9 @@ having an IR. **Cemu has an IR too and does not pay it.**
 - **The cheaper lever is already named and already built**:
   `cpu_backend_llvm_context_residency`, default off. **Its own text says the
   problem is device-confirmed.**
-- **Do not generalise from two forks.** ARMSX2 and melonDS have no IR to
-  measure, and eden's dynarmic IR was not counted here.
+- **dynarmic is now counted.** ARMSX2 and melonDS have no IR to measure, so
+  every IR in the fleet has a number.
+- **The cheapest actionable item is xenia's**, because its expansion is the
+  highest and its own device measurement says the expansion survives to run time
+  as memory traffic. **`cpu_backend_llvm_context_residency` already exists and is
+  off.**
