@@ -19,9 +19,33 @@ Written 2026-08-22. This is a specification, not a mockup.
 screen for a capability no backend has. Do not omit one that four backends
 already ship.
 
-**Start from `xenia-thor`.** It has the most complete Android shell in the
-fleet: `GameProfiles`, `GameOptimizationsActivity`, `GamePatchManager`,
-`ContentInstaller`, `ControllerMappingActivity`, `CrashReporter`.
+**Mine `xenia-thor` for features. Do not copy its structure.**
+
+It has the most **complete** Android shell in the fleet, 12,313 lines of Java.
+It also has the **worst** structure, and the two facts are related.
+
+Its shape is Activity-per-manager: `SettingsActivity`,
+`GpuDriverManagerActivity`, `GamePatchManagerActivity`,
+`ContentManagerActivity`, `TrainerManagerActivity`,
+`GameOptimizationsActivity`, `ControllerMappingActivity`. **Seven separate
+screens you navigate away into and back out of.**
+
+That is a menu tree. It is structurally the same complaint this project has
+about RetroArch, and [Foundation](../CLAUDE.md#foundation) point 4 forbids it:
+one place for every setting, no hunting across screens.
+
+Take from it:
+
+- **The feature list.** It is the most complete inventory of what an emulator
+  shell needs, learned the hard way.
+- **The mechanisms.** Cover art fetching, driver management, patch and content
+  installation, crash reporting.
+
+Do not take:
+
+- The navigation model. Activity-per-feature is what this app exists to
+  replace.
+- The code. It is Java and Activities; the shell is Kotlin and Compose.
 
 ---
 
@@ -215,8 +239,14 @@ planes. ARMSX2 declares two texture classes. None pretends to be the others.
 
 ## Open questions this raises
 
-1. Cover art: does a backend supply it, does the app scrape it, or is it a
-   bundled database? No fork was surveyed for this.
+1. Cover art: **partly answered.** xenia `XeniaCoverArt.java`, 406 lines,
+   downloads a database from `xenia-manager/x360db`, caches it for 7 days,
+   extracts an 8-hex-digit title id with a regex and matches alternative ids.
+
+   So the pattern is: **an external per-system database keyed on title id**,
+   cached locally. That generalises. What does not generalise is `x360db`
+   itself, which is Xbox 360 only. Every system needs its own source, and
+   nothing has been surveyed for the other seven.
 2. Game identification: every fork does it differently and none was surveyed.
 3. Is rewind in scope? Only some backends can do it, and it is expensive.
 4. What does the performance readout show by default, given cross-run numbers

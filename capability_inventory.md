@@ -177,10 +177,53 @@ purpose, because restricting the process to the big cores drags Java, audio and
 compiler threads onto the same cores as emulation work. xenia found the
 opposite failure. Two forks, two findings, neither aware of the other.
 
-## Per-game profiles and the app shell — LISTED
+## Per-game profiles and the app shell — PARTIAL
 
-**Nothing opened.** xenia is called the most complete Android shell in the
-fleet on the strength of its file names alone.
+**READ:** the file inventory and `XeniaCoverArt.java`. **LISTED only:** the
+bodies of the other twenty files.
+
+**xenia has the most complete shell and the worst structure.** 12,313 lines of
+Java across the emulator package. The completeness is real; so is the
+accretion.
+
+Its shape is **Activity-per-manager**: `SettingsActivity`,
+`GpuDriverManagerActivity`, `GamePatchManagerActivity`,
+`ContentManagerActivity`, `TrainerManagerActivity`,
+`GameOptimizationsActivity`, `ControllerMappingActivity`. That is a menu tree,
+and it is the same complaint this project has about RetroArch.
+
+**Mine it for the feature list and the mechanisms. Do not copy the navigation
+model or the code**, which is Java and Activities where the shell is Kotlin and
+Compose.
+
+| Capability | Lines | Notes |
+| --- | --- | --- |
+| `EmulatorActivity` | 2261 | |
+| `LauncherActivity` | 1334 | |
+| `XeniaOptimizations` | 1212 | |
+| `XeniaAndroidSettings` | 987 | |
+| `GpuDriverManager` | 582 | read separately |
+| `SettingsActivity` | 560 | |
+| `ControllerMappingActivity` | 559 | |
+| `GameProfiles` | 420 | |
+| **`XeniaCoverArt`** | **406** | **answers the cover art question** |
+| `GamePatchManager` | 391 | |
+| `ContentInstaller` | 380 | |
+| `TrainerManagerActivity` | 338 | a trainer system, previously unrecorded |
+| `CrashReporter` | 317 | |
+| `XeniaInputMapping` | 300 | |
+| `TrainerManager` | 260 | |
+| `GameOptimizationsActivity` | 258 | |
+
+### Cover art, answered
+
+`XeniaCoverArt.java` downloads `xenia-manager/x360db` `games.json`, caches it
+for **7 days**, extracts an 8-hex-digit title id by regex, and supports
+alternative id matching.
+
+**The pattern generalises: an external per-system database keyed on title id,
+cached locally.** `x360db` itself does not; it is Xbox 360 only. The other
+seven systems have no source surveyed.
 
 | Capability | Fork | Quality | Notes |
 | --- | --- | --- | --- |
