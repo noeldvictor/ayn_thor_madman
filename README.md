@@ -203,6 +203,8 @@ map disagree.
 | `console_lab/` | Experiments and speedups for one console only. |
 | `shared_layer/PATTERNS.md` | The eight pipelines every emulator has. |
 | `shared_layer/THOR_RENDER.md` | The render architecture for this device. |
+| `shared_layer/BACKEND_STANDARD.md` | What a backend must deliver to be part of one app. |
+| `shared_layer/OWNED.md` | What the shared layer owns. Empty today, on purpose. |
 | `app/SCREENS.md` | The 14 screens, and the backend contract they imply. |
 | `app/shell/` | The Compose shell, with fake data. Builds and runs. |
 

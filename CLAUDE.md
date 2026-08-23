@@ -365,6 +365,12 @@ two texture classes. None pretends to be the others.
 The contract is an internal interface, not a module boundary. It exists for
 clarity, and it must stay inlinable.
 
+**[`shared_layer/BACKEND_STANDARD.md`](shared_layer/BACKEND_STANDARD.md) is the
+other half.** The header says how a backend plugs in. The standard says what it
+must deliver: what it must never do, what is required, what is expected, what it
+may declare, the frame and power bar, and the quality gate. **It is the
+acceptance test for "is this backend finished".**
+
 ### The costs, stated
 
 Packing together is not free. Accept these:
@@ -444,8 +450,14 @@ it, no build target, and a failing build. That is cheaper than any review.
 
 ### The ownership list
 
-`shared_layer/OWNED.md` records every subsystem the shared layer owns. It is
-the input to the build guard.
+[`shared_layer/OWNED.md`](shared_layer/OWNED.md) records every subsystem the
+shared layer owns. It is the input to the build guard.
+
+**The owned list is empty today**, and the file exists so the emptiness is
+visible rather than assumed. It also carries the queue, ordered by risk, and the
+**rejected** candidates with their evidence. **Recording a rejection matters as
+much as recording an extraction**, because both stop the question being
+re-argued.
 
 For each owned subsystem, record:
 
