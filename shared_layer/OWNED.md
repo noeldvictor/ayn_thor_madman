@@ -80,7 +80,7 @@ duplication before it moves.**
 | 5 | Cheat engine | **read** | Three architectures on one axis: flat poke, polymorphic, bytecode VM. Take the whole axis |
 | 6 | Code patch engine | **read** | Cemu's symbolic assembler as the engine, xenia's TOML as the authoring format |
 | 7 | Texture upload and per-class routing | partially read | The flagship feature. Safe only after the test harness |
-| 8 | Code translation | not read | Last. The deepest reach into a core |
+| 8 | **Code cache only** | **read** | There is no shared recompiler. The code cache under it is ~2% of a backend and **folds into candidate 0** |
 
 ### Candidate 0 is scoped: take xenia's `ui/vulkan/`
 
@@ -173,6 +173,31 @@ separation that makes xenia right for candidate 0 does not extend here.
 with `pInitialData`, `vkGetPipelineCacheData`, and a header layout defined by the
 Vulkan specification. A file format and a field list are facts, not expression.
 **Write it from the spec, using ARMSX2's validation as the checklist.**
+
+### Candidate 8 shrinks to a code cache, and folds into candidate 0
+
+Read 2026-08-22. See
+[`../research_log/20260822_2338_code_translation_read.md`](../research_log/20260822_2338_code_translation_read.md).
+
+**There is no shared recompiler and there was never going to be.** Guest ISA
+decode, IR, register allocation and instruction selection are guest semantics
+end to end.
+
+**The code cache underneath is not.** Executable memory, W^X handling, icache
+invalidation and code buffer lifetime have no guest semantics at all — the same
+test that made the Vulkan device layer a real candidate.
+
+**Three forks already outsource it.** azahar, Vita3K and eden vendor dynarmic,
+which solves the code cache for them. Only ARMSX2, xenia, melonDS, Cemu and
+rpcsx have their own.
+
+**xenia separated it, and nobody else did — the third time today.**
+`a64_code_cache_posix.cc` is 632 lines standing apart from `a64_emitter.cc` at
+6,641 and `a64_sequences.cc` at 7,475. **The code cache is about 2% of a 27,780
+line backend**, and that 2% is the entire extractable surface.
+
+**So this is not its own extraction.** Fold it into candidate 0, which already
+owns host-side memory and device lifetime.
 
 ### Rejected candidates
 

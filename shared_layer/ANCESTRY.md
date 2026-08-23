@@ -301,6 +301,67 @@ rpcs3.
 discards 5% of the fork, and it now turns out that 5% was largely ours to begin
 with.
 
+## A second Dolphin import in melonDS, and it is measurable
+
+Found 2026-08-22 while reading the recompilers. **This document records melonDS
+carrying Dolphin code from 2008 and 2009. There is a third import, from 2015,
+and it is in the JIT rather than the frontend.**
+
+`melonDS-android-lib/src/dolphin/Arm64Emitter.cpp`:
+
+```
+// Copyright 2015 Dolphin Emulator Project
+// Licensed under GPLv2+
+```
+
+**Dolphin is on disk**, so for once the drift is measurable rather than
+inferred.
+
+| | melonDS's copy | Dolphin today |
+| --- | --- | --- |
+| `Arm64Emitter.cpp` | 4,496 | 4,474 |
+| `Arm64Emitter.h` | 1,157 | **1,495** |
+| emitter methods | 308 | **344** |
+
+**Dolphin has added 40 methods that melonDS never received:**
+
+```
+ABI_CallFunction  ABI_CallLambdaFunction  BFXIL  BIF  BIT  CMEQ  CMGE  CMGT
+CMHI  CMHS  CMLE  CMLT  CMTST  CNEG  EXT  EmitExtract  EmitScalar2RegMisc
+EmitScalarPairwise  EmitScalarThreeSame  FACGE  FACGT  FADDP  FMAXNMP  FMAXP
+FMINNMP  FMINP  FRINTI  MOVI2RImpl  NEGS  NOP  ORR_BIC  ParallelMoves
+PoisonMemory  SEV  SEVL  SHL  SSHR  URSHR  WFE  WFI  YIELD
+```
+
+Three groups stand out:
+
+- **Eight vector compares plus `BIF`, `BIT` and `EXT`.** A DS geometry engine is
+  exactly the workload that wants vector compare and bit select.
+- **`YIELD`, `WFE`, `WFI`, `SEV`, `SEVL`.** **This lands on a finding already in
+  `CLAUDE.md`**: `yield` is a no-op on ARM, rpcs3 found half of all CPU time in
+  a four-line `busy_wait`, and the fleet needs auditing for it. Dolphin can emit
+  the whole family; melonDS's copy can emit none of it.
+- **`ABI_CallFunction`, `ABI_CallLambdaFunction`, `ParallelMoves`.**
+  `ParallelMoves` is the standard way to shuffle register assignments without a
+  scratch spill, which matters given the X3 guidance to spill to the vector file
+  rather than to memory.
+
+melonDS added five of its own: `LDRGeneric`, `STRGeneric`, `QuickTailCall`,
+`SBFX`, `SetCodeBase`.
+
+**The licence permits taking the code, not only the idea.** Dolphin's file is
+GPLv2 **or later**; melonDS-android is GPL-3.0.
+
+**A hypothesis that was wrong, recorded so it is not re-checked.** I expected
+Dolphin to have added `SDOT`, `UDOT`, `EOR3` or `BCAX`, since melonDS emits
+none. **Dolphin has none of them either.** Nobody in that lineage ever added
+them, so melonDS is not behind on the device's vector features — the whole
+lineage is.
+
+**This is the document's own thesis with a number attached**: copy once, diverge
+forever, never receive the fixes. Twelve years, one file, forty methods, and the
+licence never stood in the way.
+
 ## What is still unknown
 
 - ~~Whether the ancestors have fixes worth back-porting.~~ **Answered below.**
