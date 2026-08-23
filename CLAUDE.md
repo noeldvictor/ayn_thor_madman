@@ -1764,8 +1764,12 @@ new feature is "which fork already has this?", not "how do I write this?".
 
 The survey on 2026-08-22 proved the point. ARMSX2 and melonDS-android both
 built per-class texture routing, separately, with different names for the same
-idea. Their algorithm sets overlap by nine entries. Neither fork knows the
-other exists.
+idea. Neither fork knows the other exists.
+
+**The "overlap by nine entries" figure recorded here earlier is withdrawn.**
+Reading both sets showed the lists are not comparable entry by entry: melonDS's
+carries `lite` and `strong` suffixes that are cost variants rather than distinct
+algorithms. **Re-derive it or leave it out; do not repeat it.**
 
 **Harvest and adapt. Do not only merge.** Record what you took from each
 upstream, and why. If a sibling fork does something better or faster, take it
@@ -3581,8 +3585,44 @@ it, the fan-out in [Agentic acceleration](#agentic-acceleration) does damage.
 
 The flagship feature. It is safe to attempt only after phase 3.
 
-Base the shared algorithm enum on ARMSX2 `GSTextureUpscaleAlgorithm`. Add
-`Super2xSaI` and `Quilez` from melonDS-android. Keep the class list per-fork.
+**CORRECTED 2026-08-22 after reading both sets.** Base the shared **algorithm**
+axis on ARMSX2 `GSTextureUpscaleAlgorithm`, which is 24 entries grouped by the
+art they suit with a note on when each is wrong. Keep the class list per-fork.
+
+**Two corrections to the earlier instruction:**
+
+**`Quilez` is a present-time filter and must not go in this enum.** melonDS
+keeps two separate string arrays: `video_filtering_options` holds None, Linear,
+2xBR, HQ2X, HQ4X and **Quilez**, which is whole-frame output filtering. The
+texture list is the other one. `Super2xSaI` is genuinely in the texture list;
+`Quilez` is not. **Adding it would be the exact category error this document
+warns about** in [Per-class routing](#2-per-class-routing--the-first-shared-feature):
+a present-time shader sees one finished frame and cannot separate an anime
+portrait from a wall.
+
+**The shared type needs two axes, because the forks disagree on which axis
+matters.** melonDS's list is `HQ2x lite`, `2xSaI lite`, `SuperEagle lite`,
+`MMPX lite`, `Anime4K lite`, `Super2xSaI strong`, `SuperEagle smooth`, plus
+`crisp gradient` and `crisp edge AA`. **Five of those are `lite` and two are
+strength variants** — the same algorithms at different cost points, not
+different algorithms.
+
+| | ARMSX2 | melonDS |
+| --- | --- | --- |
+| Axis | algorithm identity | **cost and strength tier** |
+| Can express "xBR, but cheap" | **no** | yes |
+| Can express "Lanczos" | yes | no |
+
+**Flattening melonDS's list into ARMSX2's loses the cost axis, and on a handheld
+that is the axis that decides whether a filter is usable.** So carry
+`algorithm` and `tier` separately, and let the implemented pairs be **declared**
+rather than fixed, exactly as texture classes are.
+
+**A rule worth taking, stated inside ARMSX2's enum:** the enum is persisted as
+an integer, so **entries can only ever be appended**. Group in the UI, never in
+the numbering.
+
+See [`research_log/20260822_2350_upscale_algorithm_sets.md`](research_log/20260822_2350_upscale_algorithm_sets.md).
 
 ### Later
 

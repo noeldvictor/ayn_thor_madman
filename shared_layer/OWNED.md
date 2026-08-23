@@ -79,7 +79,7 @@ duplication before it moves.**
 | 4 | Settings framework | **read** | azahar and eden: same design twice, **code fully diverged**. Extraction is a rewrite guided by two references |
 | 5 | Cheat engine | **read** | Three architectures on one axis: flat poke, polymorphic, bytecode VM. Take the whole axis |
 | 6 | Code patch engine | **read** | Cemu's symbolic assembler as the engine, xenia's TOML as the authoring format |
-| 7 | Texture upload and per-class routing | partially read | The flagship feature. Safe only after the test harness |
+| 7 | Texture upload and per-class routing | **algorithm sets read** | The flagship feature. Needs **two axes**, algorithm and cost tier. Safe only after the test harness |
 | 8 | **Code cache only** | **read** | There is no shared recompiler. The code cache under it is ~2% of a backend and **folds into candidate 0** |
 
 ### Candidate 0 is scoped: take xenia's `ui/vulkan/`
