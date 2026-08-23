@@ -150,6 +150,29 @@ The rules that follow:
 
 **Judge a feature by the time it costs the person, not by its power.**
 
+### Frame generation already exists in the fleet
+
+**ARMSX2 has a complete Vulkan frame-generation subsystem, 31 files, all
+GPL-3.0-or-later.** Nothing else has one, and nothing recorded it until
+2026-08-22.
+
+`pcsx2/GS/Renderers/Vulkan/FrameGen/`, ported from **eden PR #4263** and
+**lsfg-vk**. It includes a `FrameGenPacer`, because generated frames need their
+own pacing decision.
+
+**On a handheld this may be the highest-value feature in the fleet.** Frame
+generation makes a 30 fps game feel like 60 without rendering more frames. On a
+device where the bottleneck is GPU-bound and architectural, that buys smoothness
+optimisation cannot.
+
+Two further points:
+
+- **Its provenance comment is the only proper one in the fleet.** It names the
+  source project, the pull request, the file and what was kept unchanged. That
+  is exactly what [Provenance](#provenance-harvest-and-adapt) asks for.
+- **The local `eden-thor` checkout does not have it**, because the port came
+  from a later PR. The fleet is out of date with its own members.
+
 ### 5. Quality of life, everywhere
 
 These are not extras. They are the reason to build a unified app rather than
@@ -161,6 +184,8 @@ run eight separate emulators.
 - **HD texture packs.** Install one without a guide.
 - **Mods and translations.** Install from inside the app.
 - **Cheats.** One library across every system.
+- **Frame generation.** ARMSX2 already has 31 files of it, GPL-3.0-or-later.
+  See above.
 - **Per-game performance profiles.** Every option overridable per game. See
   [The game library and per-game overrides](#6-the-game-library-and-per-game-overrides).
 - **Known-good settings from the community.** A game should arrive with

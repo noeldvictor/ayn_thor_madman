@@ -742,6 +742,59 @@ independently arrived at the contract this repo already wrote.**
 element that is not a button, so the declaration needs a kind as well as a
 name.
 
+## Frame generation — READ. Unrecorded until now, and the biggest QOL find.
+
+**ARMSX2 has a complete Vulkan frame-generation subsystem. 31 files. Nothing
+else in the fleet has one.**
+
+`pcsx2/GS/Renderers/Vulkan/FrameGen/`:
+
+| Group | Files |
+| --- | --- |
+| Core | `FrameGen`, `FrameGenTypes`, `FrameGenPacer` |
+| Lsfg pipeline | `LsfgAlpha`, `LsfgBeta`, `LsfgGamma`, `LsfgDelta`, `LsfgChain`, `LsfgCommon` |
+| Support | `LsfgGenerate`, `LsfgMipmaps`, `LsfgShaders`, `LsfgTranslate`, `LsfgUtil`, `LsfgVkCompat`, `LosslessDll` |
+
+**All 51 licence identifiers are GPL-3.0-or-later**, so it drops straight into
+the GPL-3.0 app.
+
+### Why this matters on a handheld
+
+Frame generation turns a 30 fps game into something that feels like 60 without
+rendering more frames. On a device where xenia's ledger says the bottleneck is
+GPU-bound and architectural, **generating frames buys smoothness that
+optimisation cannot.**
+
+`FrameGenPacer` also connects directly to
+[`THOR_RENDER.md`](THOR_RENDER.md) commitment 6, since generated frames need
+their own pacing decision.
+
+### Its provenance comment is the model this repo asked for
+
+```
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-FileCopyrightText: Copyright 2025 lsfg-vk
+//
+// Ported from Eden (eden-emu PR #4263),
+// src/video_core/renderer_vulkan/present/frame_gen.h.
+// The orchestration is unchanged - warm-up counting, the rebuild conditions,
+// the flow-scale ...
+```
+
+**It names the source project, the pull request, the file, and what was kept
+unchanged.** That is exactly what the provenance rule in `CLAUDE.md` asks for,
+and it is the only example in the fleet that does it properly.
+
+### The local eden checkout does not have it
+
+A search of `eden-thor` for frame generation found nothing, because the port
+came from **eden PR #4263** and the local checkout predates it. `eden-thor` is
+one commit ahead of a stale upstream reference.
+
+**So the fleet is out of date with its own members.** ARMSX2 has an eden
+feature that the eden checkout in this fleet does not.
+
 ## Survey gaps
 
 Partly surveyed forks:
