@@ -177,6 +177,9 @@ is conversion rather than invention.
 | dual-screen routing | melonDS, azahar |
 | touch overlay | azahar, Vita3K, Cemu |
 | cheat engine | eden VM, azahar manager, rpcsx flat |
+| **cheat manager UI** | **melonDS-android**, 2,119 lines, Room + SAX + import progress |
+| screen layout editor | melonDS-android, 2,925 lines |
+| settings migration framework | melonDS-android, 37 files, 16 migrations |
 | code patcher | Cemu assembler, xenia TOML |
 | guest accounts | six of eight |
 | second-screen `Presentation` | **ARMSX2**, 707 lines, naming the Thor |

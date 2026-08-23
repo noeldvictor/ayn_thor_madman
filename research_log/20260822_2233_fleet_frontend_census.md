@@ -68,6 +68,28 @@ with repositories as top-level singletons.
 **Take the structure from melonDS-android and the features from ARMSX2.** That
 is a more useful conclusion than either superlative.
 
+### Correction, made while writing this: melonDS-android has the cheat manager
+
+The paragraph above originally ended "neither has a cheat manager UI or a
+storage view". **Wrong, and wrong in the same session it was written.**
+
+`ui/cheats` is 2,119 lines across 20 files: `GameListScreen`, `FolderListScreen`,
+`CheatListScreen`, `EnabledCheatsListScreen`, `CheatsScreen`, a `CheatForm` with
+its own form-state model, per-item composables, navigation and a loading screen.
+`domain/model` has `Cheat`, `CheatDatabase`, `CheatFolder`, `CheatInFolder` and
+`CheatImportProgress`. `impl` has `RoomCheatsRepository` at 304 lines,
+`XmlCheatDatabaseSAXHandler` at 217 and `BundledCheatDatabaseImporter` at 103.
+
+**`CheatImportProgress` and a SAX parser together say this was used in anger.**
+SAX is a streaming parser, chosen when the document does not fit comfortably in
+memory, and a progress model exists because the import is slow enough to need
+one. Those are the marks of a real cheat database, not a demo.
+
+`ui/layouteditor` at 2,925 lines is also present, which is SCREENS.md screen 11.
+
+**Storage aggregation is now the only screen with no prior art anywhere in the
+fleet.**
+
 ---
 
 ## The finding: settings migrations are already solved

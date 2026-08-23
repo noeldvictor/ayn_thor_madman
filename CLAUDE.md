@@ -3459,7 +3459,22 @@ managers, a texture pack catalogue with an online section, a shader chain editor
 controller skins, themes and 13 languages.
 
 **Mine ARMSX2's frontend for features and melonDS-android's for structure.**
-Neither has a cheat manager UI or a storage view.
+
+**And melonDS-android has the cheat manager UI**, which this repo recorded as
+missing from the fleet. It is a full stack: `ui/cheats` is 2,119 lines across 20
+files, with a game list, a folder list, a cheat list, an enabled-cheats list and
+a **cheat editing form**; `domain` carries `Cheat`, `CheatDatabase`,
+`CheatFolder`, `CheatInFolder` and **`CheatImportProgress`**; `impl` has Room
+persistence, a **streaming XML SAX parser** for cheat databases, and a bundled
+database importer.
+
+`CheatImportProgress` is the detail that shows it was used in anger. **A cheat
+database is large and importing it is slow enough to need a progress report.**
+
+It also has **`ui/layouteditor`, 2,925 lines** — a screen layout editor, which
+is [`app/SCREENS.md`](app/SCREENS.md) screen 11.
+
+**Storage aggregation remains the one screen with no prior art anywhere.**
 
 See [`research_log/20260822_2233_fleet_frontend_census.md`](research_log/20260822_2233_fleet_frontend_census.md).
 
