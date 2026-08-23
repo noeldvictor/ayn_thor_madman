@@ -261,8 +261,11 @@ Direct the exploration at these:
   irreducibly per-backend. The unpriced cost is to the **test harness**; see
   Phase 3. eden, Vita3K and xenia savestate code was found by neither search and
   is recorded as unread, not absent.
-- Thread and cluster affinity, and frame pacing, are still not surveyed in any
-  fork.
+- **Thread and cluster affinity: surveyed 2026-08-23.** Four forks set host-side
+  affinity; **melonDS and Vita3K set none at all**, so their threads land
+  wherever the kernel puts them. See
+  [`research_log/20260823_0030_thread_affinity.md`](research_log/20260823_0030_thread_affinity.md).
+- Frame pacing is still not surveyed in any fork.
 - Clean build times for every fork. Only melonDS-android has been built, and
   that was incremental.
 
@@ -927,6 +930,22 @@ raises the command-processor thread priority.
 
 **This is host-side, so it transfers to every fork**, unlike the vector items.
 Check every spin loop in the fleet for a `yield` that does nothing.
+
+**A related survey, 2026-08-23: two forks set no host affinity at all.** Four do
+— xenia, ARMSX2, eden and rpcsx. **melonDS sets thread priority but never
+affinity, and Vita3K sets neither.**
+
+**melonDS is the case worth naming**, because it is the one fork that tuned its
+compiler for the prime core with `-mtune=cortex-x3` and reasoning written into
+its `CMakeLists.txt`. **It schedules its code generation for the X3 and then
+never asks for the X3.** Two decisions, two files, nobody holding both.
+
+**A warning for that survey and any like it.** Searching for
+`sched_setaffinity` and `CPU_SET` returns **guest code**: Cemu's hit is the
+Wii U `coreinit` thread API, azahar's is a 3DS kernel syscall, and rpcsx's is
+Orbis kernel emulation. An emulator implements the guest's affinity API **as a
+feature**. A fourth hit was inside vendored Oboe's test app. **Separate
+host-side from guest-side before counting anything.**
 
 ### Feature detection may be silently excluding this device
 
