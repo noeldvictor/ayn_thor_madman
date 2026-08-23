@@ -288,9 +288,52 @@ from the deliberate `cpu_backend_llvm_lower_vmaddfp=false` workaround. **Every
 from the AOT object cache.** Fixing `vmaddfp` is a **coverage** lever before it
 is a correctness fix.
 
-**So the cheap first step is not a device run at all: fix the `vmaddfp`
-fallback**, then re-measure coverage by counting `LLVMfallback` in a log. **No
-device needed.**
+**CORRECTED within the hour: "fix `vmaddfp`, no device needed" was wrong.**
+xenia's own flag text says the opposite, and reading it was the check:
+
+> the LLVM lowering is **qemu-byte-correct in isolation**, but on-device it
+> **MISCOMPILES** a function that uses `vmaddfp` **together with other vector
+> ops** (BD's vertex-transform routine, e.g. `0x82282490`) -> degenerate
+> geometry ('cyan-bars'), **at opt=0 AND opt=2**. It is a device
+> codegen/regalloc **INTERACTION** bug (**the IR is correct**), not fixable from
+> the IR
+
+**So this is not a coverage tidy-up. It is a live miscompile in LLVM's AArch64
+backend**, and the a64 fallback is the correct behaviour, device-proven via
+`cpu_backend_llvm_skip_opcodes=77`.
+
+**xenia already built the right tool for it**, and its text states the method:
+
+- `cpu_backend_llvm_dump_ir` — the IR, "**device-free-ishly**"
+- `cpu_backend_llvm_dump_asm` — the post-codegen AArch64 assembly, "**Unlike
+  `_dump_ir` (which shows correct-looking IR), this shows the IR->asm output
+  where device codegen/regalloc bugs live**"
+
+Both take `_range_lo`/`_hi` to isolate one function.
+
+### The off-device repro path, and the one thing that blocks it
+
+**The IR is target-independent, so the failing function's IR can be compiled to
+AArch64 on any box.** That turns a device asm-debugging job into a desktop one —
+the same move as the target-features work, which was settled by disassembling
+rather than by running.
+
+**Prerequisites, measured 2026-08-23:**
+
+| Need | State |
+| --- | --- |
+| The exact LLVM | **20.1.8** — read from both shipped `libLLVM.so` files. **The `18.1.8` in the June build plan is superseded**; do not chase it |
+| An x86-64 `llc`/`opt` at that version | **NOT on this box.** No `llc`, `opt` or `clang` on PATH |
+| The NDK's clang as a substitute | **NO. It is 21.0.0** on both NDK 29 and 30 — **a different major version, so a 20.1.8 codegen bug may not reproduce** |
+| The IR for `0x82282490` | needs one load of the title with `dump_ir`; the **AOT precompiler runs at load**, so no scene navigation |
+
+**So the blocking step is obtaining LLVM 20.1.8 host tools, not device time.**
+Once they exist, `llc -mtriple=aarch64-linux-android -mcpu=cortex-x3` on the
+dumped IR reproduces the device's codegen path **on this box**, exactly.
+
+**Do not attempt the repro with NDK clang 21** and report a negative from it.
+**That would be measuring a different compiler**, and this repo has a rule about
+searching with the wrong instrument.
 
 ### And the ledger already cites Box64
 

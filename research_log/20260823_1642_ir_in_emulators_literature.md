@@ -213,6 +213,58 @@ mechanism behind it.
 
 ---
 
+## 7. Following the one actionable thread, and correcting myself on it
+
+**Section 6 ended by naming the `vmaddfp` fallback as the cheap next step.
+Reading it showed that was wrong, within the hour.**
+
+I wrote that fixing it needed no device. **xenia's own flag text says the
+opposite**, and it is unusually precise about why:
+
+> the LLVM lowering is **qemu-byte-correct in isolation**, but on-device it
+> **MISCOMPILES** a function that uses `vmaddfp` **together with other vector
+> ops** ... **at opt=0 AND opt=2**. It is a device codegen/regalloc
+> **INTERACTION** bug (**the IR is correct**), not fixable from the IR
+
+**It is a live miscompile in LLVM's AArch64 backend, not a coverage tidy-up.**
+The a64 fallback is correct behaviour and was device-proven with
+`cpu_backend_llvm_skip_opcodes=77`.
+
+### But the device-free path is real, and xenia already built the tools
+
+`cpu_backend_llvm_dump_ir` dumps the IR "**device-free-ishly**".
+`cpu_backend_llvm_dump_asm` dumps the post-codegen AArch64 assembly, and its own
+text names the reason: "**Unlike `_dump_ir` (which shows correct-looking IR),
+this shows the IR->asm output where device codegen/regalloc bugs live.**"
+
+**The IR is target-independent**, so the failing function's IR compiles to
+AArch64 anywhere. **That converts a device asm-debugging job into a desktop
+one** — the same move that settled the target-features question, which was
+answered by disassembling rather than by running.
+
+### The prerequisite nobody had checked
+
+| Need | State on this box, 2026-08-23 |
+| --- | --- |
+| Exact LLVM | **20.1.8**, read from both shipped `libLLVM.so` |
+| x86-64 `llc`/`opt` at 20.1.8 | **absent** — no `llc`, `opt` or `clang` on PATH |
+| NDK clang as substitute | **21.0.0** on NDK 29 **and** 30 — **wrong major version** |
+
+**Two corrections fall out of this.**
+
+**The docs disagree about the LLVM version and the binaries settle it.**
+`docs/research/20260626-llvm-jit-backend-build-plan.md` says LLVM **18.1.8**;
+the shipped libraries are **20.1.8**. **The build plan is superseded.** A
+codegen-bug report against the wrong version is worthless.
+
+**And the obvious shortcut is a trap.** Reproducing a 20.1.8 codegen bug with
+NDK clang **21.0.0** would be measuring a different compiler. **A negative from
+that would be a wrong-instrument result**, which is the failure mode this repo
+has recorded five times today.
+
+**So the blocker is host LLVM 20.1.8 tools, not device time.** That is a
+cheap thing to obtain and nobody had identified it as the gate.
+
 ## Sources
 
 - [arXiv:2501.03427](https://arxiv.org/abs/2501.03427) — Parker, *Boosting
