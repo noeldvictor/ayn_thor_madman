@@ -1806,6 +1806,18 @@ ARMSX2's `GSTextureUpscaler` with the names changed.
 
 **Order extraction by risk, not by value:**
 
+0. **The touch overlay.** Read 2026-08-22 and it is now the best candidate in
+   the fleet. azahar and Vita3K ship the **same four classes from the same 2013
+   Dolphin ancestor**, 1302 lines of Kotlin against 1067 lines of Java. Vita3K
+   still carries Dolphin's copyright header verbatim.
+
+   A touch overlay has **no guest semantics**, both are GPL-2.0-or-later, and
+   the class names already match, so the contract is agreed before anyone
+   starts. **xenia has no overlay at all**, so it gains a feature rather than
+   losing one, and **melonDS has `TouchVibrator`**, haptics nobody else ships.
+
+   Compare Cemu's independent config-driven design before extracting.
+
 1. The GPU driver manager. **Read on 2026-08-22: it is four concerns, not six
    copies.** Compose the shared version from the fork that does each best.
 

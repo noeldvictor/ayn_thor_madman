@@ -661,6 +661,47 @@ is Nintendo's. **The structure generalises; those specifics do not.**
 Not found in xenia-thor, Vita3K-Thor or rpcsx-ui-android. **The search was by
 name and those forks may use different ones**, which has been wrong before.
 
+## Touch overlays — READ. The clearest duplication in the fleet.
+
+Surveyed 2026-08-22. **azahar and Vita3K ship the same four classes, from the
+same 2013 ancestor, in two languages.**
+
+| | azahar-thor | Vita3K-Thor |
+| --- | --- | --- |
+| `InputOverlay` | 1302 lines, Kotlin | 1067 lines, Java |
+| `InputOverlayDrawableButton` | yes | yes |
+| `InputOverlayDrawableDpad` | yes | yes |
+| `InputOverlayDrawableJoystick` | yes | yes |
+| Header | Citra / Azahar, GPL-2.0-or-later | **`Copyright 2013 Dolphin Emulator Project`**, GPL-2.0-or-later |
+
+Vita3K kept Dolphin's copyright header verbatim. azahar's arrived through
+Citra. **2,369 lines implementing one design twice.**
+
+**This is a better extraction candidate than the GPU driver manager.** The
+driver pickers turned out to be four different concerns. These are the same
+code, diverged.
+
+- A touch overlay has **no guest semantics**. Buttons, a dpad and a joystick
+  drawn on a screen are the same problem on every system.
+- **Both are GPL-2.0-or-later**, so both can be used as GPL-3.0.
+- The classes already have the same names, so the contract is already agreed.
+
+### The other four are different, and two have things nobody else does
+
+| Fork | Approach | Notable |
+| --- | --- | --- |
+| Cemu-thor | config-driven: `OverlayInputConfig.kt`, `InputOverlayDefaultConfigs.kt`, `CanvasOnTouchListener.kt` | an independent design, worth comparing before extracting |
+| melonDS-android | `EmulatorOverlayTracker.kt`, **`TouchVibrator.kt`** | **haptics on touch. Nobody else has it.** |
+| eden-thor | overlay assets under `dist/icons/overlay/` | art, not logic |
+| xenia-thor | **nothing.** One research note, `20260527-151500-android-ingame-menu-overlay-controller-start.md` | would gain the feature outright |
+
+**melonDS's `TouchVibrator` is the kind of quality-of-life detail this project
+exists to spread.** A touch button that does not vibrate feels dead, and six
+forks ship one that does not.
+
+**xenia has no touch overlay at all**, despite having the largest Android
+shell. Extraction would give it a feature rather than replacing one.
+
 ## Survey gaps
 
 Partly surveyed forks:
