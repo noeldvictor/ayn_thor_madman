@@ -596,6 +596,34 @@ here has measured what is.
 **Also read before running:** how the cache handles self-modifying guest code.
 It was searched for and not found, which means unread rather than absent.
 
+## 18. Does this device execute AArch32 at EL0 — one property read
+
+**The cheapest entry in this file, and it gates the largest open question found
+on 2026-08-23.**
+
+```sh
+adb -s "$THOR" shell getprop ro.product.cpu.abilist
+adb -s "$THOR" shell getprop ro.product.cpu.abilist32
+```
+
+**Why it matters.** eden runs Switch guest code **natively** through NCE, with no
+recompiler, because the guest ISA is the host ISA. **Three more fleet guests are
+ARM but not ARM64**: Vita is ARMv7, 3DS is ARMv6, DS is ARMv4 and ARMv5. Whether
+the same idea can even be attempted for them turns on whether this device runs
+32-bit ARM code at all. See
+[`research_log/20260823_2250_eden_nce_deletes_the_translator.md`](research_log/20260823_2250_eden_nce_deletes_the_translator.md).
+
+**Do not infer it from a build file.** GameThor and melonDS both build
+`armeabi-v7a`, and building an ABI is a choice rather than proof the device runs
+it.
+
+**Prediction: `abilist32` is empty.** ARMv9 cores dropped AArch32 in stages and
+the Cortex-X3 is one of them, and Android does not usually advertise a 32-bit ABI
+that only some cores can run. **Stated so the run can fail.**
+
+**If the prediction is wrong, the question reopens for three backends**, and that
+is worth more than anything else in this file.
+
 ## Not ready to run
 
 These need a decision or a build first, not device time.

@@ -1667,7 +1667,28 @@ Every item is already written somewhere in the fleet. None needs invention.
 | Transient colour attachments | Vita3K | everyone |
 | Depth and stencil `DontCare` by default | Cemu | eden, azahar |
 | `eClear` instead of `eLoad` when the pass clears | azahar | eden |
+| **Persisting relocatable emitted code, with a validity sentinel** | **ARMSX2** | **eden's NCE patcher, which has the key type and no cache** |
+| **Whole-text AOT patching keyed by build ID** | **eden NCE** | anything with a same-ISA or near-ISA guest |
+| **Merging another user's cache into yours** | **Cemu `ShaderCacheMerger`** | everyone |
+| **Requesting `VK_KHR_shader_float16_int8`** | eden | **ARMSX2, whose frame generator is forced to fp32 without it** |
 | `COLOR_ATTACHMENT_OPTIMAL` instead of `GENERAL` | — | Cemu |
+
+**Two of those rows are the same missing piece seen from both ends, found
+2026-08-23.** **eden patches a Switch module's whole text segment ahead of time**,
+keyed by the 32-byte NSO build ID, with relocation and trampolines — Rosetta's
+shape — **and then throws the result away, because `PatchText` runs from the
+loader on every launch.** Its `PatchCacheKey` type is declared, given a hash
+specialisation, and **used nowhere.** **ARMSX2 already built the cache that key
+was declared for**, for the PS2 vector unit, with tests. **Neither fork cites the
+other.**
+
+**And eden's NCE is the DELETE operation applied to pipeline 1**, code
+translation — the deepest reach into a core, which this file orders **last**
+precisely because of that depth. **eden runs Switch guest code natively on this
+host with no recompiler at all**, because its guest ISA is the host ISA. This
+file already recorded that fact as a *difficulty*. **It is also the opportunity.**
+
+See [`research_log/20260823_2250_eden_nce_deletes_the_translator.md`](research_log/20260823_2250_eden_nce_deletes_the_translator.md).
 
 **The four-way spread is itself the argument for the shared layer.** Four forks
 gave four answers to one question, and the best answer is not in the newest or
