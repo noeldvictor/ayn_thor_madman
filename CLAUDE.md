@@ -296,8 +296,13 @@ Direct the exploration at these:
   **So it is the cheapest subsystem in the queue to own**: nothing to extract,
   nothing to reconcile, no licence question. It belongs with the presenter,
   which is already where the two-guest-screen question lands.
-- Clean build times for every fork. Only melonDS-android has been built, and
-  that was incremental.
+- **Clean build times: one fork done, seven to go.** melonDS-android builds
+  clean in **15 min 27 s** to a 55.5 MB APK, on **NDK 28 and Gradle 9.5.0**, so
+  it is one NDK major and one Gradle minor behind the standard row. **The time
+  is dominated by compiling librashader from Rust source, not by the
+  emulator's C++.** See
+  [`work_log/20260823_0006_melonds_clean_build.md`](work_log/20260823_0006_melonds_clean_build.md).
+  ARMSX2, Cemu-thor and xenia-thor remain, and are the expensive ones.
 
 ## What this repo is
 
@@ -3499,6 +3504,17 @@ than the packaging of the shipped app, and it does not wait on 0.1.
 **0.3 Build every Tier 1 fork as it stands today. Record the result.** You
 cannot migrate a toolchain you cannot build. One work log for each fork. Record
 the command, the time taken and the failure.
+
+**Started 2026-08-23. melonDS-android: 15 min 27 s clean, exit 0, 55.5 MB APK,
+89 tasks.** Its 2026-07-12 recipe worked unchanged, which is worth knowing
+because a stale recipe is worse than none.
+
+**The time is not where anyone would guess.** It is dominated by building
+`librashader` and its Rust dependency graph — `glslang`, `spirv-cross2`,
+`gpu-allocator`, then eight `librashader-*` crates. **The emulator's own C++
+compiled quickly.** So a shared-layer change will not cost 15 minutes on this
+fork; a clean checkout will, and the two should be measured separately before
+anyone plans CI around the figure.
 
 This baseline also answers [Open decisions](#open-decisions) item 3, the build
 location, with measured build times instead of a guess.
