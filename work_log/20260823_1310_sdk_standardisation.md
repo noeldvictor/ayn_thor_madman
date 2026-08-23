@@ -64,13 +64,24 @@ scratch.
 | --- | --- | --- |
 | **Cemu** | **BUILD SUCCESSFUL in 5 min 8 s** | 73.1 MB APK |
 | **melonDS** | **BUILD SUCCESSFUL in 18 min 12 s** | all 3 ABIs rebuilt, 15 warning groups |
-| azahar | building | |
-| ARMSX2 | queued | |
+| **azahar** | **BUILD SUCCESSFUL in 14 min 49 s** | 27.6 MB, all 2,206 native targets rebuilt |
+| ARMSX2 | building | |
 | eden, GameThor | **cannot be verified** — they do not build for unrelated reasons | |
 | Vita3K, rpcsx, xenia | not yet attempted | |
 
 **melonDS is the important one.** It carried the riskiest change and its
 toolchain switch worked.
+
+**The times barely moved, and where they did the reason is known.**
+
+| Fork | Before | After | Why |
+| --- | --- | --- | --- |
+| azahar | 14 min 33 s | **14 min 49 s** | unchanged within noise, despite rebuilding all 2,206 native targets |
+| melonDS | 15 min 27 s | **18 min 12 s** | `minSdk` changed the NDK clang, invalidating the native cache for **three** ABIs |
+
+**Raising the SDK row costs one cache invalidation, not ongoing build time.**
+Both forks rebuilt their native trees from scratch and landed within a few
+minutes of where they started.
 
 ## The migration is safer than it looked, because two forks had already done it
 
