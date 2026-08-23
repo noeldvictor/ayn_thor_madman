@@ -2075,11 +2075,39 @@ Define the GPU driver selection, the cluster affinity, the thermal governor,
 the panel resolution and aspect, and the controller and trigger mapping. Define
 each one time. Each fork reads the profile. No fork hardcodes these values.
 
-### 4. Cheat databases
+### 4. Cheats
 
 `azahar-thor/cheat_sources/` holds Sharkive, CTRPF-AR-CHEAT-CODES and
 citra-games-wiki. `ai_cheat_helper_switch` is a separate AI-driven method.
 Unify the format. Do not unify the sources.
+
+**Read 2026-08-22: eden's cheat engine is a virtual machine, and its host
+interface is six calls, none of them Switch-specific.**
+
+```cpp
+MemoryReadUnsafe(addr, data, size);   MemoryWriteUnsafe(addr, data, size);
+HidKeysDown();                        PauseProcess();  ResumeProcess();
+DebugLog(id, value);                  CommandLog(data);
+```
+
+**Every backend in the fleet can implement those.** So a shared cheat engine is
+the VM shared and the callbacks per backend, which is the same split as every
+other pipeline: shared algorithm, backend supplies guest knowledge.
+
+It generalises by accident, because a cheat VM has to be abstracted from the
+machine anyway.
+
+azahar solves the **other** half: `CheatEngine` with `CheatBase`, add, remove,
+update and a `shared_mutex`. That is the better model for **managing** a cheat
+list; eden's is the better model for **executing** one. **Take both.**
+
+**The format problem is separate from the execution problem.** At least six
+formats exist in the fleet: `mch`, `pnach`, `ncl`, Cemu graphic packs,
+Atmosphere `dmnt` and 3DS AR codes. A VM does not care — a per-format front end
+compiles them to one bytecode, turning six engines into six small parsers.
+
+**Unverified, and it decides the design:** whether `pnach` and AR codes map
+cleanly onto `dmnt` bytecode has not been checked.
 
 ### 5. Mod and translation loading
 

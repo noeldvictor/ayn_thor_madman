@@ -151,7 +151,7 @@ than six engines.
 **Unverified.** Whether `pnach` and AR codes map cleanly onto `dmnt` bytecode
 has not been checked, and that check decides whether this works.
 
-## Survey gaps
+### The five cheat implementations
 
 **Five forks support cheats. Each uses a different format.**
 
