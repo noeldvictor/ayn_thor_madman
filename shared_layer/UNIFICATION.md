@@ -327,6 +327,41 @@ build that takes 15 minutes, after the toolchain migration is already done.
 `struct Vertex` do not want to become one `struct Vertex`. **They want to stop
 being able to see each other.**
 
+### There are two ISOLATE failures, not one
+
+The percentages above measure **symbol** collisions at link time. **Include
+collisions are a separate failure with a separate fix, and they are worse
+because they are silent.**
+
+**Measured 2026-08-23: 3,898 distinct header basenames across seven forks, and
+241 appear in two or more.** `util.h` is in five. `types.h`, `config.h`,
+`hash.h`, `atomic.h`, `input.h`, `file.h`, `ring_buffer.h` and
+`shared_memory.h` are in four each.
+
+**These are the names a codebase gives its own foundations**, and every emulator
+wrote its own.
+
+**With per-target include directories nothing collides**, which is normal
+practice. **But a shared-layer header that writes `#include "types.h"` is
+ambiguous by construction** — which one it gets depends on the include order of
+whichever target compiles it, so the same shared header can compile against
+seven different `types.h` **and never error.** It may simply pick up the wrong
+`Config`.
+
+**That is the worst class of build problem: not a failure, a divergence.**
+
+| | Symptom | Fix |
+| --- | --- | --- |
+| Symbol collision | duplicate definition at **link** | namespaces, `-fvisibility=hidden` |
+| **Include collision** | **the wrong header compiles, silently** | **a unique include prefix** |
+
+**The rule, and it must land before the first extraction:** every shared-layer
+header is included by a prefixed path — `#include "thor/device.h"` — and uses
+prefixed includes only. **A naming decision is cheap before there are callers
+and expensive afterwards.**
+
+See [`../research_log/20260823_0230_header_collisions.md`](../research_log/20260823_0230_header_collisions.md).
+
 ### It is cheap, and it belongs in the standard row
 
 Two mechanisms, both mechanical:

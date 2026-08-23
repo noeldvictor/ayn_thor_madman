@@ -22,14 +22,31 @@ walls that code cannot.
 
 ## Can the target take a propagation today?
 
-| Fork | Builds? | Tests? | Ready |
-| --- | --- | --- | --- |
-| melonDS-android | **yes**, 15 min 27 s | some | **yes** |
-| Vita3K-Thor | **yes, once `x86_64` is dropped** — see below | a regression suite | **unblocked by a one-line change** |
-| ARMSX2, azahar, eden, Cemu, xenia, GameThor | **never attempted** | varies | **unknown** |
+**Measured, not assumed. Updated as Phase 0.3 proceeds.**
 
-**Six of eight are unknown.** That is the single biggest obstacle to this
-operation and it is why Phase 0.3 matters.
+| Fork | Builds? | Blocker | Ready for propagation |
+| --- | --- | --- | --- |
+| **melonDS-android** | **yes**, 15 min 27 s | — | **yes** |
+| **azahar** | **yes**, 14 min 33 s | — | **yes** |
+| Vita3K-Thor | **yes, arm64-only** | its recipe is wrong; `x86_64` fails | **one line away** |
+| **eden** | **no** | **`pkg-config`, then `glslangValidator`** — host tools, and the NDK ships neither by that name | **blocked on the box, not the fork** |
+| ARMSX2 | in progress | — | — |
+| Cemu, xenia, GameThor | not attempted | — | **unknown** |
+
+**Two forks are ready today.** That is two more than when this ledger was
+written, and it came from the least glamorous work in the project.
+
+**And the blockers are worth separating**, because they need different fixes:
+
+| Blocker class | Example | Fix |
+| --- | --- | --- |
+| the fork's own recipe | Vita3K builds from the wrong directory | correct the recipe |
+| an ABI the device cannot run | Vita3K, and four others carry it | one line in `abiFilters` |
+| **host tools nobody declared** | **eden needs `pkg-config` and `glslangValidator`** | **install, or declare and check** |
+
+**None of them is in an emulator.** After four attempts, every obstacle has been
+peripheral — and that is good news for the migration and bad news for estimating
+it, because each is a separate accident rather than one systematic difference.
 
 **Vita3K was unblocked by testing a prediction.** The log
 [`../work_log/20260823_0027_vita3k_build_attempt.md`](../work_log/20260823_0027_vita3k_build_attempt.md)
