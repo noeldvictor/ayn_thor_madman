@@ -67,6 +67,47 @@ same mechanism pointed at the user rather than the test.
 **A vision model asked "what button?" during a pre-rendered movie will guess.**
 The answer is not to guess better. It is to know that a movie is playing.
 
+### BETTER SIGNAL FOUND 2026-08-24: the guest declares it
+
+**The decode path below is a fallback. It is not the primary signal, and this
+document was wrong to make it one.**
+
+> **Every console has an API meaning "do not sleep, the user is watching
+> something they did not trigger". Games call it. Every fork receives the call
+> and discards the argument.**
+
+| Console | Fork | The call | State kept |
+| --- | --- | --- | --- |
+| Switch | eden | **`SetMediaPlaybackState(bool)`** plus five more | **no**, five of six |
+| Vita | Vita3K | **`sceKernelPowerTick(type)`**, with `DISABLE_OLED_OFF` | **no**, type dropped |
+| 3DS | azahar | **`ReplySleepQuery(app_id, reply)`**, a two-way protocol | **no**, `(STUBBED)` |
+| Wii U | Cemu | `OSEnableHomeButtonMenu(bool)` | **yes**, for its own HOME menu |
+
+**The Switch vocabulary is the richest and it is all stubbed**:
+`SetMediaPlaybackState`, `SetAutoSleepDisabled`, **`ReportUserIsActive`**,
+`SetIdleTimeDetectionExtension`, `SetInputDetectionPolicy`. **A game playing a
+cutscene sets three of them at once.**
+
+**`ReportUserIsActive` deserves its own contract row**: an agent that injects
+input and wants to know whether it registered has the guest's own answer.
+
+**Three reasons the declaration beats the decoder:**
+
+1. **It is a declaration, not an inference.**
+2. **A running decoder is not always a movie** — a game may decode video into a
+   texture on a screen inside the world.
+3. **Most in-engine cutscenes touch no decoder at all**, and they are the common
+   case. **They still disable sleep.**
+
+**Cost: five assignments in eden, one in Vita3K, one in azahar.** This is the
+cheapest capability in this document.
+
+**Calibrate before trusting it.** A game may never call these, or call them
+wrongly. See
+[`../research_log/20260824_0140_the_guest_declares_its_activity.md`](../research_log/20260824_0140_the_guest_declares_its_activity.md).
+
+### The fallback: the video-decode path
+
 **Every console has a dedicated video-decode path, and every fork implements
 it:**
 

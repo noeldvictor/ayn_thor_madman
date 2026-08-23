@@ -94,6 +94,56 @@ CAPABILITIES = {
         ],
         "known": "melonDS: a self-populating pack. Playing the game WRITES a shareable pack.",
     },
+    "guest_activity_state": {
+        "question": "Can the backend say what the guest is doing -- movie, menu, gameplay?",
+        "probes": [
+            ("video decode path", r"cellVdec|nvdec|SceAvcdec|mvd_|H264|XMA|ipu_|IPUProcess"),
+            ("an explicit state word", r"GuestActivity|PlaybackState|is_playing_video|playback_probe"),
+            ("cutscene or movie vocabulary", r"cutscene|[Mm]ovie[A-Z_ ]|fmv|FMV"),
+            ("the decoder object", r"VideoDecoder|video_decoder|DecoderContext"),
+        ],
+        "known": "Every console has a decode path; an explicit state word is the part that may not exist.",
+    },
+    "pass_merging": {
+        "question": "Does the fork merge render passes or use input attachments?",
+        "probes": [
+            ("Vulkan subpass inputs", r"pInputAttachments|inputAttachmentCount|subpassInput"),
+            ("subpass vocabulary", r"subpassCount|pSubpasses|vkCmdNextSubpass"),
+            ("merge vocabulary", r"merge.*pass|pass.*merge|fuse.*pass|MergeRenderPass"),
+            ("dynamic rendering local read", r"local_read|LocalRead"),
+        ],
+        "known": "Claimed absent in CLAUDE.md after counting pInputAttachments. Re-checking with four probes.",
+    },
+    "audio_backend": {
+        "question": "Which host audio API does the fork use?",
+        "probes": [
+            ("Oboe", r"[Oo]boe"),
+            ("cubeb", r"cubeb"),
+            ("AAudio direct", r"AAudio|aaudio"),
+            ("OpenSL", r"OpenSLES|SLES/"),
+            ("SDL audio", r"SDL_OpenAudio|SDL_AudioSpec|SDL_QueueAudio"),
+        ],
+        "known": "CLAUDE.md: three forks use Oboe, five vendor cubeb. Re-checking.",
+    },
+    "compatibility_sweep": {
+        "question": "Can the fork launch a list of titles unattended and report how far each got?",
+        "probes": [
+            ("harness vocabulary", r"compat.*(sweep|matrix|suite)|boot.*test|smoke.*test"),
+            ("a title list", r"titles?\.json|games?\.json|regression.?matrix"),
+            ("headless run", r"headless|--no-gui|nogui|batch.*run"),
+            ("result classification", r"BootResult|boot_status|reached.*(menu|ingame)"),
+        ],
+        "known": "CLAUDE.md lists this as specified and never built.",
+    },
+    "rewind": {
+        "question": "Does the fork implement rewind, not just save states?",
+        "probes": [
+            ("the word", r"[Rr]ewind"),
+            ("the ring buffer", r"state.?ring|rewind.?buffer|history.?buffer"),
+            ("periodic snapshot", r"snapshot.*interval|auto.?save.?state"),
+        ],
+        "known": "Unknown. Hotkeys.kt declares a REWIND action with no backend behind it.",
+    },
     "frame_pacing": {
         "question": "Does the fork pace presentation, beyond choosing a present mode?",
         "probes": [
