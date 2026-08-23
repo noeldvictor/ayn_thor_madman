@@ -133,7 +133,7 @@ RetroArch is the anti-pattern, and these are its named failures:
 - **Cheats are not first class.** Finding, installing and enabling a cheat is
   a research task. In this app, cheats are a first-class feature with a
   library, a search and a per-game view. See
-  [Cheat databases](#4-cheat-databases).
+  [Cheats](#4-cheats).
 - **No common hotkeys.** Each core does its own thing. In this app, **one
   hotkey set works on every system**. Save state, load state, fast forward,
   rewind, screenshot, overlay and menu are the same everywhere, always.
@@ -2859,7 +2859,7 @@ has:
 - An HD texture pack is installed.
 - A mod or a translation patch is applied.
 - How much space the game uses in total. See
-  [Storage and cache visibility](#8-storage-and-cache-visibility).
+  [Storage and cache visibility](#9-storage-and-cache-visibility).
 
 The library is one list across every backend. It is not one list per emulator.
 

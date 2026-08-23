@@ -1009,7 +1009,7 @@ struct user_list_dialog : public user_interface {
 ```
 
 **That is the `RequestUserSelect` applet drafted in
-[`thor_backend.h`](thor_backend.h), already built** — and it carries an
+[`thor_backend.h`](shared_layer/thor_backend.h), already built** — and it carries an
 `avatar_path` the draft omitted.
 
 The earlier search used `profile|account|gamertag|mii|user_data|nnid|xuid|npid`
@@ -1193,7 +1193,7 @@ GPU-bound and architectural, **generating frames buys smoothness that
 optimisation cannot.**
 
 `FrameGenPacer` also connects directly to
-[`THOR_RENDER.md`](THOR_RENDER.md) commitment 6, since generated frames need
+[`THOR_RENDER.md`](shared_layer/THOR_RENDER.md) commitment 6, since generated frames need
 their own pacing decision.
 
 ### Its provenance comment is the model this repo asked for
@@ -1431,7 +1431,7 @@ generic ARMv8-A that this device has not been for years.
   A fork can have baseline `-march` and still emit `SDOT` from its JIT.
 - **Vita3K and Cemu tune for one core each**, `cortex-x3` and `cortex-a710`.
   On a 1+4+3 device threads land on all of them, and
-  [the core comparison](../hardware_ref/thor/cpu/CORE_COMPARISON.md) shows the
+  [the core comparison](hardware_ref/thor/cpu/CORE_COMPARISON.md) shows the
   guides give conflicting advice. Tuning for one core is a choice, not an
   oversight, but it should be a stated one.
 
