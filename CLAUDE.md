@@ -2540,12 +2540,40 @@ The app owns the routing. The user picks a layout per game, and the choice is
 a per-game override like any other. See
 [The game library and per-game overrides](#6-the-game-library-and-per-game-overrides).
 
-Layouts to support:
+**Read 2026-08-22: two forks already ship this. Do not design it.**
 
-- One guest screen on each physical display. The obvious case.
-- Both guest screens on display 0, with Screen-2 showing something else.
-- One guest screen only, at full size, ignoring the other.
-- Swapped, for a person who wants the touch screen on top.
+azahar `display/ScreenLayout.kt` has a **`SecondaryDisplayLayout` with eight
+modes**: `NONE`, `TOP_SCREEN`, `BOTTOM_SCREEN`, `SIDE_BY_SIDE`,
+`REVERSE_PRIMARY`, `ORIGINAL`, `HYBRID`, `LARGE_SCREEN`. Plus a primary
+`ScreenLayout`, a `SmallScreenPosition` with eight positions, a separate
+portrait layout, and **layout cycling by hotkey** on the Qt side.
+
+melonDS models the Thor's exact case:
+
+```kotlin
+enum class DualScreenPreset {
+  OFF, INTERNAL_TOP_EXTERNAL_BOTTOM, INTERNAL_BOTTOM_EXTERNAL_TOP,
+}
+```
+
+with per-display alignment, insets and a background mode.
+
+| This repo designed | Already exists |
+| --- | --- |
+| `ONE_EACH` | melonDS `INTERNAL_TOP_EXTERNAL_BOTTOM` |
+| `SWAPPED` | melonDS `INTERNAL_BOTTOM_EXTERNAL_TOP`, azahar `REVERSE_PRIMARY` |
+| `BOTH_MAIN`, `MAIN_ONLY` | melonDS `OFF`, azahar `ENABLE_SECONDARY_DISPLAY` |
+| — | `SIDE_BY_SIDE`, `HYBRID`, `LARGE_SCREEN`, alignment, insets, hotkey cycling |
+
+**Both are richer than what was designed here.** Take melonDS's
+internal-and-external model and azahar's layout set.
+
+A design lesson sits in an azahar comment: `NONE` was removed from the
+interface and replaced by a boolean `ENABLE_SECONDARY_DISPLAY`, the enum value
+kept only for compatibility. **They shipped it, learned, and changed it.**
+
+**The hardware is still the differentiator. The software is not.** Two forks
+already route guest screens to a secondary display.
 
 **Touch must follow the screen.** If the DS lower screen renders on Screen-2,
 touch on Screen-2 must reach the guest lower screen. A routing change that

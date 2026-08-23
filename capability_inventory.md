@@ -806,6 +806,83 @@ one commit ahead of a stale upstream reference.
 **So the fleet is out of date with its own members.** ARMSX2 has an eden
 feature that the eden checkout in this fleet does not.
 
+## Dual-screen routing — READ. The flagship feature already exists, twice.
+
+Surveyed 2026-08-22. **This repo designed dual-screen routing from first
+principles while two forks already shipped it.**
+
+### azahar has a secondary-display layout system
+
+`display/ScreenLayout.kt` carries four enums, one of them a **secondary display
+layout with eight modes**:
+
+```kotlin
+enum class SecondaryDisplayLayout {
+  NONE, TOP_SCREEN, BOTTOM_SCREEN, SIDE_BY_SIDE,
+  REVERSE_PRIMARY, ORIGINAL, HYBRID, LARGE_SCREEN
+}
+```
+
+Plus `ScreenLayout` with `ORIGINAL`, `SINGLE_SCREEN`, `LARGE_SCREEN`,
+`SIDE_SCREEN`, `HYBRID_SCREEN`, `CUSTOM_LAYOUT`; a `SmallScreenPosition` with
+**eight positions** including `ABOVE` and `BELOW`; and a separate
+`PortraitScreenLayout`.
+
+There is also `ScreenAdjustmentUtil.kt` and, on the Qt side,
+`configure_layout_cycle` — **cycling through layouts with a hotkey.**
+
+**A design lesson is embedded in a comment:**
+
+> NONE is no longer selectable in the interface, having been replaced with the
+> boolean ENABLE_SECONDARY_DISPLAY setting, but is left here for backwards
+> compatibility
+
+They shipped `NONE` inside the enum, learned a separate boolean was better, and
+kept the value only for compatibility. **That is design experience no amount of
+reasoning produces.**
+
+### melonDS models exactly the Thor's two panels
+
+```kotlin
+enum class DualScreenPreset {
+  OFF,
+  INTERNAL_TOP_EXTERNAL_BOTTOM,
+  INTERNAL_BOTTOM_EXTERNAL_TOP,
+}
+```
+
+with `defaultInternalAlignment()` and `defaultExternalAlignment()` returning a
+`ScreenAlignment` of `TOP` or `BOTTOM`, plus `layout/BackgroundMode.kt` and
+`layout/Insets.kt`.
+
+**Internal display and external display, with both orderings and a per-display
+alignment.** That is the Thor's routing problem, already solved.
+
+### Against what this repo designed
+
+`app/shell/.../Model.kt` defined `ONE_EACH`, `BOTH_MAIN`, `MAIN_ONLY`,
+`SWAPPED`.
+
+| This repo | Already exists |
+| --- | --- |
+| `ONE_EACH` | melonDS `INTERNAL_TOP_EXTERNAL_BOTTOM` |
+| `SWAPPED` | melonDS `INTERNAL_BOTTOM_EXTERNAL_TOP`; azahar `REVERSE_PRIMARY` |
+| `BOTH_MAIN`, `MAIN_ONLY` | melonDS `OFF`; azahar `ENABLE_SECONDARY_DISPLAY` |
+| — | azahar `SIDE_BY_SIDE`, `HYBRID`, `LARGE_SCREEN` |
+| — | per-display alignment, insets, background mode |
+| — | layout cycling by hotkey |
+
+**Both existing designs are richer.** Take melonDS's internal-and-external
+model and azahar's layout set, and stop designing this.
+
+### Why this one stings
+
+Dual-screen routing was recorded as **the differentiator no multi-device
+frontend can copy**. That is still true of the *hardware*. It is not true of
+the *software*: two forks in this fleet already route guest screens to a
+secondary display, and one of them names the case exactly as the Thor presents
+it.
+
 ## Survey gaps
 
 Partly surveyed forks:
