@@ -131,9 +131,10 @@ in these forks:
 | Fork | Foreign code it carries |
 | --- | --- |
 | Vita3K-Thor | Dolphin 2013, Dolphin 2016, Citra, yuzu |
-| melonDS-android | **Dolphin 2008 and 2009** |
+| melonDS-android | **Dolphin 2008, 2009, and 2015** |
 | eden-thor | yuzu, over 2,000 files |
 | azahar-thor | Citra, hundreds of files |
+| **ARMSX3** | **ARMSX2's entire Android UI, copied in 2026** |
 
 **The alternative to unification was never "everyone writes their own".** It is
 what actually happened: everyone copies once, then diverges forever, and nobody
@@ -148,6 +149,25 @@ The question was never whether emulators should share code. **They already do,
 at scale, across a decade.** The only question is whether that sharing is
 tracked and maintained, or copied and abandoned.
 
+### It is measurable, and it is still happening
+
+**melonDS's ARM64 code emitter is Dolphin's, from 2015.** Both are on disk here,
+so the drift is not an argument:
+
+| | melonDS's copy | Dolphin today |
+| --- | --- | --- |
+| emitter methods | 308 | **344** |
+
+**Dolphin has added 40 methods that melonDS never received**, including eight
+vector compares and the entire `YIELD`/`WFE`/`WFI`/`SEV`/`SEVL` spin-wait family.
+Dolphin's file is GPLv2-or-later and melonDS is GPL-3.0, so **the licence never
+stood in the way**. Nobody was carrying the fixes across.
+
+**And this is not only history.** ARMSX3's Android frontend is ARMSX2's,
+vendored whole, package name included — **copied in 2026, in this fleet, in the
+same year.** Every other example above is archaeology. That one is current, and
+it is the reason this repo exists.
+
 See [`shared_layer/ANCESTRY.md`](shared_layer/ANCESTRY.md).
 
 ## The duplication problem
@@ -156,7 +176,15 @@ Agentic coding accelerates duplication. A feature that used to be built once,
 because it was expensive, now gets built in three forks in a week.
 
 That already happened here. Three forks independently implemented per-class
-texture filtering. Six forks each wrote a GPU driver picker.
+texture filtering. Six forks each wrote a GPU driver picker. **All eight persist
+a Vulkan pipeline cache.**
+
+**Reading the code shrinks most of these claims, and that matters.** Three "LRU
+caches" turned out to be three different designs for three different
+constraints; six "driver pickers" turned out to be four different concerns.
+**So the rule here is that a duplication claim is a hypothesis until somebody
+opens the files** — and of ten "no fork has this" claims checked, **nine were
+wrong**.
 
 The fix is structural, not a rule in a document. When the shared layer takes a
 subsystem, the fork loses the ability to have one: the implementation is
@@ -263,6 +291,15 @@ Every decision carries its evidence. See [`research_log/`](research_log/) and
   prevented structurally rather than by a rule.
 - The Thor has two internal touch displays. Dual-screen routing is a
   first-class feature.
+- One compile target for every fork:
+  `-march=armv8.2-a+crc+lse+fp16+dotprod+sha3+i8mm+bf16 -mtune=cortex-x3`.
+  **Not `armv9-a`** — these cores are ARMv9 but the shipped SoC does not expose
+  SVE, so a compiler told `armv9-a` may emit instructions that trap here.
+- Audio is Oboe. Three forks had already chosen it independently, which settles
+  the five vendored copies of cubeb that blocked the packed binary.
+- **Frame pacing has no incumbent.** No fork uses Swappy or Vulkan display
+  timing; every one picks a present mode and stops. It is the cheapest
+  subsystem in the queue to own, because there is nothing to reconcile.
 
 ### Next
 
