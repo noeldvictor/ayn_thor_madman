@@ -134,6 +134,33 @@ See [`shared_layer/TRANSLATION.md`](shared_layer/TRANSLATION.md).
 only the first stage of translation, and rewriting a register model is the
 deepest possible reach into a core.
 
+## The paused agent loop
+
+**An emulator can stop time. That makes an AI agent a practical way to drive a
+game -- for testing, and for the person playing.**
+
+**Pause the guest. Capture the screen. Ask a vision model which button. Inject
+it. Resume for a bounded number of frames.**
+
+The decision happens while the guest is frozen, so **the model latency costs the
+guest nothing.** From the guest side the input arrives on the very next frame.
+**No animation is fought, no timing window is missed.**
+
+**Why it matters:** reaching a scene is the noisy part of every measurement, not
+the measurement itself. One fork measured the spread of a single configuration
+re-run at **plus or minus 0.2% on a gated title screen and about 50% pressing
+through cutscenes.** A deterministic agent-driven route makes the prologue a
+fixed cost.
+
+**It also has to know when not to look.** A vision model asked "what button?"
+during a pre-rendered movie will guess. Every console has a video-decode path
+and every fork implements it, so **a backend can declare when a movie is
+playing** -- which also stops the app generating frames for fixed-rate video,
+upscaling decoded frames, or drawing an overlay over a cutscene.
+
+**Every primitive already exists in the fleet. The loop does not.** See
+[`shared_layer/AGENT_LOOP.md`](shared_layer/AGENT_LOOP.md).
+
 ## Storage and cache visibility
 
 Look at a game and see where its space went. One view, every system: game
@@ -305,6 +332,8 @@ map disagree.
 | `shared_layer/UNIFICATION.md` | **What unification actually means here. Unify what is forced; harvest what is chosen.** |
 | `shared_layer/PATTERNS.md` | The nine pipelines every emulator has. |
 | **`shared_layer/TRANSLATION.md`** | **Where CPU speed actually is: inflation, and the register mapping that causes it.** |
+| **`shared_layer/AGENT_LOOP.md`** | **Pause the guest, ask a model which button, resume. Model latency costs the guest nothing.** |
+| `shared_layer/HOST_SIDE.md` | Every host-side service a core hands over. |
 | **`shared_layer/HOST_SIDE.md`** | **Every host-side service a core hands over, and who owns it instead.** |
 | `shared_layer/PROPAGATION.md` | Lessons one fork learned that the others have not received. |
 | `shared_layer/THOR_RENDER.md` | The render architecture for this device. |

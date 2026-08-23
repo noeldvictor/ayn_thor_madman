@@ -385,6 +385,51 @@ Rules that follow from this:
 
 ### 3. AI-first at every level
 
+#### The paused agent loop -- pause the guest, and model latency is free
+
+**Stated 2026-08-23.** See [`shared_layer/AGENT_LOOP.md`](shared_layer/AGENT_LOOP.md).
+
+**An agent driving a real console loses every race against an animation. An
+agent driving an emulator never has to enter the race.**
+
+**Pause. Capture. Ask a vision model which button. Inject. Resume for N frames.**
+Steps three and four happen while the guest is frozen, so **from the guest side
+the input arrives on the frame after resume** -- no timer expires, no animation
+desyncs, no window is missed.
+
+> **Model latency costs the guest nothing. That is only available because we own
+> the emulator.**
+
+**It removes the worst measurement problem in the fleet.** Getting to a scene is
+the noisy part, not measuring at it: **button presses through cutscenes have a
+~50% noise floor** while a gated title screen has 0.2%. **A deterministic route
+turns the prologue from the dominant variance into a fixed cost**, unblocks every
+queued experiment that waits on a person to reach a scene, and **enables the
+compatibility sweep this project specified and never built.**
+
+**And it is a product feature, not only a harness** -- auto-navigating to a save
+point, or getting past a menu somebody cannot read, is the same mechanism
+pointed at the user.
+
+**The one thing it must know is when NOT to look at the frame.** A vision model
+asked "what button?" during a pre-rendered movie will guess. **Every console has
+a dedicated video-decode path and every fork implements it** -- PS3 `cellVdec`,
+PS2 IPU, Wii U H264, 3DS `mvd`, Switch `nvdec`, Vita `SceAvcdec`, 360 XMA -- **so
+"am I in a movie" is answerable in every backend.**
+
+**That signal is worth more than the loop alone.** A backend that declares its
+guest activity state can also refuse to be measured in a 50%-noise state, **not
+generate frames for a fixed-rate video** where extrapolation invents motion,
+not upscale decoded video, not draw the overlay over a cutscene, and change the
+thermal policy for a decode-heavy CPU-light workload.
+
+**Every primitive already exists**: pause and resume in all seven forks, burst
+capture in rpcsx and Vita3K, input automation in Vita3K's 120-line skill, and
+**eden's cheat VM already exposes `PauseProcess`, `ResumeProcess` and
+`HidKeysDown` as host callbacks.** **ARMSX2's `docs/mcp-server.md` already
+specifies the surface and names the same bottleneck.** **The loop itself exists
+nowhere.**
+
 This project is built by agents, on purpose, at every stage.
 
 - **Development.** Agents read the fleet, extract the shared layer and port a
