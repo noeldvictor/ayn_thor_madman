@@ -855,6 +855,38 @@ Register pressure is the central problem in a guest-to-host recompiler and the
 standard answer is a stack spill. On the X3 the vector file is faster than L1.
 Check whether any of the four recompilers does this.
 
+### MEASURED: the Thor has no SVE
+
+From `/proc/cpuinfo`, recorded in xenia's research on 2026-08-05:
+
+```
+asimddp  i8mm  bf16  fphp  asimdhp  atomics  lrcpc  ilrcpc  sha3
+```
+
+**No SVE, no SVE2.** Qualcomm shipped the 8 Gen 2 as ARMv9 without them, so
+every SVE section of the Cortex-X3 and A510 optimization guides is **not
+applicable**, and so are rpcs3's SVE2 optimisations.
+
+What is present and useful: **`asimddp`** gives `SDOT` and `UDOT`; **`sha3`**
+gives `EOR3` and `BCAX`, which are nominally crypto but serve as three-input
+bitwise operations in guest vector lowering.
+
+**Check `/proc/cpuinfo` before trusting an ARM manual.** A core's guide
+describes what the core can implement, not what the vendor shipped.
+
+### `yield` is a no-op on ARM, and it may be costing the fleet dearly
+
+rpcs3 found **half of all CPU time** sitting in a four-line `busy_wait`. On
+modern ARM cores `yield` does nothing; the x86 `pause` equivalent is **`ISB`**.
+
+**xenia has exactly that shape.** Its `A64Backend` logs
+`clock-spin-yield disabled`, and its own notes record that Burnout's main
+thread busy-waits on the GPU ring read pointer, which is why that profile
+raises the command-processor thread priority.
+
+**This is host-side, so it transfers to every fork**, unlike the vector items.
+Check every spin loop in the fleet for a `yield` that does nothing.
+
 ### One code layout cannot suit all four cores
 
 The four optimization guides give **directly conflicting advice**. Distilled in

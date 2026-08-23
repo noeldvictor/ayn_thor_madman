@@ -164,10 +164,45 @@ Four consequences:
    mask so Java, audio and compiler threads are not dragged onto emulation
    cores. Both findings are consistent with these guides.
 
+## MEASURED: the Thor has no SVE, so half of both guides do not apply
+
+From `/proc/cpuinfo` on the device, recorded in
+`xenia-thor/docs/research/20260805-rpcs3-arm64-optimizations-applicable.md`,
+2026-08-05:
+
+```
+asimddp  i8mm  bf16  fphp  asimdhp  atomics  lrcpc  ilrcpc  sha3
+```
+
+**No SVE. No SVE2.** Qualcomm shipped the 8 Gen 2 as ARMv9 without them.
+
+**This corrects the manual work in this directory.** The Cortex-X3 guide
+devotes sections 3.24 to 3.31 to SVE, and the A510 guide describes 128-bit SVE
+and SVE2 as key features. **None of it applies on this device.** Those sections
+were listed here as "still unread"; they should be listed as **not
+applicable**.
+
+### What the device does have, and what each is good for
+
+| Feature | Why it matters here |
+| --- | --- |
+| **`asimddp`** | `SDOT` and `UDOT`, the dot-product instructions. **Available.** |
+| **`sha3`** | `EOR3` and `BCAX`. Nominally crypto, useful as **three-input bitwise ops** in guest vector lowering. |
+| `i8mm` | 8-bit integer matrix multiply |
+| `bf16` | bfloat16 |
+| `fphp`, `asimdhp` | half-precision scalar and vector |
+| `atomics` | LSE atomics |
+| `lrcpc`, `ilrcpc` | release-consistent loads |
+
+**Check `/proc/cpuinfo` before trusting an ARM manual.** A core's guide
+describes the architecture the core can implement, not what the SoC vendor
+shipped.
+
 ## Still unread
 
 - Instruction latency and throughput tables, section 3 of each guide. They are
-  large and only matter once a specific sequence is being tuned.
+  large and only matter once a specific sequence is being tuned. **Skip the SVE
+  sections; the device has no SVE.**
 - The A715 and A710 special-register tables.
 - `arm-architecture-reference-manual-a-profile.pdf` is not tracked, by design.
 
