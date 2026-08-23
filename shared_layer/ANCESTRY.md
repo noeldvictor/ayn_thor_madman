@@ -410,9 +410,45 @@ remote.
 
 **Nobody has to guess whether the ancestors moved on. It takes one lookup.**
 
-Do the same for the other ancestors before extracting from their descendants:
-Citra and yuzu for the settings framework, PCSX2 for ARMSX2, rpcs3 for rpcsx,
-melonDS upstream for melonDS-android.
+### All six ancestors checked. They split in two.
+
+Checked 2026-08-22.
+
+| Ancestor | Status | Consequence for the fork |
+| --- | --- | --- |
+| **Citra** | **dead.** Shut down March 2024, repos offline, collateral to the yuzu settlement | **azahar IS the upstream now** |
+| **yuzu** | **dead.** Ceased 2024-03-04, $2.4M settlement, developers barred from Nintendo-infringing work | **eden IS the upstream now** |
+| Dolphin | alive. Overlay migrated to Kotlin, gained `InputOverlayPointer` | Vita3K is behind |
+| PCSX2 | alive. 2.6.3 in January 2026, and **2.6.0 landed a faster Vulkan path** | ARMSX2 can back-port |
+| rpcs3 | alive. Alpha builds through January 2026, **targets ARM64**, and reports Cell CPU optimisation work | rpcsx can back-port |
+| melonDS | alive. 0.11.3 in July 2026 | melonDS-android can back-port |
+
+### Two forks have no upstream, and that changes their status
+
+**Citra and yuzu were shut down by Nintendo in March 2024.** azahar and eden are
+not forks lagging behind an upstream. **They are the continuation.**
+
+So the 90 shared files between them are not two copies drifting from a living
+parent. They are **two surviving descendants of a dead one**, which makes the
+shared design more valuable rather than less: nobody upstream will ever
+reconcile them, and no third party is going to.
+
+**Extraction between azahar and eden is the only reconciliation that will ever
+happen.**
+
+### Four forks have live upstreams doing relevant work
+
+Two are directly on this project's path:
+
+- **PCSX2 2.6.0 landed a faster Vulkan path in January 2026.** ARMSX2's
+  renderer is PCSX2's. That is exactly the kind of free work the ancestry
+  argument predicts.
+- **rpcs3 now targets ARM64 and reports Cell CPU optimisation work.** rpcsx
+  runs rpcs3 on ARM64. Upstream is doing the port work the fork needs.
+
+**Check what each has landed before optimising the corresponding fork.** The
+alternative is re-deriving a fix that already exists, which is the failure mode
+this whole document describes.
 
 ## The uncomfortable part
 

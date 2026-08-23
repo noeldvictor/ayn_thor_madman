@@ -1512,9 +1512,30 @@ But the forks are behind on two things:
 - **Dolphin migrated the overlay to Kotlin.** azahar did too, independently.
   **Vita3K is still Java.**
 
-**It takes one lookup to find out whether an ancestor moved on.** Do it for
-Citra and yuzu, PCSX2, rpcs3 and melonDS upstream before extracting from their
-descendants.
+### All six ancestors checked, and they split in two
+
+| Ancestor | Status | Consequence |
+| --- | --- | --- |
+| **Citra** | **dead**, shut down March 2024 | **azahar IS the upstream** |
+| **yuzu** | **dead**, ceased 2024-03-04 after a $2.4M settlement | **eden IS the upstream** |
+| Dolphin | alive, Kotlin migration plus `InputOverlayPointer` | Vita3K is behind |
+| PCSX2 | alive, 2.6.3 in Jan 2026; **2.6.0 landed a faster Vulkan path** | ARMSX2 can back-port |
+| rpcs3 | alive, **targets ARM64**, Cell CPU optimisation work | rpcsx can back-port |
+| melonDS | alive, 0.11.3 in July 2026 | melonDS-android can back-port |
+
+**azahar and eden are not lagging forks. They are the continuation of dead
+projects.** So the 90 shared files between them are two surviving descendants
+of a dead parent, which makes the shared design **more** valuable: nobody
+upstream will ever reconcile them, and no third party will either.
+**Extraction between them is the only reconciliation that will ever happen.**
+
+**Two live upstreams are doing work directly on this project's path.** PCSX2
+landed a faster Vulkan path in January 2026 and ARMSX2's renderer is PCSX2's.
+rpcs3 now targets ARM64 and reports Cell optimisation work, and rpcsx runs
+rpcs3 on ARM64.
+
+**Check what an upstream has landed before optimising its fork.** Re-deriving
+an existing fix is the exact failure mode this section describes.
 
 ## The key idea
 
