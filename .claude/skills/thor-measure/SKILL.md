@@ -123,6 +123,15 @@ Also: **measure without ADPF first**, or the hint is tuned against an unknown.
 
 ## Before the run
 
+0. **Read [`DEVICE_QUEUE.md`](../../../DEVICE_QUEUE.md).** There is one physical
+   Thor, so device time is the scarce resource and analysis is not. **If the
+   thing you are about to measure is already queued, run the queued version**,
+   which already carries its prediction and its gates.
+
+   **And put a new experiment in the queue rather than in a research log.** A
+   log is where an experiment goes to be forgotten; the queue is what gets read
+   when the device is free.
+
 1. **Query the experiment ledger.** `python tools/exp_ledger.py check "<keyword>"`
    in xenia-thor. A `DEAD` or `FLAT` verdict means do not re-run it.
 2. **State the expected signature.** Name what the numbers should do if the
@@ -130,6 +139,12 @@ Also: **measure without ADPF first**, or the hint is tuned against an unknown.
 3. **Name the scene.** Which game, which point, how you get there.
 4. **Name the CPU cluster** for any CPU claim. The 8 Gen 2 is 1+4+3 and
    "faster on the X3" and "faster on the A510" are different results.
+5. **Check the metric matches the claim.** Some wins do not move an average.
+   A frame-pacing change should hold average fps and **cut frame-time
+   variance**, so a run recording only fps will read as `FLAT` while being a
+   win. Record 1% low and frame-time spread whenever smoothness is the point.
+   A bandwidth change may move **watts and temperature and not frame time at
+   all**.
 
 ## What to record
 
