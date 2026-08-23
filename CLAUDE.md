@@ -2510,8 +2510,10 @@ Notes:
   | **ARMSX2**, **eden**, **azahar**, **rpcsx** | `arm64-v8a` | **1 of 1** |
   | Vita3K, xenia | `arm64-v8a`, `x86_64` | 1 of 2 |
   | GameThor | `arm64-v8a`, `armeabi-v7a` | 1 of 2 |
+  | Cemu | `arm64-v8a`, `x86_64` | 1 of 2 |
   | **melonDS** | three | **1 of 3** |
-  | Cemu | **unread** | |
+
+  **Four correct, five not. No unread entries remain.**
 
   **Four forks already fixed this, and rpcsx measured it.** Its
   `build.gradle.kts` records that adding x86_64 put **26 MiB compressed and
