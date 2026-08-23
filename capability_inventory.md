@@ -792,8 +792,60 @@ is Nintendo's. **The structure generalises; those specifics do not.**
 | azahar-thor | `MiiSelector.kt`, `MiiSelectorDialogFragment.kt`, `mii_selector.cpp` |
 | eden-thor | `ProfileAdapter.kt` |
 
-Not found in xenia-thor, Vita3K-Thor or rpcsx-ui-android. **The search was by
-name and those forks may use different ones**, which has been wrong before.
+**CORRECTION: rpcsx has one, and the search missed it.**
+
+`Emu/RSX/Overlays/overlay_user_list_dialog.h`:
+
+```cpp
+struct user_list_dialog : public user_interface {
+  struct user_list_entry : horizontal_layout {
+    user_list_entry(const std::string& username,
+                    const std::string& user_id,
+                    const std::string& avatar_path);
+  };
+  error_code show(const std::string& title, u32 focused,
+                  const std::vector<u32>& user_ids, bool enable_overlay,
+                  std::function<void(s32 status)> on_close);
+};
+```
+
+**That is the `RequestUserSelect` applet drafted in
+[`thor_backend.h`](thor_backend.h), already built** — and it carries an
+`avatar_path` the draft omitted.
+
+The earlier search used `profile|account|gamertag|mii|user_data|nnid|xuid|npid`
+and `user_list_dialog` matches none of them. **Fourth time a negative result
+was a narrow search.**
+
+**rpcsx is GPL-2.0-only. Take the shape, not the code.**
+
+Still not found in xenia-thor or Vita3K-Thor, with the same caveat.
+
+## rpcsx has a complete in-game menu framework
+
+`Emu/RSX/Overlays/`, inherited from rpcs3.
+
+| Group | Files | Contents |
+| --- | --- | --- |
+| `HomeMenu` | 16 | main menu, **page**, **components**, cheats, savestate, settings, message box |
+| `Network` | 4 | |
+| `Shaders` | 4 | |
+| `Trophies` | 2 | achievements |
+| `FriendsList` | 2 | |
+| top level | several | `overlay_video`, `overlay_utils`, `overlay_user_list_dialog` |
+
+**`home_menu_page` derives from `list_view`**, and there is a shared
+`components` header. So it is a page-and-component framework, not a pile of
+one-off dialogs.
+
+**This is `app/SCREENS.md` screen 3, the in-game overlay, already built** —
+save state, cheats, settings and a message box, as pages in a reusable
+framework.
+
+It also has three things the screen list never considered: **trophies and
+achievements**, a **friends list**, and **video playback inside the overlay**.
+Whether those belong in this app is a separate question, but they are evidence
+of what an in-game overlay grows into.
 
 ## Touch overlays — READ. The clearest duplication in the fleet.
 

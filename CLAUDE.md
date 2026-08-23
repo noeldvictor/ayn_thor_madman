@@ -2474,8 +2474,28 @@ Three forks have a guest account system, each different:
 | azahar-thor | `MiiSelector.kt`, `MiiSelectorDialogFragment.kt`, `mii_selector.cpp` |
 | eden-thor | `ProfileAdapter.kt` |
 
-Nothing found in xenia-thor, Vita3K-Thor or rpcsx-ui-android, though the search
-was for names and those forks may use other ones.
+**CORRECTION: rpcsx has one.** `overlay_user_list_dialog.h` carries a
+`user_list_entry` with username, user id and **avatar path**, and a `show()`
+taking a title, a focused index, a list of user ids and an on-close callback.
+
+**That is the `RequestUserSelect` applet drafted in
+[`shared_layer/thor_backend.h`](shared_layer/thor_backend.h), already built**,
+with an avatar path the draft omitted. The earlier search used
+`profile|account|gamertag|mii|nnid|xuid|npid` and matched none of it.
+**Fourth time a negative result was a narrow search.** rpcsx is GPL-2.0-only:
+take the shape, not the code.
+
+Still not found in xenia-thor or Vita3K-Thor, with the same caveat.
+
+**rpcsx also has a complete in-game menu framework**, inherited from rpcs3:
+`HomeMenu` with 16 files covering a main menu, a **page** abstraction deriving
+from `list_view`, shared **components**, cheats, savestate, settings and a
+message box, plus Network, Shaders, Trophies, FriendsList and video playback
+inside the overlay.
+
+**That is `app/SCREENS.md` screen 3 already built**, as a page-and-component
+framework rather than a pile of one-off dialogs. It also has trophies, a
+friends list and overlay video, none of which the screen list considered.
 
 ### Guest system applets: UI the guest asks the host to show
 
