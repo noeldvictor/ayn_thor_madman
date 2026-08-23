@@ -1668,8 +1668,24 @@ them. Separate them:
 eden's mod manager is **21 lines**: install a file, list a folder, return a
 result. That is the right size for file replacement and it should not grow.
 
-**Three patch systems already exist. Choose between them; do not write a
-fourth.**
+**"Patch" means three different things here, and this repo has now conflated
+them twice.**
+
+| Meaning | What it does | Where |
+| --- | --- | --- |
+| **Content patch** | updates, DLC, mods the guest filesystem serves | eden `patch_manager` |
+| **Code patch** | modify guest instructions at run time | Cemu `GraphicPack2Patches`, xenia `patcher` |
+| **File mod** | replace game assets | eden `mod_manager` |
+
+eden's `patch_manager` has `PatchType { Update, DLC, Mod }` and belongs with
+file mods. Cemu's `GamePatch.h` is two function declarations about HLE
+non-returning functions and is not a patch system at all.
+
+**Rule: never file a capability by the word in its filename.** Three
+subsystems called "patch" do three unrelated jobs.
+
+**So there are two code patchers, not three. Choose between them; do not write
+a third.**
 
 - **xenia `.patch.toml`.** `src/xenia/patcher/patcher.cc` and `patch_db.cc`,
   with `emit_patch_toml.py` authoring a patch from Ghidra. It already carries
@@ -1705,9 +1721,20 @@ the fork diverges from upstream, including why: upstream parses with
 `tomlplusplus`, this fork ships `cpptoml`. **That is the provenance rule at
 line level, and it makes a later re-base survivable.**
 
-**Binding a patch to the right game build** is solved by two forks and nobody
-else: Cemu matches a loaded `RPLModule`, rpcsx keeps a `PatchHashRepository`.
-Elsewhere a patch can silently apply to the wrong build.
+**Binding a patch to the right game build** is solved three separate ways, by
+three forks, none aware of the others:
+
+| Fork | Method |
+| --- | --- |
+| Cemu | match a loaded `RPLModule` |
+| rpcsx | `PatchHashRepository`, match by hash |
+| eden | a 32-byte `BuildID` |
+
+**Three solutions to one identical problem is the strongest signal for a shared
+design in the whole survey.** Unlike the LRU caches, these are not different
+problems wearing one name; they all answer "does this patch belong to the
+binary in front of me". Elsewhere a patch can silently apply to the wrong
+build.
 
 Cemu also has the more capable pack mechanism:
 `GraphicPack2Patches`, `GraphicPack2PatchesParser` and

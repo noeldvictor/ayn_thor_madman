@@ -272,6 +272,61 @@ relocation against a loaded module, branch-range checking (`VALUE_ERROR` is
 and it is the one to build the shared engine from. xenia `.patch.toml` and
 ARMSX2 `pnach` are both flatter formats.
 
+### "Patch" means three different things in this fleet
+
+Read 2026-08-22. **This repo conflated two of them once already, and there are
+three.**
+
+| Meaning | What it does | Where |
+| --- | --- | --- |
+| **Content patch** | game updates, DLC, mods the guest filesystem serves | eden `patch_manager` |
+| **Code patch** | modify guest instructions at run time | Cemu `GraphicPack2Patches`, xenia `patcher` |
+| **File mod** | replace game assets | eden `mod_manager` |
+
+**eden's `patch_manager` is not a code patcher.** Its types say so:
+
+```cpp
+enum class PatchType { Update, DLC, Mod };
+struct Patch { name, version, type, source, location };
+class PatchManager { using BuildID = std::array<u8, 0x20>; ... };
+```
+
+Updates, DLC and mods, with a version and a location. **It belongs with file
+mods, not with the code patchers**, and this repo filed it wrongly.
+
+**Cemu's `GamePatch.h` is not a patch system at all.** Its entire contents:
+
+```cpp
+void GamePatch_scan();
+bool GamePatch_IsNonReturnFunction(uint32 hleIndex);
+```
+
+That is HLE function analysis, identifying non-returning functions. **Filed
+under patches here purely because of its name.**
+
+So the fleet has **two** code patchers, not three: Cemu `GraphicPack2Patches`
+and xenia `patcher`.
+
+**Rule: never file a capability by the word in its filename.** Three
+subsystems called "patch" do three unrelated jobs.
+
+### A third way to bind a patch to a build
+
+`PatchManager` uses `BuildID = std::array<u8, 0x20>`, a 32-byte build
+identifier.
+
+That makes three approaches, all different, and no fork aware of the others:
+
+| Fork | Method |
+| --- | --- |
+| Cemu | match a loaded `RPLModule` |
+| rpcsx | `PatchHashRepository`, match by hash |
+| eden | a 32-byte `BuildID` |
+
+**Three solutions to one problem is the strongest signal for a shared design.**
+Unlike the LRU caches, these solve the identical problem: does this patch belong
+to the binary in front of me.
+
 ### xenia's patcher: BSD, TOML, flat values
 
 `src/xenia/patcher/`, four files, **BSD licensed**. `PatchDataValue` is a sized
