@@ -233,6 +233,7 @@ map disagree.
 | `shared_layer/THOR_RENDER.md` | The render architecture for this device. |
 | `shared_layer/BACKEND_STANDARD.md` | What a backend must deliver to be part of one app. |
 | `shared_layer/OWNED.md` | What the shared layer owns. Empty today, on purpose. |
+| `DEVICE_QUEUE.md` | Everything waiting on the hardware, with a prediction for each run. |
 | `app/SCREENS.md` | The 14 screens, and the backend contract they imply. |
 | `app/shell/` | The Compose shell, with fake data. Builds and runs. |
 

@@ -2637,6 +2637,12 @@ Wi-Fi adb rules:
 - **Query the experiment ledger before running anything.** See
   [The experiment ledger](#the-experiment-ledger).
 
+**[`DEVICE_QUEUE.md`](DEVICE_QUEUE.md) holds everything waiting on the Thor**,
+with the expected signature for each run and the gates to check first. There is
+one physical device, so device work is a queue and analysis is not. **Add to it
+rather than leaving an experiment in a research log**, where it will not be
+found when the device is free.
+
 ### 1. Upscaling and filters
 
 Two paths exist. Both are already in the fleet. Neither needs a libretro core.
