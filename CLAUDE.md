@@ -2591,6 +2591,7 @@ Finding 5.
 | Gradle | 9.6.1 or newer | The newest already in the fleet. |
 | C++ standard | C++20 | Verify each fork builds. melonDS declares C++17. |
 | Audio | **Oboe**, pinned | Three forks already use it. Replaces five vendored copies of cubeb. Version not yet chosen. |
+| Symbol visibility | **`-fvisibility=hidden`** | **Seven emulators share one global namespace.** Cemu leaves 66% of its headers at global scope, ARMSX2 59%, Vita3K 53%. One flag removes most of the collision surface. |
 
 Notes:
 

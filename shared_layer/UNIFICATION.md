@@ -261,7 +261,75 @@ as already written.
 
 ---
 
-## 7. What this does not say
+## 7. A third operation: ISOLATE
+
+Sections 2 and 6 give two operations — **unify** the forced singletons, **delete**
+the portability layers. **There is a third, it is forced by the linker, and
+nothing in this repo had recorded it.**
+
+**Seven emulators in one binary share one global namespace.**
+
+Measured 2026-08-23, counting headers that declare nothing inside a `namespace`:
+
+| Fork | Headers at global scope |
+| --- | --- |
+| **Cemu** | **342 of 519 — 66%** |
+| **ARMSX2** | **231 of 394 — 59%** |
+| **Vita3K** | **174 of 331 — 53%** |
+| melonDS | 139 of 297 — 47% |
+| eden | 90% of `.cpp` files **are** namespaced |
+| xenia | 88% **are** namespaced |
+
+**A false alarm, recorded because it was mine.** The first pass looked for
+collisions on obvious names — `class Memory`, `class GPU`, `class Renderer` —
+and found several. **They are not collisions.** azahar's `GPU` is in
+`namespace Frontend`, eden's in `Core::Frontend`, melonDS's in
+`namespace melonDS`. **The famous names are the ones people remembered to
+namespace.**
+
+**The risk is the long tail**: helper structs, enums, constants and free
+functions sitting at global scope in half to two thirds of the headers of four
+forks. **Those are the ones that collide**, and they collide at link time, in a
+build that takes 15 minutes, after the toolchain migration is already done.
+
+### Why this is a distinct operation
+
+| Operation | Applies to | What you do |
+| --- | --- | --- |
+| **UNIFY** | forced singletons: device, driver, budget, scheduler | one owner replaces N |
+| **DELETE** | portability layers serving variability we lack | remove the machinery |
+| **ISOLATE** | everything else that must merely **coexist** | make collision impossible |
+
+**Isolation is not unification and must not be confused with it.** Two forks'
+`struct Vertex` do not want to become one `struct Vertex`. **They want to stop
+being able to see each other.**
+
+### It is cheap, and it belongs in the standard row
+
+Two mechanisms, both mechanical:
+
+1. **`-fvisibility=hidden` by default**, exporting only what the backend
+   contract needs. **This is one compiler flag and it removes most of the
+   surface**, because a symbol that is not exported cannot collide across
+   translation units at link time.
+2. **A per-backend namespace**, `thor::ps2`, `thor::nds`, and so on, wrapping
+   whatever a fork left at global scope.
+
+**Add `-fvisibility=hidden` to the toolchain row.** It is the cheapest item on
+the whole packed-binary path and it was not there.
+
+### And it is testable before any extraction
+
+**A build guard can require that a converted fork declares nothing at global
+scope**, exactly the mechanism `OWNED.md` describes for deleted subsystems.
+Unlike most guards, this one needs no extraction first — **it can be written
+against a fork today** and it fails loudly.
+
+**This is the same finding as everything else in this document**: the expensive
+thing is not shared code, it is a structural property nobody stated, and the
+durable fix is a guard rather than a paragraph.
+
+## 8. What this does not say
 
 **It does not say the shared layer is unnecessary.** The forced list is real and
 the packed binary depends on all of it.
