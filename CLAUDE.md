@@ -1971,6 +1971,37 @@ Thor's cores.
 
 **All these leads belong in the experiment ledger before anyone acts on them.**
 
+### AND A MEASURED PRIOR AGAINST THEM, FOUND 2026-08-23
+
+**rpcsx's `thor-game-workup` says, verbatim:**
+
+> **Do not pick a lever from a manual. Ten manual-derived predictions were
+> measured here and ten were refuted. Profile first.**
+
+**Ten for ten.** And **every lead in this section is manual-derived** — the
+Cortex-X3 FP-status stall, the A710 lane-assembly stall, the A715 branch
+density, the A510 shared VPU, "prefer a load over arithmetic". **None has been
+profiled here.**
+
+**The fleet's own record agrees.** xenia implemented all three CPU leads and left
+them **off by default**; `EOR3`/`BCAX` fusion measured **`DEAD`**; the
+`TBL2`-for-`TBX2` rewrite measured **null**. **Thirteen for thirteen.**
+
+**This does not make the leads false. It makes them hypotheses with a bad
+prior.** Treat every one as `OPEN` at best, and **profile before choosing which
+to chase.**
+
+**And prove the workload before believing a null.** Two cheap checks:
+**is it capped?** — a flat rate in every sample means frames cannot move — and
+**is it loaded?** — half load hides a regression.
+
+> **A negative result needs a workload that could have produced a positive one.**
+
+**Prefer a workload with fixed, finite work.** Best is a **precompile with the
+cache cleared**, which is self-timed and has a natural unit. **A free-running
+scene has no unit** — which is exactly why xenia's LLVM run came back
+`CONFOUNDED` and why its fix is a fixed frame range.
+
 ## The philosophy: share the hot path, not the periphery
 
 This is the central idea. Everything else follows from it.
@@ -3692,6 +3723,21 @@ Wi-Fi adb rules:
   [`research_log/20260823_1848_fleet_skills_mined.md`](research_log/20260823_1848_fleet_skills_mined.md).
 - **`CONFOUNDED` is a verdict.** A number that cannot be trusted gets labelled,
   not discarded and not promoted to a win.
+- **STACKING RULES, from rpcsx.** These are absent from this repo and it would
+  have got the last one wrong:
+  - **One new component per proof run**, and only after each is individually
+    clean on the same route.
+  - **A component can be `stackable` without being a speed win** — a CPU-load
+    reduction under an FPS cap, for example.
+  - **A combined stack that fails where components passed is a
+    `stack-regression`. Stop stacking and bisect to the last known-good. Do not
+    add another candidate.**
+  - **Do not add deltas arithmetically.** The only aggregate claim is the
+    measured combined run.
+  - **A newest failure outranks an older success.**
+- **Two verdicts this repo lacks:** **`migration-credit`** for a change that is
+  structurally right but not yet faster, and **`route-miss`** for a capture that
+  is clean but of the wrong state.
 - **Temperature proves the run happened.** No heating means an idle or menu
   scene, so the run is invalid whatever the counter said.
 - **Query the experiment ledger before running anything.** See
