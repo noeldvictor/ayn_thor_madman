@@ -40,10 +40,155 @@ conclusion every time it was tried on one:
 | Driver GPU validation | "no fork does this" | rpcsx `GpuDriverAdvisor` does |
 | On-device MCP | "design only" | xenia has a working server |
 | Thor hardware profile | "to be designed" | rpcsx `ThorPerformanceProfile` exists |
+| One hotkey set | "nobody has this" | ARMSX2 `SysHotkey` enum + `HotkeysTab` |
+| Storage accounting | "nobody has this" | measurement in five forks |
+| Cheat manager UI | "nobody has this" | melonDS `ui/cheats`, 2,119 lines |
+| Settings migrations | "nothing says how" | melonDS `migrations/`, 37 files |
+| Most complete shell | "xenia, 12,313 lines" | **xenia is the SMALLEST Tier 1 frontend** |
+
+**Ten negatives have now been checked and nine were wrong.** Treat a negative in
+this file as the least reliable kind of row it contains.
 
 Surveyed 2026-08-22. **The first version of this file was wrong.** It covered
 two forks and implied the rest had nothing. Read every "not surveyed" line
 below as a gap in the survey, never as an absence in the fork.
+
+## The Android frontends — READ, measured 2026-08-22
+
+**Measured, not estimated.** Own code per `src/main/java`, tests and vendored
+trees excluded.
+
+| Fork | Lines | Files | Note |
+| --- | --- | --- | --- |
+| **melonDS-android** | **78,033** | **698** | largest, and the only layered one |
+| **ARMSX2** | 63,111 | 153 | most features this project wants |
+| ARMSX3 | 61,319 | 157 | **ARMSX2's UI, vendored whole, package `com.armsx2`** |
+| eden | 33,671 | 217 | |
+| azahar | 26,919 | 156 | |
+| Vita3K | 20,744 | 76 | |
+| Cemu | 18,501 | 144 | |
+| rpcsx | 18,407 | 85 | |
+| **xenia** | **12,334** | **25** | **smallest Tier 1 frontend** |
+
+**This file previously repeated `CLAUDE.md`'s claim that xenia has the most
+complete shell in the fleet. It is the smallest**, by a factor of six against
+melonDS-android.
+
+### melonDS-android: the only layered architecture — READ
+
+`domain` 120 files, `impl` 97, `di` with Hilt, `database`, `parcelables`, and
+**`migrations` with 37 files**. Nothing else in the fleet separates these.
+
+| Capability | Path | Quality |
+| --- | --- | --- |
+| **Cheat manager UI** | `ui/cheats`, 2,119 lines, 20 files | `shipped` |
+| Cheat persistence | `impl/RoomCheatsRepository.kt`, 304 lines | `shipped` |
+| Cheat DB import | `impl/XmlCheatDatabaseSAXHandler.kt` + `BundledCheatDatabaseImporter.kt` | `shipped` |
+| **Settings migrations** | `migrations/`, 16 concrete, `Migration6to7` to `Migration40to41` | `shipped` |
+| Screen layout editor | `ui/layouteditor`, 2,925 lines | `shipped` |
+| Cache size in the UI | `VideoPreferencesFragment`, scanned off the main thread | `shipped` |
+
+**The cheat stack uses a streaming SAX parser and a `CheatImportProgress`
+model.** Both are marks of a database large enough to be slow — this was used in
+anger, not demonstrated.
+
+**The migration framework carries two non-obvious rules.** The schema version is
+the app's **own version code**, so there is no separate number to bump; and
+`legacy/` **freezes a DTO per version**, because a migration that deserializes
+with the current class breaks retroactively, silently, and only for users
+upgrading from an old version.
+
+### ARMSX2: the features this project specified — READ
+
+| Capability | Path | Quality |
+| --- | --- | --- |
+| **Per-game overrides** | `config/ConfigStore.kt`, 240 fields, `merge`/`diff` | `shipped` |
+| **Hotkey set + binding UX** | `ControllerMappings.SysHotkey` + `ui/settings/HotkeysTab.kt` | `shipped` |
+| **Second-screen `Presentation`** | `SecondScreen.kt` 576 + `SecondScreenTiles.kt` 131, **names the Thor** | `shipped` |
+| Settings search | `ui/settingshub/SettingsSearchIndex.kt`, generated, i18n-aware | `shipped` |
+| Patch manager | `ui/patches/`, 1,688 lines + `PatchRepo.kt` | `shipped` |
+| Texture pack catalogue | `TextureCatalog.kt`, `TexturePackInstaller.kt` | `shipped` |
+| Upscale algorithm enum | `Config.h` `GSTextureUpscaleAlgorithm`, 24 entries, documented | `shipped` |
+
+**`ConfigStore` is the important one.** It has three fixes the obvious design
+lacks, each from a reported bug: an override must be **sticky** or a later global
+change silently takes the game's setting; some settings are **process-wide** and
+the per-game file refuses them, so they must be **promoted** to global; and
+pinning needs **change-tracking**, or a stale whole-object write makes a wrong
+value permanent. See
+[`research_log/20260822_2203_armsx2_frontend_is_the_shell.md`](research_log/20260822_2203_armsx2_frontend_is_the_shell.md).
+
+**`SecondScreen.kt` carries three lessons for any `Presentation` work**: do not
+put Compose inside one; it is not torn down when the activity stops; re-attach
+on every resume, because a dual-screen handheld lets a person move the app.
+
+## The native side — READ, measured 2026-08-22
+
+| System | Fork | Lines | Files |
+| --- | --- | --- | --- |
+| Switch | eden | 645,359 | 3,006 |
+| PS3 | rpcsx | 621,097 | 1,497 |
+| PS2 | ARMSX2 | 395,883 | 813 |
+| Xbox 360 | xenia | 362,019 | 909 |
+| DS | melonDS | 334,719 | 519 |
+| Wii U | Cemu | 291,183 | 825 |
+| 3DS | azahar | 278,525 | 1,263 |
+| Vita | Vita3K | 214,233 | 834 |
+
+**About 3.14M lines of native against 310k of frontend.**
+
+**Counting traps, all hit on the first pass.** Cemu appeared to be 7.2M because
+`src/android/` holds a vcpkg tree; xenia appeared to be 1.33M because
+`gpu/shaders/bytecode/` holds generated SPIR-V headers up to 20k lines each;
+melonDS's "Vulkan layer" appeared to be 123k, mostly generated shader arrays and
+a DS rasterizer. **List the biggest files after counting.**
+
+### xenia separated three host layers and nobody else did — READ
+
+This is the strongest single result of the survey.
+
+| Layer | xenia | Everyone else |
+| --- | --- | --- |
+| Vulkan device | **`ui/vulkan/`, own directory, 11,471 lines** | inside the renderer |
+| Code cache | **`a64_code_cache_posix.cc`, 632 lines** | inside the emitter |
+| Pipeline cache | **not separated**, 120 lines inside a 2,875-line file | also not separated |
+
+**`src/xenia/ui/vulkan/` against `src/xenia/gpu/vulkan/` is exactly the
+shared/not-shared line this project draws, already expressed as a directory.**
+And xenia is **BSD**, so extracting from it keeps the shared module usable by
+anything.
+
+### Pipeline cache — READ, and it is genuine duplication
+
+**All eight forks call `vkGetPipelineCacheData`.** Unlike the LRU cache, the
+shape is fixed by the API with no guest semantics.
+
+**But there are two caches in those files and only one is shareable**: the
+driver blob dies on a driver swap and is guest-agnostic; the guest-shader-to-
+SPIR-V translation cache survives a driver swap and is guest-specific.
+
+**Invalidation is answered by the Vulkan spec**, not by us: `pipelineCacheUUID`
+changes when a driver's caches become incompatible. ARMSX2's `VKShaderCache.cpp`
+validates header length, version, vendor ID, device ID and UUID. xenia
+deliberately does not, relying on the driver — correct, but it produces **no
+signal** when a cache is silently dropped, which on this device presents as
+stutter.
+
+### melonDS's ARM64 emitter is Dolphin's, from 2015 — READ
+
+A **third** Dolphin import, separate from the 2008 and 2009 frontend code, and
+in the JIT.
+
+**308 emitter methods against Dolphin's current 344.** Dolphin has added 40 that
+melonDS never received, including eight vector compares, `BIF`/`BIT`/`EXT`,
+`ParallelMoves`, and the whole **`YIELD`/`WFE`/`WFI`/`SEV`/`SEVL`** spin-wait
+family — which lands on this repo's existing finding that `yield` is a no-op on
+ARM. **Dolphin's file is GPLv2-or-later, so the code can be taken, not only the
+idea.**
+
+**A wrong hypothesis, recorded so nobody re-checks it:** Dolphin has **not**
+added `SDOT`, `UDOT`, `EOR3` or `BCAX` either. melonDS is not behind on the
+device's vector features; the whole lineage never had them.
 
 ## Texture filtering and upscaling — PARTIAL
 
