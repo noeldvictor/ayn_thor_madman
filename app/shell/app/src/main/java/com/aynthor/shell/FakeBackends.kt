@@ -62,6 +62,28 @@ object FakeMelonDs : Backend {
             "melonds.audio.latency", "Audio latency", SettingType.ENUM,
             "Audio", "Medium", listOf("Low", "Medium", "High"),
         ),
+        // The scope exception, with the fleet's own example.
+        //
+        // CLAUDE.md says a different driver is selectable per game. That is
+        // true of the CHOICE and not of the LOADING: adrenotools loads one
+        // driver at process start, so the process holds exactly one. A
+        // per-game value therefore cannot take effect in the running process,
+        // which is what PROMOTED plus liveChangeable=false means.
+        //
+        // Offering it per game without a restart is ARMSX2's PINE bug wearing
+        // different clothes: the switch moves and nothing happens.
+        SettingSpec(
+            "gpu.driver", "GPU driver", SettingType.ENUM,
+            "Device", "Turnip T30 (pinned)",
+            listOf("Turnip T30 (pinned)", "Turnip v26.3.0-r7", "Turnip v26.0.0_R8", "Stock Qualcomm"),
+            liveChangeable = false,
+            scope = SettingScope.PROMOTED,
+        ),
+        SettingSpec(
+            "app.telemetryConsent", "Share crash reports", SettingType.BOOL,
+            "Device", "false",
+            scope = SettingScope.GLOBAL_ONLY,
+        ),
     )
 
     override fun defaults() = settings().associate { it.key to it.default }

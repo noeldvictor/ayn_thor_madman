@@ -36,6 +36,15 @@ class MainActivity : ComponentActivity() {
     val layoutChoice: SnapshotStateMap<String, ScreenLayout> = mutableStateMapOf()
     val companionChoice: SnapshotStateMap<String, Companion> = mutableStateMapOf()
 
+    /**
+     * The two settings tiers, stand-ins for real storage.
+     *
+     * Separate on purpose: the override rules only mean anything when global
+     * and per-game are distinct places. See Backend.kt SettingResolver.
+     */
+    var globalSettings by mutableStateOf<Map<String, String>>(emptyMap())
+    var perGameSettings by mutableStateOf<Map<String, String>>(emptyMap())
+
     /** What Screen-2 is currently told to show. */
     var screen2Title by mutableStateOf("AYN Thor Shell")
     var screen2Lines by mutableStateOf(listOf("No game selected"))

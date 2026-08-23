@@ -1257,6 +1257,17 @@ something no fork does today.
    Turnip, or the stock driver, is selectable per game and carries a warning
    that it leaves the tested configuration.
 
+   **Found 2026-08-22 while wiring the settings screen to the contract: the
+   driver override needs a process restart, and nothing said so.** adrenotools
+   loads one driver at process start, so a packed binary holds exactly one for
+   its lifetime. The per-game *choice* is real; the per-game *effect* is not,
+   until the process restarts.
+
+   So the driver is a **`PROMOTED`** setting with `liveChangeable = false`. See
+   [Track A](#track-a--the-ui-shell-defines-the-contract). **Offering it per
+   game without a restart is ARMSX2's PINE bug in different clothes: the switch
+   moves and nothing happens.**
+
 ### What this changes
 
 - **The GPU driver manager gets smaller and sharper.** It stops being a

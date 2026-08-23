@@ -52,7 +52,7 @@ fun ShellApp(activity: MainActivity) {
                 when (val r = route) {
                     is Route.Library -> LibraryScreen(activity) { route = Route.Detail(it) }
                     is Route.Detail -> DetailScreen(activity, r.game)
-                    is Route.Settings -> SettingsScreen()
+                    is Route.Settings -> SettingsScreen(activity)
                     is Route.Drivers -> DriversScreen()
                     is Route.Systems -> SystemsScreen()
                 }
@@ -333,25 +333,116 @@ private fun Section(title: String, content: @Composable ColumnScope.() -> Unit) 
 
 // --------------------------------------------------------------- settings
 
+/**
+ * Settings, rendered from the real contract.
+ *
+ * This screen exists to EXERCISE the contract, not to look finished. It reads
+ * SettingSpec from every backend, resolves each value through
+ * [SettingResolver], and shows which tier answered. If a row says the wrong
+ * thing, the contract is wrong.
+ *
+ * Tapping a row sets a per-game override through
+ * [SettingResolver.writeOverride], so the sparse, sticky and change-tracked
+ * rules are driven by the UI rather than only by the tests.
+ */
 @Composable
-private fun SettingsScreen() {
+private fun SettingsScreen(activity: MainActivity) {
+    val specs = remember { Backends.all.flatMap { it.settings() } }
+    val defaults = remember { Backends.all.flatMap { it.defaults().entries }.associate { it.key to it.value } }
+    // A stand-in for the two stored tiers. Fake persistence, like the rest of
+    // the shell.
+    val global = activity.globalSettings
+    val perGame = activity.perGameSettings
+
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) {
         Text("Settings", color = Text, fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
         Spacer(Modifier.height(4.dp))
         Text(
-            "One schema for every system. Every row is overridable per game.",
+            "One schema for every system. Resolved live through the contract: " +
+                "per-game, then global, then Thor profile, then backend default.",
             color = Dim, fontSize = 13.sp,
         )
         Spacer(Modifier.height(18.dp))
-        Fake.settingGroups.forEach { (group, rows) ->
+
+        specs.groupBy { it.group }.forEach { (group, rows) ->
             Section(group) {
-                rows.forEach { r ->
-                    Row(Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
-                        Text(r, color = Text, fontSize = 13.sp, modifier = Modifier.weight(1f))
-                        Text("inherited", color = Dim, fontSize = 11.sp)
+                rows.forEach { spec ->
+                    val resolved = SettingResolver.resolve(
+                        spec,
+                        perGame = perGame,
+                        global = global,
+                        thorProfile = emptyMap(),
+                        backendDefault = defaults,
+                    )
+                    SettingRow(spec, resolved) {
+                        // Cycle to the next option, in game scope.
+                        val current = resolved?.value ?: spec.default
+                        val next = spec.options
+                            .getOrNull((spec.options.indexOf(current) + 1) % spec.options.size.coerceAtLeast(1))
+                            ?: if (current == "true") "false" else "true"
+
+                        val before = specs.associate { s ->
+                            s.key to (
+                                SettingResolver.resolve(s, perGame, global, emptyMap(), defaults)
+                                    ?.value ?: s.default
+                                )
+                        }
+                        val after = before + (spec.key to next)
+                        val out = SettingResolver.writeOverride(
+                            specs, perGame, global, after, before,
+                        )
+                        activity.perGameSettings = out.perGame
+                        // A promoted field leaves the per-game tier entirely.
+                        if (out.globalPatch.isNotEmpty()) {
+                            activity.globalSettings = global + out.globalPatch
+                        }
                     }
                 }
             }
+        }
+
+        Spacer(Modifier.height(12.dp))
+        Text(
+            "Overrides held: ${perGame.size}. Global values set: ${global.size}.",
+            color = Dim, fontSize = 11.sp,
+        )
+    }
+}
+
+@Composable
+private fun SettingRow(
+    spec: SettingSpec,
+    resolved: ResolvedSetting?,
+    onCycle: () -> Unit,
+) {
+    Row(
+        Modifier.fillMaxWidth().clickable { onCycle() }.padding(vertical = 7.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(spec.label, color = Text, fontSize = 13.sp)
+            Row {
+                // The scope is visible, because it changes what the row does.
+                when (spec.scope) {
+                    SettingScope.PROMOTED -> Badge("global-backed")
+                    SettingScope.GLOBAL_ONLY -> Badge("global only")
+                    SettingScope.PER_GAME -> Unit
+                }
+                if (!spec.liveChangeable) Badge("needs restart")
+            }
+        }
+        Column(horizontalAlignment = Alignment.End) {
+            Text(resolved?.value ?: "unset", color = Text, fontSize = 12.sp)
+            Text(
+                when (resolved?.source) {
+                    SettingSource.PER_GAME -> "per game"
+                    SettingSource.GLOBAL -> "global"
+                    SettingSource.THOR_PROFILE -> "Thor profile"
+                    SettingSource.BACKEND_DEFAULT -> "backend default"
+                    null -> "no value"
+                },
+                color = Dim, fontSize = 10.sp,
+            )
         }
     }
 }

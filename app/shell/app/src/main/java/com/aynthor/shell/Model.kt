@@ -157,25 +157,10 @@ object Fake {
         ),
     )
 
-    /** Settings, grouped by intent rather than by owning subsystem. */
-    val settingGroups: List<Pair<String, List<String>>> = listOf(
-        "Display and layout" to listOf(
-            "Screen layout", "Screen-2 content", "Aspect", "Internal resolution",
-        ),
-        "Image quality" to listOf(
-            "Texture filter, sprites", "Texture filter, 3D", "Upscale factor",
-            "HD texture packs", "Present filter",
-        ),
-        "Performance and power" to listOf(
-            "Frame limit", "Frame pacing", "Performance hints", "Thermal target",
-        ),
-        "Audio" to listOf("Backend", "Latency", "Volume"),
-        "Input and hotkeys" to listOf(
-            "Controller map", "Touch overlay", "Hotkeys", "Deadzone",
-        ),
-        "Storage" to listOf("Save location", "Cache limit", "Screenshot format"),
-        "Drivers" to listOf("Graphics driver", "Driver override"),
-    )
+    // settingGroups was a hardcoded list of setting names for the settings
+    // screen. It is DELETED rather than left unused: the screen now reads real
+    // SettingSpec from the backends and groups by SettingSpec.group, so the
+    // fake list would only tempt someone to render it again.
 
     /** The pinned driver. See CLAUDE.md, The driver baseline. */
     const val PINNED_DRIVER = "turnip_mrpurple_T30-toasted"
