@@ -1031,6 +1031,50 @@ wins come from handing whole programs to an optimising compiler**, which needs
 per-game decompilation and symbols — **a cost this project cannot pay across
 eight systems.**
 
+**REVISED the same day, after a challenge to check again.** **Translation
+quality IS where the speed is, and it is large — the IR is simply not the
+lever.**
+
+**"An Instruction Inflation Analyzing Framework for Dynamic Binary
+Translators"**, ACM TACO, March 2024, defines **inflation** as host instructions
+emitted per guest instruction, shows by regression that **inflation predicts
+slowdown**, and finds **state-of-the-art DBTs run at 1.46 or worse.** Applying
+its guidance to QEMU measured **5.47x** — range **2.99x to 7.12x** — on **SPEC
+CPU 2017**, cutting inflation **83.59% on CINT2017** and **94.56% on CFP2017**.
+**That is incomparably better evidence than the 35x withdrawn above.**
+
+**But the same paper rules the IR out as the cause**, by ranking real systems:
+**ExaGear, Rosetta 2 and LATX minor; Box64 and FEX moderate; QEMU substantial.**
+
+- **Box64 and FEX sit in the same band** with **opposite IR choices.**
+- **LATX is built on QEMU 6 and keeps TCG's IR**, yet is in the best band while
+  QEMU is in the worst. **It fixed what the translator does, not whether it has
+  an IR** — compare-and-conditional-jump fusion, push/pop elision, AOT, and
+  runtime library pass-through **referencing Box64's source.**
+
+> **QEMU is slow because it optimises little, not because it has an IR.**
+
+**The two winning optimisations are ones an IR is supposed to enable** — **dead
+code elimination** of unused result bits and **address pre-calculation** — and
+**Box64 does dead code elimination with no IR at all.** So the analysis is the
+cure, and it lives in either place.
+
+**Caveat that halves the prize here: this literature is CISC-to-RISC.** Every
+system measured is x86 to ARM or LoongArch. **This fleet is mostly RISC-to-RISC**
+— MIPS, PowerPC and ARM guests on ARM64 — **the easier case, with less inflation
+to recover.**
+
+**The part that does transfer is flag handling**, and it is the strongest
+specific lead: `jcc` at **9.72%** and `cmp/test` at **8.66%** of inflation,
+roughly **18% from compare-and-branch alone.** PowerPC condition-register fields
+and MIPS compare idioms have the same shape. **Box64's Kildall flag propagation
+attacks the same target independently.**
+
+**So the next step is a number this project has never had: inflation per fork.**
+Host instructions emitted per guest instruction, same guest block, IR fork
+against non-IR fork. **A disassembly count — the exact method that settled the
+target-features question — needing no device and no fork modification.**
+
 See [`research_log/20260823_1642_ir_in_emulators_literature.md`](research_log/20260823_1642_ir_in_emulators_literature.md).
 
 **This does not say delete xenia's HIR.** 35x is one proof of concept on one

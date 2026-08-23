@@ -9,6 +9,11 @@ No device. Reading only.
 weaker than the citation implies, and there is far better evidence already
 inside the fleet.**
 
+**REVISED after a challenge — read section 8 first.** Translation quality **is**
+where the speed is, and it is worth **2.99x to 7.12x** on a real DBT against SPEC
+CPU 2017. **The IR is simply not the lever**: LATX keeps QEMU's IR and is fast,
+while Box64 has none and sits in the same band as FEX, which does.
+
 ---
 
 ## 1. The cited paper does not support the weight put on it
@@ -265,6 +270,117 @@ has recorded five times today.
 **So the blocker is host LLVM 20.1.8 tools, not device time.** That is a
 cheap thing to obtain and nobody had identified it as the gate.
 
+## 8. CORRECTION: speed IS in translation quality. The IR is just not the lever.
+
+**Written after being pushed to check again, and the push was right.**
+
+Section 6 concluded the IR question was not where speed lives. **Half of that was
+wrong.** I asserted that an IR's cost is at translation time rather than run
+time, **and I did not verify it.** It is verifiable, and the answer is that
+translated **code quality** is where the speed is — a permanent run-time cost,
+not a warm-up cost.
+
+### The paper I should have found first
+
+**"An Instruction Inflation Analyzing Framework for Dynamic Binary
+Translators"**, ACM Transactions on Architecture and Code Optimization, **March
+2024**. Framework: **Deflater**, with a trace-based simulator **InflatSim**.
+
+**Inflation** is host instructions emitted per guest instruction. The paper
+establishes by linear regression that **inflation correlates with slowdown**, and
+that **state-of-the-art DBTs run at inflation of at least 1.46**.
+
+**Applying its guidance to QEMU produced a measured 5.47x**, with a validated
+model at 4.65% inflation error. The presentation gives the range as **2.99x to
+7.12x**, with inflation cut by **83.59% on CINT2017** and **94.56% on CFP2017**.
+
+**That is peer-reviewed, on SPEC CPU 2017, against a real DBT** — incomparably
+better evidence than the 35x this repo had been citing, which was a three-opcode
+loop against a simulator.
+
+**So the speed is real and it is large.**
+
+### But the same paper kills the IR as the explanation
+
+It ranks real translators by slowdown:
+
+| Band | Systems |
+| --- | --- |
+| **minor** | ExaGear, **Rosetta 2**, **LATX** |
+| moderate | **Box64**, **FEX** |
+| **substantial** | **QEMU** |
+
+**Two facts in that table decide the question.**
+
+**Box64 and FEX are in the same band.** Same guest, same host class, **opposite
+IR choices** — Box64 has none, FEX has a custom one — and they land together.
+**The IR is not what separates them.**
+
+**LATX is built on QEMU 6 and keeps TCG's IR**, and it is in the *best* band
+while QEMU is in the worst. **It did not delete the IR. It fixed what the
+translator does with it** — its named levers are **compare-and-conditional-jump
+fusion** and **push/pop elision**, plus AOT compilation and runtime library
+pass-through, the last **referencing Box64's source.**
+
+> **QEMU is slow because it optimises little, not because it has an IR.**
+> The often-quoted line is that *"the translated code quality almost cannot be
+> improved once the guest instructions are converted to the intermediate code"* —
+> **that is a statement about QEMU's passes, and LATX disproves it as a
+> statement about IRs.**
+
+### And the winning optimisations are ones an IR is supposed to enable
+
+Deflater's two headline optimisations are **dead code elimination** — skipping
+unused high result bits, such as `%rdx` in a multiply — and **address
+pre-calculation** when the same address is referenced repeatedly.
+
+**Both are textbook compiler passes.** QEMU had an IR and did not do them well.
+**Box64 does dead code elimination with no IR at all**, over the guest stream.
+
+**That is the resolution.** The IR is neither the cost nor the cure. **The
+analysis is the cure, and it can live in either place.**
+
+### What actually transfers to this fleet, and what does not
+
+**Read this before acting on the 5.47x.**
+
+| Lever | Transfers here? |
+| --- | --- |
+| **AOT compilation** | **already done** — xenia's precompiler has ~97% coverage |
+| **Library pass-through** | **already done** — GameThor via Box64; also arXiv:2512.00487's selective offloading |
+| **Dead code elimination on unused results** | **plausible**, and unmeasured in any fork here |
+| **Address pre-calculation** | **plausible**, and unmeasured |
+| compare-and-conditional-jump fusion | **partially** — see below |
+| push/pop elision | **no** — x86 stack idiom |
+
+**The large caveat: this literature is CISC-to-RISC.** The paper says overhead
+remains "especially when translating from CISC to RISC", and every system it
+measures is x86 to ARM or LoongArch. **This fleet is mostly RISC-to-RISC** —
+MIPS, PowerPC and ARM guests on an ARM64 host — **which is the easier case, so
+the inflation to recover is smaller.**
+
+**But flag handling does transfer, and it is the strongest specific lead.**
+Deflater's own instruction breakdown puts `jcc` at **9.72%** and `cmp/test` at
+**8.66%** of inflation — roughly **18% from compare-and-branch alone**, which is
+what LATX's fusion targets. **PowerPC has condition register fields and MIPS has
+its own compare idioms**, so the shape exists here even though the ISA does not.
+
+**And this repo already has an independent hit on exactly that.** Box64 uses
+**Kildall's algorithm** to compute only the flags a later instruction reads.
+**Two systems, arrived at separately, both attacking flag emulation.**
+
+### The revised next step, and it is device-free
+
+**Measure inflation per fork.** Host instructions emitted per guest instruction,
+for the same guest block, in a fork with an IR and one without.
+
+**That is a disassembly count — the exact method xenia used to settle the
+target-features question**, which it closed with *"disassemble and count — no
+device, no scene noise, exact."*
+
+**It gives a number this project has never had**, it is comparable against the
+literature's 1.46 floor, and **it needs no device and no fork modification.**
+
 ## Sources
 
 - [arXiv:2501.03427](https://arxiv.org/abs/2501.03427) — Parker, *Boosting
@@ -282,6 +398,11 @@ cheap thing to obtain and nobody had identified it as the gate.
   primary source for the four-pass, no-IR structure
 - [N64Recomp](https://github.com/N64Recomp/N64Recomp) — static recompilation of
   N64 binaries to C
+- [ACM TACO 10.1145/3640813](https://dl.acm.org/doi/full/10.1145/3640813) —
+  *An Instruction Inflation Analyzing Framework for Dynamic Binary Translators*,
+  March 2024. **The most important source here.**
+- [InflatSim artifact](https://github.com/MicroTranslator/InflatSim)
+- [LATX](https://github.com/lat-opensource/lat) — built on QEMU 6, keeps TCG
 
 ## Limits of this survey
 
