@@ -164,6 +164,34 @@ spikes, a player feels it immediately, and it needs no renderer internals.
 
 ---
 
+
+### Read 2026-08-23: two forks have no such pipeline, and the rest split in two
+
+**Not every guest has programmable shaders.**
+
+| Approach | Forks |
+| --- | --- |
+| **Guest bytecode straight to SPIR-V** | **eden** (`shader_recompiler/backend/spirv/emit_spirv.cpp`), **xenia** (`gpu/spirv_shader_translator`), **Vita3K** (`shader/usse_translator.h`) |
+| Guest to GLSL text, then `glslang` | azahar, Cemu, and Vita3K's second path |
+| **No pipeline at all** | **ARMSX2, melonDS** |
+
+**ARMSX2 and melonDS translate nothing** because the PS2's GS and the DS's 3D
+core are **fixed-function**. They write their own host shaders instead. **So
+shader translation is a declared, optional pipeline** — two of seven backends do
+not have one, and a contract that assumed it would be wrong for both.
+
+**This explains the vendored `glslang` count.** `CLAUDE.md` records glslang
+vendored by four forks and treats it as a dependency to unify. **Three of those
+need it at run time**, because their shader backend emits GLSL text and compiles
+it. **Dropping glslang is not a packaging decision for them; it is a shader
+backend rewrite.**
+
+**Emitting SPIR-V directly is the better target for this device** — no text
+round-trip and no runtime compiler — but it is not a change the shared layer can
+make on a backend's behalf.
+
+---
+
 ## 4. Memory mapping
 
 Least surveyed pipeline. Every emulator maps a guest address space onto host
@@ -400,7 +428,8 @@ None of this is emulation. All of it is written more than once.
 - **Pipelines 3 to 7 are partly read now, not listed.** Read since this was
   written: the pipeline cache, the code cache, thread affinity, save
   conventions, frame pacing and the upscale algorithm sets. **Shader
-  translation and memory mapping remain listed rather than read.**
+  translation and memory mapping are now read too**, so every pipeline in this
+  catalogue has been opened at least once.
 - **GameThor: surveyed 2026-08-23**, and the difference is real. It translates
   Direct3D to Vulkan through DXVK and runs Windows binaries under Wine, so it
   has no guest CPU to recompile and no guest GPU to model. **Pipelines 1, 3 and
