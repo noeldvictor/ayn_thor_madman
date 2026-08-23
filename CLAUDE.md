@@ -1152,10 +1152,43 @@ detection problem. **If detection, it is free performance.**
 the fork that wrote the research. The rest compile for a generic ARMv8-A this
 device stopped being years ago.
 
-**This produced the fleet standard.** Reading the build files rather than
-assuming them: **melonDS is the only fork that sets `-mtune`, and it chose
-`cortex-x3` with the reasoning written in the file. xenia is the only fork that
-raises `-march`. No fork does both. Cemu, Vita3K and azahar set neither.**
+**CORRECTED 2026-08-23 by `tools/fleet_lint.py` on its first accurate run.**
+An earlier version said no fork does both. **xenia does both**, in
+`premake5.lua` — missed earlier because that survey searched CMake files:
+
+```lua
+"-march=armv8.2-a+lse+crypto+sha3+crc+dotprod", "-mno-outline-atomics",
+"-mtune=cortex-a710"
+```
+
+**That is very nearly the line
+[`THOR_TARGET.md`](hardware_ref/thor/THOR_TARGET.md) recommends, reached
+independently** — another convergence result, like Oboe.
+
+**melonDS sets `-mtune=cortex-x3` with its reasoning in the file. ARMSX2, Cemu,
+azahar and Vita3K set neither.**
+
+### xenia already measured what the features buy: PERMISSION, not speed
+
+It enabled them and **disassembled the result** — 1,779,182 instructions — and
+found clang emitted **zero** `eor3`/`bcax`/`rax1`/`xar`, **zero** `aes*`/`sha*`,
+**zero** `crc32*`, **zero** `udot`/`sdot`.
+
+> these flags change the compiler's **PERMISSION** and nothing else ... **Do not
+> claim a speedup from this line.**
+
+**This answers a queued device experiment without the device.** The reason to
+set the flags is that hardware AES and SHA intrinsics **will not compile**
+without `+crypto`, and `SDOT` cannot be hand-written without `+dotprod`.
+
+**So the ARMSX2 opportunity below is one step further away than it reads.**
+Fixing its flags will not make clang emit `SDOT`; **someone must write the
+intrinsics**, and the flags are what lets that compile.
+
+**Take the method.** For *does this flag change what is emitted*, **disassemble
+and count** — no device, no scene noise, exact. Only *is it faster* needs the
+Thor. See
+[`research_log/20260823_0150_target_features_are_permission.md`](research_log/20260823_0150_target_features_are_permission.md).
 ARMSX2 sets `-march=armv8-a` for Android deliberately while selecting
 `armv8.4-a -mcpu=apple-m1` for Apple Silicon, so **it targets an M1 more
 precisely than it targets the Thor.**

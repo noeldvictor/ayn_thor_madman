@@ -81,7 +81,19 @@ verified. See
 **If the last one never fires, delete the listener** rather than keeping it for
 symmetry.
 
-## 4. Does the compile target do anything
+## 4. Does the compile target do anything — **ANSWERED, no device needed**
+
+**Removed from the queue 2026-08-23.** xenia already ran it, by disassembling
+its own binary rather than benchmarking: enabling the features made clang emit
+**zero** of them. **The flags are permission for hand-written intrinsics, not a
+codegen win.** See
+[`research_log/20260823_0150_target_features_are_permission.md`](research_log/20260823_0150_target_features_are_permission.md).
+
+**The lesson for this queue: ask whether a question needs the device at all.**
+"Does the compiler emit X" is answered by disassembly — deterministically, with
+no scene noise. Only "is it faster" needs the Thor.
+
+### The original entry, kept for the record
 
 `-march=armv8.2-a+...+dotprod+sha3 -mtune=cortex-x3` against the fork's current
 baseline, same commit, same scene.

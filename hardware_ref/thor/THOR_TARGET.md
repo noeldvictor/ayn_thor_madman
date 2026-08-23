@@ -98,6 +98,49 @@ Oryon entry names `+sve+sve2` explicitly. **It tracks SVE per SoC precisely
 because SVE is not universal on ARMv9.** That is the pattern this document
 follows.
 
+### These flags buy PERMISSION, not speed. MEASURED.
+
+**xenia enabled them and disassembled the result** — `libxenia-app.so`,
+1,779,182 instructions — and found clang emitted **zero** `eor3`/`bcax`/`rax1`/
+`xar`, **zero** `aes*`/`sha*`, **zero** `crc32*`, **zero** `udot`/`sdot`.
+
+> So these flags change the compiler's **PERMISSION** and nothing else — they
+> are a **PREREQUISITE for hand-written intrinsics, NOT a free codegen win. Do
+> not claim a speedup from this line.**
+
+**The reason to set them is that hardware AES and SHA intrinsics will not
+compile without `+crypto`, and `SDOT` cannot be hand-written without
+`+dotprod`.** The flags unlock work. They do not do it.
+
+**So the ARMSX2 opportunity is one step further away than it looked.** ARMSX2
+emits no `SDOT` and has baseline flags; fixing the flags will not make clang
+emit `SDOT`. **Someone has to write the intrinsics.**
+
+**And the method transfers.** For any question of the form *does this flag
+change what is emitted*, **disassemble the binary and count** — it needs no
+device, has no scene-dependent noise, and answers exactly. Only *did it get
+faster* needs the Thor.
+
+### `-march` moves the ISA baseline. `-mtune` does not.
+
+> these DO move the ISA baseline, unlike `-mtune` — a build with them **SIGILLs
+> on an arm64 device lacking them.**
+
+**Safe here only because the APK runs on one device.** That safety disappears
+the moment anything is shared with a non-Thor target. Same trap as `armv9-a`,
+one level down.
+
+### `+fp16` carries a warning
+
+**xenia deliberately excludes it**: FP16 is excluded for guest FP throughout its
+tree because **it black-screens as guest geometry**, and it sees no host-side
+case.
+
+**Read carefully this is guest-side and fork-specific** — the device does report
+`fphp` and `asimdhp`. **But a fork that lowers guest floating point through half
+precision can lose geometry, and one already has.** Keep `+fp16` in the target;
+do not lower guest FP through it without checking.
+
 ### Name every feature the device has
 
 | Feature | Flag | What it buys |
