@@ -257,8 +257,12 @@ Direct the exploration at these:
   standardise on it. Latency itself is still unmeasured.
 - **Control overlays: surveyed.** See
   [How to build the shared layer](#how-to-build-the-shared-layer), item 0.
-- Save conventions, thread and cluster affinity, and frame pacing are still not
-  surveyed in any fork.
+- **Save conventions: surveyed 2026-08-23, partially.** The format is
+  irreducibly per-backend. The unpriced cost is to the **test harness**; see
+  Phase 3. eden, Vita3K and xenia savestate code was found by neither search and
+  is recorded as unread, not absent.
+- Thread and cluster affinity, and frame pacing, are still not surveyed in any
+  fork.
 - Clean build times for every fork. Only melonDS-android has been built, and
   that was incremental.
 
@@ -3597,6 +3601,29 @@ Take these, in this order:
    design anything.
 2. The Vita3K-Thor on-device regression suite and its savestate fixture runner.
    It already runs on the Thor.
+
+   **A cost of the savestate fixture, priced 2026-08-23 and not priced before.**
+   A change that alters guest state layout **invalidates every fixture for that
+   backend at once**. The golden images survive, but nothing can reach the scene
+   that produced them, so that console's suite goes dark until the fixtures are
+   regenerated. **This will happen**, because the shared layer changes backends
+   on purpose — and ARMSX2 already carries a `SaveStateLegacy.cpp`, so its state
+   format has changed at least once already.
+
+   Three rules follow:
+
+   - **A fixture records the state version it was made with**, and the harness
+     fails loudly on mismatch. **A quietly wrong fixture is worse than a missing
+     one**, because it produces a golden-image diff that reads as a rendering
+     regression.
+   - **Prefer a rebuildable fixture**: a ROM hash plus a recorded input replay
+     can regenerate the state. azahar already has deterministic input replay in
+     `core/movie.cpp`.
+   - **Treat a state-format change as a schema migration**, with the same two
+     rules as the settings schema: version it, and never deserialise old data
+     with the current structure.
+
+   See [`research_log/20260823_0020_save_conventions.md`](research_log/20260823_0020_save_conventions.md).
 3. The ARMSX2 golden image comparer, `comparer.js`.
 4. The ARMSX2 headless replay pattern, `pcsx2-gsrunner`.
 5. The two existing agent skills, from xenia-thor and Vita3K-Thor.
