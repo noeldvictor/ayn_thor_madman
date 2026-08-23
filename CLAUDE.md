@@ -392,6 +392,9 @@ Packing together is not free. Accept these:
 | Three forks duplicate an LRU cache | three different designs |
 | Six forks duplicate a driver picker | four different concerns |
 | The Thor hardware profile is to be designed | rpcsx `ThorPerformanceProfile` exists |
+| No CPU-side differential testing | ARMSX2 `tests/ctest/core/recompilers/` |
+| Dual-screen routing must be designed | azahar and melonDS both ship it |
+| Only melonDS has haptics | azahar has `hapticFeedback` too |
 
 The cause is the same every time: **the inventory was built from file listings,
 and a listing cannot tell you what a file does.**
@@ -2761,9 +2764,18 @@ Ranked by value. The fleet already has most of them, in one fork each.
    exact instruction rather than at the crash. For a GPU it is the software
    renderer against the hardware renderer.
 
-   In the fleet: **melonds_HD_2 `renderer_cases/` already does the GPU form.**
-   Each case stores expected frames for the software renderer and for each
-   hardware path. Nothing does the CPU form yet.
+   In the fleet, **both forms already exist**:
+
+   - **GPU form:** melonds_HD_2 `renderer_cases/` stores expected frames for
+     the software renderer and for each hardware path.
+   - **CPU form:** ARMSX2 `tests/ctest/core/recompilers/`. A `StateSnapshot`
+     captures register state for **both** CPUs, `R3000A` and `R5900`, plus a
+     fixed-size memory window. Around it sit generated `autocases_` suites for
+     EE cache, EE load/store, FPU overflow, IOP, and vector unit macros,
+     branches and latencies, plus ARM64 basic-block linking tests.
+
+   This repo recorded that nothing did the CPU form. **That was the third such
+   claim to be wrong.**
 
 8. **Sanitizer builds.** ASan, UBSan and TSan in the automated build. Many
    emulators cannot even compile with them. Getting there is the work.

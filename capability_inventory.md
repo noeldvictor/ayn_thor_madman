@@ -883,6 +883,70 @@ the *software*: two forks in this fleet already route guest screens to a
 secondary display, and one of them names the case exactly as the Thor presents
 it.
 
+## Save states, rewind and recompiler tests — READ
+
+### melonDS is the only fork with rewind
+
+`app/src/main/cpp/RewindManager.cpp` and `.h`, plus a UI under
+`ui/emulator/rewind/`. **Nothing else in the fleet has it.**
+
+A first search for undo and rewind terms found nothing anywhere. A second pass
+with different words found this. **That is twice now that a negative result was
+a bad search**, so the rule stands: state the method with the result.
+
+### Nobody has undo save state
+
+Searched twice, with `undo.?(save|load).?state`, `UndoSaveState`,
+`backup.?state`, then with `rewind`, `snapshot`, `state_history`. **No fork has
+an undo slot.**
+
+`PATTERNS.md` lists an undo slot as part of the shared state pipeline. It
+would be a genuinely new feature rather than an extraction.
+
+### melonDS's save state model is the one to take
+
+```kotlin
+data class SaveStateSlot(
+    val slot: Int, val exists: Boolean,
+    val lastUsedDate: Date?, val screenshot: Uri?,
+) { companion object { const val QUICK_SAVE_SLOT = 0 } }
+
+enum class SaveStateLocation { SAVE_DIR, ROM_DIR, INTERNAL_DIR }
+```
+
+**A screenshot per slot, a last-used date, and quick-save pinned to slot 0.**
+That is the thumbnail and slot model `app/SCREENS.md` specified, already built.
+
+### CORRECTION: ARMSX2 has recompiler differential testing
+
+This repo recorded that no fork does the CPU form of differential testing, and
+that only the GPU form existed in `melonds_HD_2`. **Wrong.**
+
+`tests/ctest/core/recompilers/` holds a real suite:
+
+| File | What it covers |
+| --- | --- |
+| `harness/StateSnapshot.{h,cpp}` | register state for **both** CPUs, `R3000A` and `R5900`, plus a fixed-size memory window |
+| `arm64_baseblocks_link_tests.cpp` | ARM64 basic-block linking |
+| `autocases_eecache.h` ×3 | EE cache behaviour |
+| `autocases_eelsu.h` | EE load/store unit |
+| `autocases_efu.h`, `autocases_fpuovf.h` | FPU, including overflow |
+| `autocases_vu0macro.h`, `autocases_vubranch.h`, `autocases_vulat.h` | vector unit macros, branches, latencies |
+| `autocases_iopmisc.h`, `autocases_sa.h` | IOP and shift-amount cases |
+
+**The `autocases_` prefix means generated cases**, so this is systematic
+recompiler testing, not a handful of hand-written checks. Capturing registers
+plus a memory window is exactly the differential-testing shape.
+
+**That is the third "no fork has this" claim to be wrong.**
+
+### The `yaps2` ancestor, identified
+
+`StateSnapshot.h` carries `SPDX-FileCopyrightText: 2026 yaps2 Dev Team`. The
+SPDX pass found 207 files attributed to a "yaps Dev Team" in ARMSX2 and could
+not place them. **`yaps2` is a PS2 project ARMSX2 draws from**, and the test
+harness is part of what it took.
+
 ## Survey gaps
 
 Partly surveyed forks:
