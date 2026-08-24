@@ -341,9 +341,32 @@ planes. ARMSX2 declares two texture classes. None pretends to be the others.
    extracts an 8-hex-digit title id with a regex and matches alternative ids.
 
    So the pattern is: **an external per-system database keyed on title id**,
-   cached locally. That generalises. What does not generalise is `x360db`
-   itself, which is Xbox 360 only. Every system needs its own source, and
-   nothing has been surveyed for the other seven.
+   cached locally.
+
+   **SURVEYED 2026-08-25, and the premise above was too pessimistic. Six of
+   eight systems carry their own art in the dump**, so an external database is
+   the **fallback**, not the plan.
+
+   | Tier | Source | Systems | Fork |
+   | --- | --- | --- | --- |
+   | **1** | **embedded in the dump** | 3DS, Switch, DS/DSiWare, Vita, PS3, Wii U | azahar and eden `GameIconUtils`, **melonDS `RomIconBuilder`** from the DS banner, Vita3K `apps_list.cpp`, rpcsx |
+   | 2 | external database by title id | **Xbox 360** | xenia `x360db`, cached 7 days |
+   | 3 | a user-supplied file | **PS2** | ARMSX2 `GetCoverImagePathForEntry` |
+
+   **Tier 1 always succeeds, offline, and is always right for the copy in
+   hand.** Its limit is size — a DS banner icon is 32x32 and a 3DS SMDH icon
+   48x48, which is small for a grid read at arm's length — **so tier 2 is an
+   upgrade rather than the source.** That maps onto `GAME_DATA.md`'s layers
+   exactly: **derived, scraped, user.**
+
+   **And all three implementations key their icon cache on the file path** —
+   azahar and eden in Kotlin, ARMSX2 in C++. `GAME_DATA.md` rejects
+   path-as-identity already; **for a cache the failure is worse and inverted:
+   two dumps at one path collide, so replacing a file serves the old game's
+   icon.** The icon is a pure function of the dump, so it keys on `DumpId` and
+   belongs in `ArtifactStore`.
+
+   See [`../research_log/20260825_0900_cover_art_has_three_sources_and_all_three_key_on_the_path.md`](../research_log/20260825_0900_cover_art_has_three_sources_and_all_three_key_on_the_path.md).
 2. Game identification: every fork does it differently and none was surveyed.
 3. Is rewind in scope? **ANSWERED 2026-08-25: yes, as a declared per-backend
    extension that must declare its PER-STATE COST.** melonDS has a complete
