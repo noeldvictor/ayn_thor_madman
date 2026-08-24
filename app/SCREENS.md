@@ -345,7 +345,36 @@ planes. ARMSX2 declares two texture classes. None pretends to be the others.
    itself, which is Xbox 360 only. Every system needs its own source, and
    nothing has been surveyed for the other seven.
 2. Game identification: every fork does it differently and none was surveyed.
-3. Is rewind in scope? Only some backends can do it, and it is expensive.
-4. What does the performance readout show by default, given cross-run numbers
-   are `CONFOUNDED` and a naive fps counter invites exactly the wrong
-   conclusion?
+3. Is rewind in scope? **ANSWERED 2026-08-25: yes, as a declared per-backend
+   extension that must declare its PER-STATE COST.** melonDS has a complete
+   implementation — configured in seconds rather than slots, a screenshot per
+   state so it is a timeline the user scrubs, and **20.4 MB per state,
+   preallocated, for the smallest guest in the fleet.** A Switch or Wii U state
+   is a different order of magnitude, which is why it cannot be a uniform
+   feature. The one memory-budget owner must see the window.
+   See [`../research_log/20260825_0410_rewind_and_the_integrity_mode_nobody_designed.md`](../research_log/20260825_0410_rewind_and_the_integrity_mode_nobody_designed.md).
+4. What does the performance readout show by default? **ANSWERED 2026-08-25:
+   three lines, and none of them is a bare "FPS".** ARMSX2 shows **FPS, VPS and
+   Speed as three different numbers** — frames drawn, the guest's own vsync
+   rate, and percent of nominal — and a game rendering 30 into a 60 Hz display
+   reads 30 and 60 with neither wrong. So: **guest rate and host rate, labelled
+   and backend-declared; frame time as a `[min..max]` RANGE rather than a mean,
+   which `PerformanceMetrics` already computes and the OSD already discards;
+   and the thermal state beside them.** Take ARMSX2's 19 toggles as the optional
+   set. **The default is the decision; the list is not.**
+   See [`../research_log/20260825_0800_what_the_in_game_readout_should_show.md`](../research_log/20260825_0800_what_the_in_game_readout_should_show.md).
+
+### A rule screen 3 needs and did not have
+
+**A setting reachable from an in-game menu must take effect WHILE PAUSED,
+because paused is the only state in which that menu is open.**
+
+ARMSX2's OSD rebuilt its line strings only while the VM ran, so **every overlay
+toggle looked inert at the exact moment a person used it** — its own comment
+says *"which is why toggling in the menu looked inert"*. Its invalidation also
+noticed the enabled set **emptying** and not **changing**, so turning one line
+off and another on left the old text on screen.
+
+**That is the eleventh mechanism in
+[`../shared_layer/DID_IT_APPLY.md`](../shared_layer/DID_IT_APPLY.md), and the
+first that is a rendering cache rather than a configuration store.**

@@ -3,9 +3,9 @@
 **The most repeated failure in this fleet is not a wrong value. It is a correct
 value that never took effect.**
 
-Ten instances are now recorded, across five forks, found independently by
-different people at different times. **They are not ten bugs. They are one
-disease with ten mechanisms**, and this project has been accumulating defences
+Eleven instances are now recorded, across five forks, found independently by
+different people at different times. **They are not eleven bugs. They are one
+disease with eleven mechanisms**, and this project has been accumulating defences
 against them one at a time without noticing they were the same thing.
 
 > **A setting that exists is not a setting that applies.**
@@ -28,7 +28,7 @@ becomes a research bug.
 
 ---
 
-## The ten mechanisms
+## The eleven mechanisms
 
 ### Configuration layer
 
@@ -41,6 +41,7 @@ becomes a research bug.
 | 5 | **A second writer runs later.** The config file holds the value, and a profile applier overwrites it on every launch | rpcsx | freeing the CPU affinity mask looked like it did nothing — a separate compile-thread cap was still 2 |
 | 6 | **The gate is too wide.** A restriction meant for one class of thing catches another | ARMSX2 | hardcore mode dropped every on-disk patch, killing everything the Patch Manager wrote, "with no message explaining why" |
 | 7 | **The feature is not a value at all.** It is a cross-cutting property of every clock, cache or path in the backend | Vita3K | fast-forward shipped twice and gameplay ran at real time both times |
+| **11** | **A rendering cache whose rebuild is skipped in exactly the state where the change is made.** The live path exists; the change happens while it is not running | ARMSX2 | **every OSD toggle looked inert**, because the line strings rebuild only while the VM runs and the menu is only open while paused. Its invalidation also watched the enabled set **emptying** rather than **changing**, so one line off and another on left the old text |
 
 ### Build and launch layer
 
