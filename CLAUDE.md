@@ -4802,6 +4802,28 @@ shift every later index and invalidate every stored mask.**
 > backend that renumbers its quirks orphans every per-game record that referenced
 > them — the same failure as renaming a settings key.**
 
+**CORRECTED WITHIN THE HOUR: "two forks" was a NAME search and the category is
+everywhere.** Searching for the MECHANISM instead — a hardcoded title identifier
+driving a comparison — turns four zeros into **Cemu 31, azahar 22, Vita3K 12,
+xenia 11, melonDS 1**. Cemu's largest cluster is a quirk by any definition:
+`coreinit_Memory.cpp` **artificially reduces reported memory for about fifteen
+hardcoded Lego title IDs**, inline, inside a memory function.
+
+| Fork | Form | Consequence |
+| --- | --- | --- |
+| **ARMSX2** | **18 named bits, persisted, user-toggleable** | listable, overridable, stored masks survive |
+| **XenDroid** | a declared `game_quirks` module | listable; a new title needs a rebuild |
+| **Cemu** | **an inline `if` chain of title IDs** | **not listable, not overridable, rebuild per title** |
+
+> **Same category, three maturities — and the bottom rung breaks a promise this
+> file makes.** Every option is supposed to be overridable per game. **A quirk
+> with no key cannot be offered, cannot be turned off, and cannot appear in a
+> per-game profile.** It is invisible to the override system.
+
+**And it is the THIRD instance of "ship it as data, not code"** — after
+GameThor's per-game fixes and the cheat formats. **ARMSX2 is halfway: named and
+persisted, still compiled in. Nobody in the fleet ships quirks as data.**
+
 **One quirk exists for an x86 reason and is worth re-checking here**:
 `VUOverflowHack` — *"not really possible on x86 without soft floats"*. **Whether
 ARM64 changes that is unexamined**, and it is the shape of the x86-detour audit
