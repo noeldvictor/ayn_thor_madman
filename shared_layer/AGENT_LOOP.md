@@ -165,6 +165,54 @@ frame generation and upscaling. **The rest may be `UNKNOWN`.**
 `PauseProcess`, `ResumeProcess`, `HidKeysDown`, `MemoryReadUnsafe`. **The
 primitive set is already contract-shaped somewhere in the fleet.**
 
+### PAUSE EXISTING IS NOT PAUSE WORKING — added 2026-08-25
+
+**The table above is a PRESENCE census, counted from files that mention pause.
+It says nothing about whether pause is reliable**, and this whole document rests
+on pause being reliable.
+
+**XenDroid fixed three separate pause defects in one 18-line commit**, and all
+three would break this loop rather than merely inconvenience a user.
+
+**1. A pause request can be INVISIBLE while the guest is busy.** Its comment:
+
+> *"A **wait-any reports the LOWEST signalled handle** and the client semaphores
+> sit **below** `shutdown_event_`, so **a pause request is invisible while audio
+> flows.** Test the flag rather than infer it from the handle."*
+
+**A wait-any returns the lowest-indexed signalled handle.** A busy handle below
+your control handle **starves it for as long as the guest keeps working.**
+
+> **The loop asks to pause DURING activity — that is its entire purpose. This
+> defect makes the pause fail exactly when it is wanted**, and it fails by
+> continuing, not by erroring.
+>
+> **Never infer a control state from which handle a wait-any returned. Test the
+> flag.**
+
+**2. Shutting down while paused DEADLOCKS.** *"A worker parked on `resume_event_`
+never sees `worker_running_` go false."* Its fix is `if (paused_) Resume();`
+before joining.
+
+> **The loop pauses constantly, so every stop, backend switch and error path
+> happens while paused.** **Resume before stop, always** — and this repo already
+> records xenia's save-state deadlock as a blocker, which is the same family.
+
+**3. The pause flag was not atomic.** `bool paused_` became
+`std::atomic<bool> paused_`, commented *"the worker's exit from a pause depends
+on observing this."* **A plain flag written by one thread and read by a worker
+may never be observed.**
+
+**Three defects, one subsystem, one commit.** **The presence table cannot see any
+of them**, and no fork was audited for them here.
+
+> **A backend's pause is contract-conforming when a pause requested during heavy
+> guest activity takes effect, a stop issued while paused completes, and the flag
+> is atomic.** Until a backend is checked against those three, its row in the
+> table above is a hypothesis.
+
+See [`research_log/20260825_1150_pause_existing_is_not_pause_working.md`](../research_log/20260825_1150_pause_existing_is_not_pause_working.md).
+
 **And ARMSX2's `docs/mcp-server.md` already specifies the surface**: framebuffer
 capture, emulator control, save and load state, pause, fast-forward and send
 input. **It names the same bottleneck this document does** — "boot game, reach a

@@ -148,6 +148,14 @@ EXEMPT = re.compile(
     r"|claim(?:ed)? .*(?:wrong|reversed)|no fork (?:modified|was touched|has been)"
     r"|no device|not committed|do not modify a fork|stays in this repo"
     r"|nobody is tracking|was committed|no fork converted|no fork is converted"
+    # A DISCLAIMER OF WORK NOT DONE is a scope statement, not a capability
+    # claim. "No fork has X" asserts a property of the fleet and must name its
+    # search; "no fork was audited" asserts only that I did not look, which is
+    # the opposite -- it withholds a claim. Four false positives of this exact
+    # shape in one session, all in Limits sections, before this was added.
+    r"|no (?:fork|backend|other fork)s? (?:was|were|has been|have been) "
+    r"(?:audited|checked|read|opened|examined|surveyed|built|run|measured"
+    r"|traced|tested|profiled|reproduced)"
     r"|^\s*\||->|→)",
     re.IGNORECASE,
 )
