@@ -69,6 +69,44 @@ Surveyed 2026-08-22. **The first version of this file was wrong.** It covered
 two forks and implied the rest had nothing. Read every "not surveyed" line
 below as a gap in the survey, never as an absence in the fork.
 
+## Capabilities recorded since 2026-08-23 — READ
+
+**This file was last consolidated on 2026-08-23. The rows below were found on
+2026-08-24 and 2026-08-25 and were absent from it**, checked by searching this
+file for each capability's own vocabulary. **Every one was read, not listed.**
+
+| Capability | Fork | Quality | What it is |
+| --- | --- | --- | --- |
+| **Mobile GPU driver bug database** | **ARMSX2** | `shipped` | `GSGPUProfile.h`: **29 named `DriverBug` and 15 named `DriverWorkaround` values**, matched on driver and version with a **confidence rank** (`Vendor < Model < Driver < DriverVersion`) and an explicit `conservative_fallback`. **Gate on driverID, not vendorID.** Composes with rpcsx's pre-install `GpuDriverAdvisor` — neither fork cites the other |
+| **A device-layer capability TABLE with named feature checks** | **Vita3K** | `shipped` | `{extension, &capability_flag}` with a comment saying what each is FOR, validated in two stages against a **named feature** — `support_fsr &= shaderInt16`, then a `getFeatures2KHR` check for `shaderFloat16` |
+| **`VK_KHR_shader_float16_int8`** | **eden, Vita3K only** | `shipped` | **Five of seven forks cannot legally run an fp16 shader module on this device**, whatever the hardware reports. ARMSX2's frame generator runs fp32 for this reason, in its own comment |
+| **Rewind** | **melonDS** | `shipped` | 55 files. Configured in **seconds, not slots**; **a screenshot per state**, so it is a timeline the user scrubs. **~20.4 MB per state, preallocated** — for the smallest guest in the fleet |
+| **An integrity mode governing five features at once** | **ARMSX2, melonDS** | `shipped` | RetroAchievements hardcore disables **save states, cheats, slowdown, rewind and play-changing patches**. ARMSX2 shipped two bugs here; `app/shell/IntegrityMode.kt` pins both |
+| **Auto-save on exit, periodic auto-save, auto-load on boot** | **ARMSX2** (all three), **melonDS** (on-exit only) | `shipped`, **default OFF in both** | ARMSX2 writes a **dedicated auto-save slot** so numbered slots stay the user's, and states the cost in its own UI copy |
+| **Fast forward as a TIME SCALE across every clock** | **Vita3K** (HLE, ~12 time APIs), **eden** (`GetClockTicks` divides), **melonDS/ARMSX2** (frame limiter) | `shipped` | Vita3K shipped the toggle **twice** before it worked. `app/shell/TimeScale.kt` makes a backend **declare which clock domains it scales** |
+| **Presentation-rate cap while the guest runs fast** ("Eco Turbo") | **azahar** | `shipped`, **default ON** | Caps host present and composition at **60 FPS above 100% speed** without changing guest timing. Rejects a request-derived divisor, because a scene that cannot reach the requested speed would be undersampled |
+| **Audio time-stretch BELOW 100% speed** | **azahar** | `shipped` | Stretches when emulation speed drops to **95 or below** — the opposite direction to fast-forward, and the common case on a thermally-limited handheld |
+| **A tuned AArch64 SoundTouch search, and a unity-bypass time stretcher** | **azahar** | `shipped` | Four-offset NEON batch; `SETTING_BYPASS_RATE_TRANSPOSER_AT_UNITY` with auto-disable on the first non-unity rate |
+| **In-pass EDRAM resolve via `VK_KHR_dynamic_rendering_local_read`** | **XenDroid** | `shipped` there; **absent from xenia** | A coherent **16-commit series**. xenia's tree has **neither the extension nor any in-pass path**; it has enabled the extension as step 1 and **device-verified it available on the 740 under Turnip 26.3.0** |
+| **Hoisting shared-memory uploads out of render passes** | **XenDroid** | `shipped` there | ~162 lines, **independent** of the resolve chain, resting on a correctness argument about submission-scoped invalidation |
+| **`FLAG_KEEP_SCREEN_ON` during gameplay** | **XenDroid**, taken by **xenia** | `shipped` | Three lines. Without it, gamepad play generates no touch events, the panel sleeps, **the `SurfaceView` loses its surface and every guest frame is silently dropped** |
+| **A persisted VU program cache with a constant-VA arena** | **ARMSX2** | `shipped` | Already recorded elsewhere; **the arena being at a CONSTANT virtual address is the larger half** of what makes the emitted code relocatable, not the fixup table |
+
+**Two forks appear here that this inventory does not otherwise cover.**
+**XenDroid** is listed in `CLAUDE.md` only as a reference clone, and it holds
+three capabilities above. **azahar's audio work** was invisible to earlier
+surveys because they searched for backend names.
+
+**And one whole-fleet property belongs here**: **the AAPCS `v8`-`v15` contract is
+handled correctly at all four hand-written ARM64 emitter boundaries read** —
+xenia and ARMSX2 save the full `q8`-`q15` because their JITs use the upper
+halves, Cemu saves exactly the ABI-required low halves, and **melonDS's A64 JIT
+emits no vector code at all.**
+
+**Sources:** the research logs dated 2026-08-24 and 2026-08-25, and
+[`shared_layer/REJECTED.md`](shared_layer/REJECTED.md) for what was measured and
+reverted.
+
 ## The Android frontends — READ, measured 2026-08-22
 
 **Measured, not estimated.** Own code per `src/main/java`, tests and vendored
