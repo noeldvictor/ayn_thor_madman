@@ -748,7 +748,35 @@ Direct the exploration at these:
   surveyed 2026-08-23**, so every fork now has a capability recorded. What
   remains are per-subsystem gaps rather than whole forks.
 - **Audio: surveyed 2026-08-23 and answered.** Three forks already use Oboe;
-  standardise on it. Latency itself is still unmeasured.
+  standardise on it. **Oboe latency is still unmeasured. CUBEB latency is NOT,
+  as of 2026-08-24** — azahar measured its accepted path on the physical Thor at
+  a **32,728 Hz, 1,962-frame AudioTrack, roughly 118-131 ms reported latency,
+  zero underruns.** That is about **seven frames at 60 Hz**, and it is the first
+  audio number this project has.
+
+  **A bigger buffer made it worse in BOTH directions.** A 4,096-frame candidate
+  reached **271.84 ms and 989 underruns in about one minute**, because it crossed
+  **Android Cubeb's 4,000-frame power-saving threshold** — a device fact worth
+  keeping beside `CNTFRQ_EL0` and `CTR_EL0`. **Fully reverted.**
+
+  **And the three Oboe forks all set an explicit output rate where the Cubeb fork
+  opened at the GUEST rate.** Read from their source: **melonDS
+  `setSampleRate(48000)`**; **eden `TargetSampleRate = 48'000` plus
+  `setSampleRateConversionQuality(High)`**; ARMSX2 passes a variable and walks a
+  **`LowLatency` then `None` fallback ladder**. melonDS's guest runs at 32,823 Hz
+  and it opens at 48,000 anyway.
+
+  > **Open the host stream at the DEVICE's native rate and resample the guest
+  > into it.** Whether the guest rate explains azahar's 118-131 ms is a
+  > **hypothesis, not tested, and not azahar's claim** — but three forks do the
+  > opposite of the one with the measurement.
+
+  **Take ARMSX2's fallback ladder as well as the rate rule.** A shared audio
+  layer must not go silent because the fast path was refused. **And take
+  azahar's acceptance bar wholesale**: any audio-buffer change is opt-in, must
+  prove clean interactive audio, and must **beat the existing path in matched
+  whole-device battery measurements** — not latency alone. See
+  [`research_log/20260824_2340_the_first_measured_audio_latency_and_a_bigger_buffer_that_underran.md`](research_log/20260824_2340_the_first_measured_audio_latency_and_a_bigger_buffer_that_underran.md).
 - **ADPF: surveyed 2026-08-24 and answered.** Counted the four real entry points
   per fork, because counting the word "thermal" matches everything. **melonDS has
   the only complete implementation** — ten files, a factory choosing NDK at API
