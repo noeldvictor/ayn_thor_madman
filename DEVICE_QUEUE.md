@@ -21,6 +21,7 @@ Ordered by what unblocks the most.
 | check the **60 Hz cap** | `PRIORITY_USER_SETTING_PEAK_REFRESH_RATE` votes 60. Both panels do 120. Pacing runs measure the setting otherwise |
 | record battery level and charge state | |
 | **15 minutes or more** when heat matters | thermal behaviour settles over minutes |
+| **RECORD A PREFLIGHT TEMPERATURE AND MATCH THE ARMS** | **thermal drift measured 12% on identical work across 30 C to 68 C** — larger than almost every effect queued below. Two arms starting tens of degrees apart are measuring temperature |
 | **temperature must rise** | no heating means an idle or menu scene, so the run is invalid whatever the counter said |
 | query the experiment ledger first | `python tools/exp_ledger.py check "<keyword>"` in xenia-thor |
 | **CAN THE WORKLOAD EXPRESS THE CHANGE?** For any CPU experiment, **measure the LOADING phase, not gameplay or a menu** | see below |

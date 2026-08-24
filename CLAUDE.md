@@ -2675,6 +2675,36 @@ clearing the monitor is itself a wake event. It cites Linux's arm64 `__cmpwait`.
 **dynarmic reached the identical shape independently** — the same convergence
 signal as three forks choosing Oboe.
 
+**THREE CAVEATS ON TIER 1, found 2026-08-25, and the first is structural.**
+
+> **A `WFE` park wakes EVERY waiting core at once.** Arm's own wording, via
+> whatcookie: the periodic event stream *"wakes up all processors waiting in WFE
+> at the same time which would **amplify contention**."* **A stampede.**
+>
+> **One thread parking is a weak case for that. Six threads parking on one event
+> stream is exactly the case Arm warns about** — and **every guest in this fleet
+> is multi-core**: PS2's EE, IOP and two VUs; three on Wii U; four on Switch; six
+> hardware threads on the 360. **A shared spin policy that parks every guest
+> thread on one event stream is the amplification case, not the win case.**
+
+**Second: a park that costs a SYSCALL loses.** *"Every park measured here that
+traded a spin for a syscall lost."* `SEVL`/`WFE` is in-band; a futex is not.
+**The tier table says which primitive — this says which class is affordable.**
+
+**Third: there are TWO shapes and this file records one.** ARMSX2's parks on an
+**address** (`LDAXR` + `WFE`). The address-free variant is
+**`sevl; wfe; wfe`** — **the `SEVL` sets the local event so the FIRST `WFE`
+consumes it and the SECOND genuinely parks**, rather than returning at once on a
+stale event. **That is the shape for a thread with nothing to watch**, which is
+what the fleet's bare `yield()` sites are.
+
+**And the pre-spin is a reverted experiment, encoded.** The one call site using
+it spins **eight times** before parking, because **another fork parked bare there
+and had to revert it when the wake latency cost frame-time smoothness** — the
+same conclusion as the break-even rule above, reached by a different route.
+
+See [`research_log/20260825_0430_the_wfe_stampede_and_a_12_percent_thermal_drift.md`](research_log/20260825_0430_the_wfe_stampede_and_a_12_percent_thermal_drift.md).
+
 **eden ships both.** It vendors dynarmic, so the correct 0BSD spin lock is
 already in its binary, while `Common::SpinLock` still spins on `yield` in
 `k_slab_heap.h` and `KThread::m_context_guard`. **The fix is a DELETE, not a
