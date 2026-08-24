@@ -4013,9 +4013,20 @@ patch format.** xenia has `GamePatchManager` and eden has `patch_manager`.
 Rules:
 
 - A patch states the game id, the version and what it changes.
-- A patch states its **intent**: speed, fix, or change. The UI groups them by
-  intent, because a person choosing a cheat and a person chasing frames want
-  different lists.
+- A patch states its **intent**: **speed, fix, change, or cheat.** The UI groups
+  them by intent, because a person choosing a cheat and a person chasing frames
+  want different lists.
+
+  **THE INTENT FIELD IS LOAD-BEARING THREE TIMES OVER, found 2026-08-25.** It
+  was justified here as a UI grouping. ARMSX2's shipped bugs show it decides:
+
+  1. **whether integrity mode blocks the patch** — hardcore blocks cheats, not
+     fixes;
+  2. **whether it binds to `GameKey` or `DumpId`** — a cheat matches across all
+     CRCs of a serial, a fix stays CRC-specific;
+  3. **whether it may auto-apply at boot** — only a dump-bound patch may.
+
+  **`CHEAT` had to be added to the enum for any of that to be expressible.**
 - A patch states **why**. A speed patch without a measured reason is a guess.
 - A speed patch carries its measurement: the scene, the before number and the
   after number, on the device.
@@ -5489,6 +5500,75 @@ and menu use the same input on every backend, always.
 
 A backend does not get to define its own hotkey. The app owns the hotkey layer
 and tells the backend what happened.
+
+### Rewind exists, costs 20 MB a state, and collides with an integrity mode
+
+**Found 2026-08-25.** Rewind is on the hotkey list above and had never been
+examined.
+
+**melonDS has it, complete, in 70 lines of header.** Searched all nine forks with
+four vocabularies — `rewind`, `runahead`, `rollback`, a state-ring shape — and
+melonDS carries **55 files**, ARMSX2 14, the rest one or two.
+
+**Take the design.** Configured in **seconds, not slots** — length and capture
+interval, with the window size derived. **A screenshot per state**, which is what
+makes it a **timeline the user scrubs** rather than a button pressed blindly; its
+strings are `rewind_now` = **"NOW"** and labels like *"2m37.93s"*. The emulator
+asks `ShouldCaptureState(frame)`; the manager answers.
+
+**And it is priced, which is the part that matters here:**
+
+```cpp
+const int kRewindBufferSize     = 1024 * 1024 * 20;   // Use 20MB per savestate
+const int kRewindScreenshotSize = 256 * 384 * 4;
+```
+
+> **~20.4 MB per state, preallocated, for the SMALLEST guest in the fleet.** A
+> ten-second window at one-second spacing is over 200 MB.
+
+**This file says there is ONE memory budget owner**, arbitrating the texture
+cache against the shader cache on a device with a hard ceiling. **A rewind window
+is a third claimant, it is large, and a settings screen tunes it.** **A backend
+must declare its per-state cost** so the budget owner can refuse a window the
+device cannot hold — and the cost does not generalise, since a Switch or Wii U
+state is a different order of magnitude from a DS one.
+
+**melonDS states the cost to the user in plain words**, which is the standard to
+meet: *"A considerable amount of memory is also used depending on how often you
+want the state to be captured and for how long it should be kept."*
+
+### And one integrity mode governs five features this file specified separately
+
+**melonDS disables rewind under RetroAchievements hardcore.** ARMSX2 names the
+rest in its own UI text: hardcore *"prevents the usage of **save states, cheats
+and slowdown functionality**"*.
+
+| Governed | Specified in this file as |
+| --- | --- |
+| save states | the minimum contract |
+| **cheats** | a first-class feature with a library and a search |
+| **rewind** | the hotkey list |
+| **slowdown** | a `TimeScale` below 100% |
+| **patches that change play** | the patch engine |
+
+**Five features, five separate specifications, one mode reaching all of them, and
+it is in the contract nowhere.** `app/shell/IntegrityMode.kt` adds it, with 8
+tests pinning ARMSX2's two shipped bugs.
+
+**The first bug is a sixth variant of the settings symptom**, and worse than the
+others: *"the bundled `patches.zip` stays enabled in hardcore, so a
+widescreen/no-interlace/bug-fix patch worked when it shipped in our zip and
+silently did nothing when the same patch sat on disk. That killed everything the
+in-app Patch Manager writes ... **with no message explaining why**."*
+
+> **The user moved a switch and something ELSE stopped working, silently.** So
+> the mode must be able to **list what enabling it costs, before it is enabled.**
+
+**Fast forward is deliberately NOT guarded**, because ARMSX2's text names
+slowdown and nothing found says otherwise. **Recorded as unanswered rather than
+assumed.**
+
+See [`research_log/20260825_0410_rewind_and_the_integrity_mode_nobody_designed.md`](research_log/20260825_0410_rewind_and_the_integrity_mode_nobody_designed.md).
 
 ### Fast forward is a TIME SCALE, and a boolean in the contract ships a known bug
 

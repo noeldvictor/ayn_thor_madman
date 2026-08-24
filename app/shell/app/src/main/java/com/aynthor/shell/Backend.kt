@@ -386,8 +386,34 @@ data class CheatSpec(
     val liveToggle: Boolean,
 )
 
-/** Why a patch exists. The patches screen groups by this. */
-enum class PatchIntent { SPEED, FIX, CHANGE }
+/**
+ * Why a patch exists.
+ *
+ * This was justified as a UI grouping, so that somebody choosing a cheat and
+ * somebody chasing frames see different lists. ARMSX2's shipped bugs show it
+ * decides three things, and the grouping is the least of them:
+ *
+ *   1. whether integrity mode blocks it   -- IntegrityPolicy.allowsPatch
+ *   2. whether it binds to GameKey or DumpId -- IntegrityPolicy.bindsTo
+ *   3. whether it may auto-apply at boot  -- IntegrityPolicy.mayAutoApply
+ *
+ * CHEAT was added 2026-08-25. Without it the gate cannot tell a cheat from a
+ * widescreen fix, which is precisely ARMSX2's bug: hardcore mode dropped every
+ * on-disk patch and silently killed everything its Patch Manager wrote.
+ */
+enum class PatchIntent {
+    /** Faster. Not blocked by integrity mode; binds to the dump. */
+    SPEED,
+
+    /** A bug fix, widescreen, de-interlace. Not blocked; binds to the dump. */
+    FIX,
+
+    /** Gameplay change, restored content, translation. Blocked; binds to the title. */
+    CHANGE,
+
+    /** A cheat. Blocked; binds to the title, so a wrong-CRC name still matches. */
+    CHEAT,
+}
 
 data class PatchSpec(
     val format: String,

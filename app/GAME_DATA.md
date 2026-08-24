@@ -61,7 +61,24 @@ version this patch was made for", which is the problem
 a loaded `RPLModule`, rpcsx hashes, eden uses a 32-byte `BuildID`).
 
 **Both are needed and they are not the same.** A cheat targets a `GameKey`; a
-code patch usually targets a `DumpId`.
+code patch targets a `DumpId`.
+
+**Drop the word "usually" — 2026-08-25, on ARMSX2's shipped bug.** Its
+`Patch.cpp:366` records why the asymmetry is not preference:
+
+> **CHEATS are matched across ALL CRCs of the serial.** The in-app cheat editor
+> writes `{serial}_00000000.pnach` whenever it cannot read a live CRC, and
+> patches a user pastes are commonly named for a different revision's CRC —
+> either way a CRC-specific boot-time glob silently drops them, giving **"no
+> cheats found" with the file sitting right there in the list.** **Real
+> fixes/widescreen stay CRC-specific at boot so a wrong-revision graphics patch
+> cannot auto-apply.**
+
+> **A wrong-revision cheat is harmless. A wrong-revision graphics patch is
+> not.** That is the whole reason both identities exist, and it also decides
+> **whether a patch may auto-apply at boot.**
+
+Implemented as `IntegrityPolicy.bindsTo` and `mayAutoApply` in `app/shell/`.
 
 **The backend computes both**, because extracting a serial from a PS2 disc and a
 title id from a 3DS NCCH are guest knowledge. **The app never parses a ROM.**
