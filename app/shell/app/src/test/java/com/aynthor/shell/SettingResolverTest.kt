@@ -241,3 +241,81 @@ class SettingsMigratorTest {
         assertTrue("a duplicate `from` must be rejected", threw)
     }
 }
+
+/**
+ * Tests for [SettingResolver.applyPlan], the fourth ARMSX2 settings bug.
+ *
+ * Its "Load Texture Packs" switch wrote the value and never fired the live GS
+ * reconfigure, because the list of fields needing a live apply is hand-written
+ * as a chain of `!=` comparisons. A field omitted from that chain gets no live
+ * apply and nobody finds out until the switch is flipped mid-game.
+ */
+class ApplyPlanTest {
+
+    private fun spec(key: String, live: Boolean) =
+        SettingSpec(
+            key = key,
+            label = key,
+            type = SettingType.BOOL,
+            group = "g",
+            default = "false",
+            liveChangeable = live,
+        )
+
+    private val specs = listOf(
+        spec("gs.texture_packs", live = true),
+        spec("gpu.driver", live = false),
+    )
+
+    @Test
+    fun `a changed live setting lands in liveApply`() {
+        val plan = SettingResolver.applyPlan(
+            specs,
+            previous = mapOf("gs.texture_packs" to "false"),
+            updated = mapOf("gs.texture_packs" to "true"),
+        )
+        assertEquals(setOf("gs.texture_packs"), plan.liveApply)
+        assertTrue(plan.needsRestart.isEmpty())
+    }
+
+    @Test
+    fun `a changed non-live setting lands in needsRestart, not silently in liveApply`() {
+        val plan = SettingResolver.applyPlan(
+            specs,
+            previous = mapOf("gpu.driver" to "turnip-t30"),
+            updated = mapOf("gpu.driver" to "stock"),
+        )
+        assertEquals(setOf("gpu.driver"), plan.needsRestart)
+        assertTrue(plan.liveApply.isEmpty())
+    }
+
+    @Test
+    fun `an unchanged key is absent, so writing the whole object is cheap`() {
+        val same = mapOf("gs.texture_packs" to "true", "gpu.driver" to "stock")
+        assertTrue(SettingResolver.applyPlan(specs, same, same).isEmpty)
+    }
+
+    @Test
+    fun `a new spec needs no second list - this is the bug being pinned`() {
+        // The ARMSX2 failure is an omission from a hand-written comparison
+        // chain. Here a spec is the only thing that exists, so a setting cannot
+        // be added and forgotten.
+        val extended = specs + spec("gs.upscale", live = true)
+        val plan = SettingResolver.applyPlan(
+            extended,
+            previous = mapOf("gs.upscale" to "1"),
+            updated = mapOf("gs.upscale" to "4"),
+        )
+        assertEquals(setOf("gs.upscale"), plan.liveApply)
+    }
+
+    @Test
+    fun `a key with no spec is ignored, not guessed at`() {
+        val plan = SettingResolver.applyPlan(
+            specs,
+            previous = mapOf("someone.elses.key" to "a"),
+            updated = mapOf("someone.elses.key" to "b"),
+        )
+        assertTrue("the app must not reconfigure for a key it does not own", plan.isEmpty)
+    }
+}

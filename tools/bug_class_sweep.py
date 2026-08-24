@@ -168,6 +168,26 @@ CLASSES = {
         "pattern": r"cvttps|CVTTPS|_mm_cvtt|fptosi|fptoui|CVTTSS|CVTTSD|"
                    r"eor.*sext|sext.*eor|_mm_xor.*cmp|xor.*cmpgt",
     },
+    "setting_written_by_multiple_writers": {
+        "what": "One setting written from more than one place, where a later writer "
+                "silently overwrites the file the operator edited.",
+        "paid": "rpcsx: 'Max LLVM Compile Threads' lived in config.yml, AND was set by "
+                "ThorPerformanceProfile on EVERY boot, AND was carried in the game's "
+                "GameSettingsDatabase profile. Editing the config alone was undone on "
+                "the next launch, so freeing the CPU affinity mask looked like it did "
+                "nothing -- the concurrency cap was still 2.",
+        "why": "This is emitted_flags.py's rule for RUNTIME settings. A setting that "
+               "exists is not a setting that applies, and the mechanism here is not a "
+               "wrong default but a SECOND WRITER that runs later. It is this project's "
+               "own risk: the per-game override design has three tiers, and ARMSX2 "
+               "already shipped two bugs in that area. A profile applier that writes on "
+               "every boot bypasses ConfigStore's change-tracking. Read the hits: a "
+               "setter is normal, and the finding is a setter that runs unconditionally "
+               "at startup over a value a person can edit.",
+        "pattern": r"setSetting|SetSetting|applyProfile|ApplyProfile|"
+                   r"PerformanceProfile|GameSettingsDatabase|overrideSetting|"
+                   r"forceSetting|writeDefaults|applyDefaults",
+    },
     "stale_default": {
         "what": "A persisted setting that can outlive and override a compiled default.",
         "paid": "xenia: three rlwinm fastpaths were defaultEnabled=true in code and "

@@ -250,7 +250,9 @@ def check_dead_levers(paths):
     # subject was the ledger query and its zero result. Same class as the
     # DEVICE_QUEUE false positive: the document was right and the tool was wrong.
     # This is not a magic word -- it demands the query be named, which is an act.
-    satisfied = re.compile(r"exp_ledger|ledger was queried|queried the (?:experiment )?ledger", re.I)
+    satisfied = re.compile(
+        r"exp_ledger|ledger was queried|"
+        r"(?:query|queried|querying) the (?:experiment )?ledger", re.I)
     hits = [p for p in paths if proposing.search(chr(10).join(_lines(p)))
             and not satisfied.search(chr(10).join(_lines(p)))
             and not p.startswith("research_log/")]

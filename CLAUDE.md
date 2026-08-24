@@ -6170,8 +6170,34 @@ Do it in this order:
      proves changed.
    - **Some settings cannot be per-game at all.** See below.
 
+   - **FOUND 2026-08-24: a FOURTH bug, and a fourth mechanism.** Its in-game
+     **"Load Texture Packs"** switch **wrote the persisted value and never fired
+     the live GS reconfigure**, so an imported pack did not appear until the next
+     game boot. **The switch moved and nothing happened** — the PINE symptom
+     reached a third distinct way.
+
+     **The cause matters more than the bug.** ARMSX2 decides what needs a live
+     reconfigure with a **hand-written chain of `!=` comparisons, one line per
+     field**. **A setting added without touching that chain silently gets no live
+     apply**, and nobody finds out until somebody flips the switch mid-game.
+
+     > **Derive the live-apply set from the setting specs. Never enumerate it.**
+     > `SettingSpec` already carries `liveChangeable`; a second hand-maintained
+     > list is the bug. `SettingResolver.applyPlan` in `app/shell/` does this,
+     > with a test that adding a spec is sufficient.
+
    **A contract that specifies pinning without change-tracking ships the second
-   bug.**
+   bug.** **Four bugs, four mechanisms, one user-visible symptom**: a control
+   that moves and does nothing. **That symptom is the settings system's only
+   failure mode, and it has at least four causes.**
+
+   **And a fifth cause exists outside ARMSX2: a second writer.** rpcsx's
+   `Max LLVM Compile Threads` was set in `config.yml`, **and** by
+   `ThorPerformanceProfile` on every boot, **and** in a per-game managed profile.
+   **Editing the config alone was silently undone at the next launch.** A profile
+   applier that writes unconditionally at startup **bypasses the change-tracking
+   in rule 3 entirely.** Swept as
+   `tools/bug_class_sweep.py --class setting_written_by_multiple_writers`.
 5. **Write the contract.** The minimum every backend implements, and the
    extensions a backend may declare. This falls out of steps 1 to 4 rather
    than being argued in advance.

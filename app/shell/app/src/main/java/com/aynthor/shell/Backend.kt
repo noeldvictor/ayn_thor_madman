@@ -233,6 +233,57 @@ object SettingResolver {
 
         return WriteResult(perGame, globalPatch)
     }
+
+    /**
+     * What a settings save must DO, as opposed to what it must store.
+     *
+     * A FOURTH ARMSX2 bug, and a different mechanism from the three above.
+     * Its in-game "Load Texture Packs" switch wrote the persisted value and
+     * never fired the live GS reconfigure, so an imported pack did not appear
+     * until the next game boot. The switch moved and nothing happened, which is
+     * the PINE symptom reached a third way.
+     *
+     * The cause is worth more than the bug. ARMSX2 decides what needs a live
+     * reconfigure with a hand-written chain of `!=` comparisons, one line per
+     * field. **A setting added without touching that chain silently gets no
+     * live apply**, and the failure is invisible until somebody flips the
+     * switch during a game.
+     *
+     * So this is DERIVED from the specs and never enumerated. Adding a
+     * [SettingSpec] is sufficient; there is no second list to forget.
+     */
+    data class ApplyPlan(
+        /** Changed, and the backend can take it now. */
+        val liveApply: Set<String>,
+        /** Changed, and it will not take effect until the process restarts. */
+        val needsRestart: Set<String>,
+    ) {
+        val isEmpty: Boolean get() = liveApply.isEmpty() && needsRestart.isEmpty()
+    }
+
+    /**
+     * Split the changed keys by whether the backend can take them now.
+     *
+     * A key with no spec is NOT silently dropped into either bucket -- it is
+     * ignored, because the app does not own it. A key whose value did not
+     * change is not in the plan at all, so a screen that writes its whole
+     * settings object does not trigger a reconfigure per keystroke.
+     */
+    fun applyPlan(
+        specs: List<SettingSpec>,
+        previous: Map<String, String>,
+        updated: Map<String, String>,
+    ): ApplyPlan {
+        val live = LinkedHashSet<String>()
+        val restart = LinkedHashSet<String>()
+        for (spec in specs) {
+            val before = previous[spec.key]
+            val after = updated[spec.key] ?: continue
+            if (before == after) continue
+            if (spec.liveChangeable) live.add(spec.key) else restart.add(spec.key)
+        }
+        return ApplyPlan(live, restart)
+    }
 }
 
 /**

@@ -60,6 +60,45 @@ correct and the list had become unnavigable.
 | **Temperature proves the run happened** — but see the sensor rule | `CLAUDE.md` |
 | **A negative result needs a workload that could have produced a positive one** | `CLAUDE.md` |
 
+## From the number to the decision
+
+**Every rule above protects the MEASUREMENT. None protects the DECISION**, and
+rpcsx recorded a case where the number was right and the default was wrong.
+
+Its A510 pinning A/B, both arms from a 34.7 C preflight: the ordinary scheduler
+hit **71.1 C** and the thermal guard stopped it 0.7 s in; the A510 cluster
+started at **53.8 C** and survived. **Settled, and reversed.** A real cold PPU
+recompile with the pinning in place ran **78 modules over roughly ten minutes at
+51-58 C, with the guard at 72 C** — fourteen to twenty-one degrees of headroom
+unused, for ten minutes, to avoid a case **the guard already catches**.
+
+> **A measurement can be correct and still support the wrong decision.** An A/B
+> that answers "which arm is cooler" does not answer "which default is better".
+
+**Three questions an A/B does not ask. Ask them before changing a default:**
+
+| Question | The A510 answer |
+| --- | --- |
+| **How often does the bad case arise?** | rarely — one cold boot |
+| **What does the defence cost when it does not arise?** | **ten minutes at half the thermal headroom, every time** |
+| **Is something already handling it?** | **yes, the guard, and it costs nothing until it fires** |
+
+> **Pre-emptively throttling every run to avoid occasionally reaching a limit
+> spends a large certain cost against a small uncertain one.**
+
+**And two rules for when a lever reads FLAT:**
+
+| Rule | Why |
+| --- | --- |
+| **When a throttle is removed and nothing gets faster, look for the SECOND throttle before doubting the first** | rpcsx freed the CPU affinity mask while `Max LLVM Compile Threads` still capped compilation at 2. **Two limiters in series are common because each was added for a different reason at a different time** |
+| **Check who else writes the setting** | that cap was set in **three** places, and two overwrote the config file on every boot. `tools/bug_class_sweep.py --class setting_written_by_multiple_writers` |
+
+**The second is `emitted_flags.py`'s rule for runtime settings**: a setting that
+exists is not a setting that applies, and the mechanism here is **a later
+writer**, not a wrong default.
+
+`research_log/20260824_2320_a_correct_measurement_can_support_the_wrong_decision.md`
+
 ## Stacking, and the conflict
 
 | Rule | Stated in |
