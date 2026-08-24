@@ -54,7 +54,7 @@ FORKS = {
 }
 
 VENDORED = re.compile(
-    r"third_party|3rdparty|externals|dependencies|/vendor/|node_modules|"
+    r"third_party|3rdparty|externals?/|dependencies|/vendor/|node_modules|"
     r"vulkan_core|volk|vk_mem_alloc|/imgui/|/glslang/|/boost/|/ffmpeg/|/SDL|"
     r"toml11|xbyak|oaknut|vixl|catch2|gtest|/proot/|virglrenderer|"
     r"/gallium/|sysnums-|/wine/|/box64/|/fex/", re.I)
@@ -153,7 +153,12 @@ CLASSES = {
                "the guest semantics the host already provides -- ARMSX2's iCOP2-arm64.cpp says "
                "'finite overflow and +/-Inf already saturate correctly in Fcvtzs; only NaN lanes "
                "need the fixup'.",
-        "pattern": r"0x80000000|0x7[fF]{7}|cvttps|CVTTPS|fptosi|fptoui|_mm_cvttps",
+        # TIGHTENED after the first version matched any 0x7FFFFFFF constant and
+        # returned 2,498 lines in one fork. A bare saturation constant is
+        # everywhere; only the x86 CONVERSION intrinsics identify the shape.
+        # Even so this class cannot be settled by a regex -- every hit needs
+        # reading, because most are genuine guest semantics.
+        "pattern": r"cvttps|CVTTPS|_mm_cvtt|fptosi|fptoui|CVTTSS|CVTTSD",
     },
     "stale_default": {
         "what": "A persisted setting that can outlive and override a compiled default.",

@@ -59,7 +59,7 @@ FORKS = {
 # what the fork does -- this is the ARMSX2 "482 Vulkan extensions" trap, where
 # the answer was 35 and the rest were the vendored headers.
 VENDORED = re.compile(
-    r"third_party|3rdparty|externals|dependencies|/vendor/|vulkan_core|volk|"
+    r"third_party|3rdparty|externals?/|dependencies|/vendor/|vulkan_core|volk|"
     r"vk_mem_alloc|/imgui/|/glslang/|/boost/|/ffmpeg/|/SDL|toml11|/toml/|"
     r"xbyak|oaknut|vixl|/fmt/|catch2|gtest", re.I)
 

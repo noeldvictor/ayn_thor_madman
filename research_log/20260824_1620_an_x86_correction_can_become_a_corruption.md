@@ -76,6 +76,44 @@ base register. **That is the level of care this class needs.**
   discusses FP *modes* — rounding and denormals — and not FP *conversion
   semantics*, which is where the correctness risk actually was.
 
+## The sweep, and two tool bugs it exposed
+
+**Added as a bug class, and the first run was wrong twice.** Both are recorded
+because the failures are the reusable part.
+
+**Too broad.** The pattern included bare `0x80000000` and `0x7FFFFFFF`, and a
+saturation constant appears everywhere: **2,498 lines in ARMSX2 alone.** **A tool
+that returns noise is worse than no tool.** Tightened to the x86 *conversion*
+intrinsics only — `cvttps`, `_mm_cvtt`, `fptosi`, `fptoui` — and the counts became
+readable.
+
+**A filter that missed a whole tree.** Vita3K then showed **75 lines in 9 files**,
+all of them **capstone's x86 opcode constant tables**. The vendored filter carried
+`externals` and **Vita3K's directory is `external/`, singular.** Fixed to
+`externals?/`, and Vita3K drops to **zero** — correctly.
+
+**The corrected sweep:**
+
+| Fork | Lines | Where they are |
+| --- | --- | --- |
+| ARMSX2 | 52 | **x86 emitter, x86 recompiler and the software renderer — none in `pcsx2/arm64/`** |
+| rpcsx | 51 | the fork that found the bug |
+| xenia | 7 | its `x64` and `llvm` backends |
+| melonDS | 6 | — |
+| eden | 3 | — |
+| azahar | 2 | — |
+| **Cemu, Vita3K, GameThor** | **0** | — |
+
+**ARMSX2 is verified clean, and for a structural reason.** It wrote **dedicated
+ARM64 files** rather than shimming x86 intrinsics: `GSVector4_arm64.h`,
+`GSVector4i_arm64.h`, and `GSDrawScanlineCodeGenerator.arm64.h` for the software
+renderer. **The x86 intrinsics in its tree are in paths that only x86 builds
+compile.**
+
+> **That is the structural answer to this whole class: a separate ARM64 file
+> cannot inherit an x86 correction by accident.** A shared file behind a shim
+> can.
+
 ## Limits
 
 - **No fleet instance of the bug was found outside rpcsx.** The search covered
