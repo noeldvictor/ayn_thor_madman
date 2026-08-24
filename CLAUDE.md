@@ -8082,6 +8082,36 @@ These are not settled. Do not assume an answer. Ask, or mark the assumption.
 
    ARMSX2, Cemu-thor and xenia-thor remain unmeasured and are the ones the
    worry was really about.
+
+   **THE MECHANISM FOR THE DOMINANT COST, found 2026-08-25 in XenDroid.** Four
+   lines of Gradle put ccache in front of the NDK build —
+   `-DCMAKE_C_COMPILER_LAUNCHER=ccache` and the C++ twin, **gated on an
+   environment variable so a local build is unaffected unless it opts in.**
+   `CMAKE_*_COMPILER_LAUNCHER` is the right hook because `externalNativeBuild`
+   owns the toolchain and there is no compiler path to substitute.
+
+   > **And one line decides whether it ever hits: `CCACHE_COMPILERCHECK=content`.**
+   > ccache identifies the compiler by mtime and size by default, and a restored
+   > NDK has fresh timestamps, so **every restore invalidates the whole cache and
+   > it silently never hits.** `CCACHE_BASEDIR` is the sibling — it rewrites
+   > absolute paths so a cache built in one checkout hits in another.
+   >
+   > **A cache that is configured, populated and never hit is the same shape as a
+   > setting that is stored and never applied.** It fails by being slow, and
+   > there is no error.
+
+   **ccache attacks exactly the cost measured above** — a dependency that has not
+   changed is compiled once and never again, **which is the benefit vcpkg gives
+   Cemu, without vendoring prebuilt binaries.** It applies locally, not only in
+   CI.
+
+   **The measurement this decision actually needs has still not been taken**: one
+   fork built clean, then built again with a warm ccache, both reported. **The
+   four numbers above are all cold checkouts**, and this file already says a
+   clean-checkout figure is the wrong input for a decision about routine agent
+   work. **ccache does not help Rust**, so melonDS's `librashader` cost is
+   untouched; `sccache` is the analogue and was not investigated. See
+   [`research_log/20260825_1950_ccache_and_the_setting_that_makes_it_hit.md`](research_log/20260825_1950_ccache_and_the_setting_that_makes_it_hit.md).
 4. **git-lfs for `hardware_ref/`.** Manuals are large PDFs. Decide before you
    commit a large set.
 5. **The workspace layout.** The forks stay in place today. This file tracks
