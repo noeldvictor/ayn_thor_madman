@@ -999,8 +999,8 @@ Packing together is not free. Accept these:
 
 ## Did it apply? The most repeated failure in this fleet
 
-**Eleven instances, five forks, found independently by different people at
-different times. They are not eleven bugs — they are one disease with eleven
+**Twelve instances, five forks, found independently by different people at
+different times. They are not twelve bugs — they are one disease with twelve
 mechanisms**, and this project accumulated defences against them one at a time
 without noticing they were the same thing.
 
@@ -1011,7 +1011,7 @@ happens.** Sometimes the control is a switch, sometimes a compile flag, sometime
 a default in code. **Nobody is told, because from the software's point of view
 nothing went wrong.**
 
-**Ten of the eleven cost frames or convenience. The eleventh costs the truth**:
+**Eleven of the twelve cost frames or convenience. One costs the truth**:
 xenia's desktop HLE intercepts returned `count=0` for weeks from a dispatcher
 that never reached the handler, and the fix **corrected an earlier research
 conclusion that had been built on that zero.**
@@ -2683,11 +2683,20 @@ on exactly that. And **nothing here is timed**: `DEVICE_QUEUE.md` entry 25
 carries the price, predicting **FLAT on throughput** with contention as the only
 arm likely to move.
 
-**The Armv8.4 question was asked in the same pass and closed by counting.** LSE2
-turns a 16-byte atomic store from an 11-instruction `caspl` loop into `stp` —
-and **`casp` appears zero times in 25.9 million instructions across the six
-binaries.** Ledger queried first, zero prior entries. **Do not raise the
-baseline.** See
+**The Armv8.4 question was asked in the same pass and closed by counting** —
+**then the count turned out to use the wrong instrument, and the answer survived
+for a different reason.** LSE2 turns a 16-byte atomic store from an
+11-instruction `caspl` loop into `stp`, and `casp` appears **zero** times in
+25.9 million instructions across the six binaries. **But without LSE2 a 16-byte
+atomic is not a `casp` — it is an `ldaxp`/`stlxp` loop, so counting `casp` counts
+the fixed case and reports the broken case as absent.**
+
+**With the right instrument**: azahar's 8 exclusives are **all in one function**,
+`InputManager::NDKMotion::GetStatus()`, cold. **And rpcsx was not in the census
+at all, because PS3 is out of the binary — and rpcsx is the fork where these are
+HOT**: SPU mailboxes, where a pure `try_read` peek took the cache line
+**exclusive**. **One fork in the packed binary uses them, in one cold function.
+Do not raise the baseline.** Ledger queried first, zero prior entries. See
 [`research_log/20260824_2230_five_of_six_forks_ship_a_runtime_atomic_dispatch.md`](research_log/20260824_2230_five_of_six_forks_ship_a_runtime_atomic_dispatch.md).
 
 **eden ships a `YUZU_BUILD_PRESET=armv9` option that sets `-march=armv9-a`. Do

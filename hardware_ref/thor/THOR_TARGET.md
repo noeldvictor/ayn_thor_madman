@@ -201,6 +201,26 @@ before any change, per the rule taken from rpcsx's 0.04% audit:
 > **`casp` count across six shipped `arm64-v8a` binaries: zero, in 25.9 million
 > instructions.** `ldxp`/`stxp`: 8, all in azahar.
 
+**CORRECTED 2026-08-25: `casp` alone is the WRONG INSTRUMENT, and the decision
+survives for a different reason.** Without LSE2 a 16-byte atomic is **not** a
+`casp` — it is an **`ldaxp`/`stlxp` retry loop**, so counting `casp` counts the
+*fixed* case and reports the *broken* case as absent. **Count
+`ldaxp|stlxp|ldxp|stxp` as well.**
+
+Read with the right instrument: **azahar's 8 are all in one function,
+`InputManager::NDKMotion::GetStatus()`** — a 16-byte atomic read of
+motion-sensor state, one thread, at most once a frame. **Genuinely cold.**
+
+**And rpcsx was never in that census, because PS3 is out of the packed binary —
+and rpcsx is the fork where these are HOT**: SPU mailboxes, where `try_read` is
+a pure peek that took the cache line **exclusive**, plus the SPU reservation
+stamps and the global CPU-thread bitmask.
+
+**So: one fork in the packed binary uses 16-byte atomics, in one cold function.
+The fork where they are hot is not in the binary.** The decision is unchanged
+and the reason is now the true one. See
+[`research_log/20260825_1330_a_feature_probe_that_cannot_fire.md`](../../research_log/20260825_1330_a_feature_probe_that_cannot_fire.md).
+
 **So do not raise the baseline.** Raising it widens the `SIGILL` surface for
 every instruction the compiler may then choose unguarded, and buys an
 optimisation for an operation the fleet does not perform. **Revisit only if a

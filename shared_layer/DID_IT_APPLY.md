@@ -4,8 +4,8 @@
 value that never took effect.**
 
 Eleven instances are now recorded, across five forks, found independently by
-different people at different times. **They are not eleven bugs. They are one
-disease with eleven mechanisms**, and this project has been accumulating defences
+different people at different times. **They are not twelve bugs. They are one
+disease with twelve mechanisms**, and this project has been accumulating defences
 against them one at a time without noticing they were the same thing.
 
 > **A setting that exists is not a setting that applies.**
@@ -28,7 +28,7 @@ becomes a research bug.
 
 ---
 
-## The eleven mechanisms
+## The twelve mechanisms
 
 ### Configuration layer
 
@@ -50,6 +50,14 @@ becomes a research bug.
 | 9 | **A persisted config beats a compiled default, forever.** Written back when the default was genuinely off | xenia | three validated `rlwinm` fastpaths were off on the device. **−2.88%**, and every measurement that session was on a handicapped baseline |
 | 10 | **The default is set on a launch path the real launch does not take** | xenia | the AOT object cache was enabled only when no cvar bundle was supplied, and the launcher always supplies one. **111 MB of cache sat unused while every real launch recompiled ~10,000 functions** |
 | 11 | **The dispatcher never reaches the handler.** The lever is configured, allowlisted and installed, and the call goes past it | xenia | desktop HLE intercepts returned `count=0` for weeks — **"ALL desktop diag intercepts were FALSE NEGATIVES"**, and the fix **corrected an earlier research conclusion built on that zero** |
+
+| **12** | **A feature probe that CANNOT FIRE.** A guard on a macro nothing defines: syntactically valid, compiles cleanly, never true | rpcsx | **every LSE2 fast path for `atomic_t<u128>` was dead code**, so SPU mailboxes, reservation stamps and the global thread bitmask all ran an `ldaxp`/`stlxp` loop — and **`try_read`, a pure peek, took the cache line EXCLUSIVE** |
+
+> **A feature probe that cannot fire is indistinguishable from a feature the
+> hardware lacks.** There is no ACLE macro for FEAT_LSE2, so the code inferred it
+> from `__ARM_ARCH_8_4__` and friends — **which clang on AArch64 defines at no
+> `-march` at all.** Detector: **read `clang -dM -E`, not the comment above the
+> probe.** That is the same instrument that answered the `+nosve` question here.
 
 **And two near-misses that belong here:** Vita3K's `USE_LTO` defaulted to
 `RELEASE_ONLY`, which covers a configuration neither shipped build uses, so LTO
@@ -92,6 +100,7 @@ paid.
 | 9 | `bug_class_sweep.py --class stale_default`; and **read the persisted config, not the compiled default**. **Query the experiment ledger too** — `python <xenia>/tools/exp_ledger.py check "<lever>"` — because a lever recorded `DEAD` while silently disabled was never really tested |
 | 10 | `bug_class_sweep.py --class wrong_launch_path`; and **verify a hit, never infer one from a non-empty cache** |
 | 11 | **A positive control.** `capability_probe.py --self-test` |
+| 12 | **`clang -dM -E`.** Grep for `#if defined(X)` where nothing defines `X` |
 | build flags | `tools/emitted_flags.py` — the flags that reached the compiler, from `compile_commands.json`, **with `--dates`**, because a stale build describes an artefact rather than the source |
 | target claims | `tools/target_check.py` — 4 probes, proven against 4 real traps |
 
@@ -114,7 +123,7 @@ paid.
 
 ## Limits
 
-- **Eleven instances, five forks.** Cemu, azahar, melonDS and GameThor have
+- **Twelve instances, five forks.** Cemu, azahar, melonDS and GameThor have
   contributed none, which almost certainly means nobody has looked rather than
   that they are clean.
 - **Every instance here was found by reading, not by a tool.** The tools were
