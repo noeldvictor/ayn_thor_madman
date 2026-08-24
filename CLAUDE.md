@@ -3307,6 +3307,48 @@ RIGHT and still not what settled it.**
 backends in the packed binary, and **the rejections live in one fork's
 `AGENTS.md`** — the unit-of-work argument applied to negative results.
 
+**AND THE COUNTERWEIGHT, FROM THE SAME FORK: 3x TO 15x.** azahar replaced the
+frontend's **shift / broadcast / AND / equal / subtract / narrow DAG** for vector
+rounding shift-right narrowing with a **first-class IR operation** that ARM64
+emits as **one instruction** — `RSHRN`, `SQRSHRN`, `SQRSHRUN`, `UQRSHRN`:
+
+| Core | A510 | A710 | A715 | X3 |
+| --- | --- | --- | --- | --- |
+| speed-up | **13.13x - 14.81x** | 3.23x - 3.59x | 2.81x - 3.54x | 3.51x - 3.96x |
+
+**The DAG was not wrong. It was PORTABLE**, and azahar's instruction beside the
+change says so: *"x64 and RISC-V must polyfill the first-class operation back
+into that overflow-safe DAG."* **Those hosts have no single instruction for the
+guest operation, so the IR decomposed it for everybody — including the host that
+has one.**
+
+> **This is the x86 detour in a fourth organ** — not the register model, not flag
+> handling, not a timing constant, but **an IR that destroys a guest operation
+> the host implements directly.**
+>
+> **THE RULE: the IR carries the GUEST operation at high level and each backend
+> lowers it. The portable DAG is the FALLBACK, not the representation.**
+
+**And it separates two things this file was treating as one.** *"Can these two
+instructions be one"* is a peephole, and the four rows above say it usually
+loses. *"Does the host have an instruction that IS this guest operation, and is
+the IR preventing its use"* is the DELETE operation, and it measured 3x to 15x.
+
+**The A510 is the discriminator in all eight results, and this is the favourable
+direction.** It runs Q-form 128-bit NEON at **throughput 1**, so it punishes
+added operations hardest **and rewards removed ones hardest.** Both directions
+are the same fact.
+
+**A second azahar rejection belongs beside the swizzle candidate.** It refuses
+`LD2`/`LD4`/`ST4` twice, citing the manual: **"Cortex-A510 documents Q-form
+32-bit `ST4` throughput as `1/50`."** Its replacement is **not a better
+instruction but a better data layout** — channel-major `PlanarQuadFrame32`
+storage so the transpose never happens, with the sample-major form kept **for the
+save-state archive only.** **The strongest answer to an expensive instruction is
+a layout in which it is not needed.**
+
+See [`research_log/20260825_0200_a_first_class_ir_operation_measured_3x_to_15x.md`](research_log/20260825_0200_a_first_class_ir_operation_measured_3x_to_15x.md).
+
 See [`research_log/20260824_2220_four_textbook_arm64_fusions_measured_and_rejected.md`](research_log/20260824_2220_four_textbook_arm64_fusions_measured_and_rejected.md).
 
 **Add instability to the gate, not just slowness.** The second row's problem is
