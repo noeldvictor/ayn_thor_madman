@@ -114,7 +114,90 @@ data class SettingSpec(
     val options: List<String> = emptyList(),
     val liveChangeable: Boolean = false,
     val scope: SettingScope = SettingScope.PER_GAME,
+    /**
+     * Bounds for [SettingType.INT] and [SettingType.FLOAT]. Null means the
+     * backend declares no bound and the UI must not invent one.
+     *
+     * These exist because without them a slider's range is invented by
+     * whoever draws it, and an invented range that excludes the default
+     * SILENTLY COERCES it. XenDroid shipped exactly that: its
+     * `texture_cache_memory_limit_soft` slider had a floor of 512 while the
+     * real default was 384, so every user's default was raised without a
+     * message. Its fix note says the floor "would have silently coerced the
+     * default upward".
+     *
+     * That is DID_IT_APPLY mechanism 14 -- a substituted value -- reached
+     * through the UI rather than through an API.
+     */
+    val min: Double? = null,
+    val max: Double? = null,
 )
+
+/** A schema defect found by [validateSchema]. */
+data class SchemaDefect(val key: String, val problem: String)
+
+/**
+ * Schema integrity, checked without a device, a backend or a running game.
+ *
+ * Every rule here is a bug somebody shipped, not a tidiness preference:
+ *
+ * - **A default outside its own bounds** is silently coerced by the slider.
+ * - **An ENUM default that is not one of its options** cannot be displayed,
+ *   so the widget picks something else.
+ * - **An ENUM with no options** renders an empty picker.
+ * - **A duplicate key** makes resolution order undefined, and this project
+ *   resolves per-game over global by key.
+ * - **Bounds on a non-numeric setting** mean somebody misunderstood the type.
+ *
+ * Returns every defect rather than throwing on the first, so a backend author
+ * fixes one list instead of iterating.
+ */
+fun validateSchema(specs: List<SettingSpec>): List<SchemaDefect> {
+    val defects = mutableListOf<SchemaDefect>()
+    val seen = mutableSetOf<String>()
+    for (spec in specs) {
+        if (!seen.add(spec.key)) {
+            defects.add(SchemaDefect(spec.key, "duplicate key"))
+        }
+        val numeric = spec.type == SettingType.INT || spec.type == SettingType.FLOAT
+        if (!numeric && (spec.min != null || spec.max != null)) {
+            defects.add(SchemaDefect(spec.key, "bounds on a ${spec.type} setting"))
+        }
+        if (numeric) {
+            val value = spec.default.toDoubleOrNull()
+            if (value == null) {
+                defects.add(SchemaDefect(spec.key, "default '${spec.default}' is not numeric"))
+            }
+            val lo = spec.min
+            val hi = spec.max
+            if (lo != null && hi != null && lo > hi) {
+                defects.add(SchemaDefect(spec.key, "min $lo > max $hi"))
+            }
+            if (value != null) {
+                if (lo != null && value < lo) {
+                    defects.add(
+                        SchemaDefect(spec.key, "default $value below min $lo -- would be coerced"),
+                    )
+                }
+                if (hi != null && value > hi) {
+                    defects.add(
+                        SchemaDefect(spec.key, "default $value above max $hi -- would be coerced"),
+                    )
+                }
+            }
+        }
+        if (spec.type == SettingType.ENUM) {
+            if (spec.options.isEmpty()) {
+                defects.add(SchemaDefect(spec.key, "ENUM with no options"))
+            } else if (spec.default !in spec.options) {
+                defects.add(
+                    SchemaDefect(spec.key, "default '${spec.default}' is not one of its options"),
+                )
+            }
+        }
+    }
+    return defects
+}
 
 /**
  * Where a resolved setting value came from.
