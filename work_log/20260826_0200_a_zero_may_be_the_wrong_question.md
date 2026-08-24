@@ -13,9 +13,16 @@ Make the warning structural instead of remembering it.**
 | **no Oboe latency figure in three forks' `AGENTS.md`** | ARMSX2's is **92 lines about project shape** and never mentions audio |
 | **Cemu, azahar, Vita3K and melonDS have no game quirks** | they **compare a title id inline** — 31, 22, 12 and 1 files |
 
+**The searches, named, because that is the whole subject.** First: `git grep` for
+`D8|Q8|V8\.|CalleeSaved` in `ARMJIT_A64/`, against the mechanism
+`ABI_PushRegisters`. Second: `grep -icE 'latency|underrun'` over three
+`AGENTS.md` files, against a positive control on `audio` that also returned zero.
+Third: `gamefix|game_?quirk|GameDatabase|per-title hack` against
+`titleid *[=!]=|title_id *[=!]=|serial *[=!]= \"|program_id *[=!]=`.
+
 **The first two I caught with a positive control.** The third I flagged as "weak"
-and it was worse than weak — **it was the wrong question**, and the correct search
-returned 66 files.
+and it was worse than weak — **it was the wrong question**, and the mechanism
+search returned 66 files across four forks that the name search scored zero.
 
 > **This repo has had the rule since before I started**: *"a survey that searches
 > for a named library finds adopters of that library, not implementations of the
