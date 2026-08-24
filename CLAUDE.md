@@ -4047,6 +4047,20 @@ what quality. Read it before you build anything.
 **And read the fork's own research directory. It is the richest unmined seam in
 the fleet.**
 
+**BUT READ ITS `AGENTS.md` FIRST — that is cheaper and denser.**
+[`shared_layer/FLEET_DISCIPLINE.md`](shared_layer/FLEET_DISCIPLINE.md) indexes
+all eight, read in one pass on 2026-08-24: **who is disciplined about what, the
+eleven rules taken, four detection heuristics, and the three places where two
+forks disagree and both are right.**
+
+> **Nobody is disciplined about everything. Each fork is rigorous in one place
+> and casual elsewhere, and the rigour is always where that fork got burned.**
+> Send the question to the fork that was burned by it.
+
+**Cost of the pass: under two hours. It produced a correction to Foundation
+point 1, a measured answer to a queued device experiment, and eleven rules this
+repo did not have.**
+
 > **START AT THE FORK'S `AGENTS.md`, NOT AT WHICHEVER DOCUMENT YOU FOUND FIRST.**
 >
 > **Cost of not doing so, 2026-08-25: a day.** rpcsx's `docs/arm64/ledger.md` was
