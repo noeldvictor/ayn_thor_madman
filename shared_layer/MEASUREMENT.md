@@ -18,6 +18,7 @@ correct and the list had become unnavigable.
 | **Measure applicability before building a transform.** `EOR3` died on 0 of 1 candidates | `CLAUDE.md`; `research_log/20260824_0520_*` |
 | **Ask whether the code is executed** before asking for a better instruction | `research_log/20260824_0730_*` |
 | **Read the persisted config**, not the compiled default | `research_log/20260824_0645_*` |
+| **Verify a build flag from the emitted compile commands**, not the CMake | `research_log/20260824_1500_*` |
 | **Check which launch path sets a default** | same |
 
 ## Choosing the instrument
@@ -96,3 +97,4 @@ turns it into a re-runnable sweep.
 | `tools/fleet_docs_index.py` | what has the fleet already written, and what failed |
 | `tools/hle_coverage.py` | what does each backend implement |
 | `tools/fleet_lint.py` | build-configuration drift |
+| **`tools/emitted_flags.py`** | **what flags actually reached the compiler**, from real build output |
