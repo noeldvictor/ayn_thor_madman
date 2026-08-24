@@ -115,6 +115,39 @@ same quantity.**
 
 ---
 
+> ## THE MECHANISM IS PROVEN. THE PAYOFF IS `CONFOUNDED`, 2026-07-24.
+>
+> **Added after a self-audit found this document resting on one dated source.**
+>
+> **The disassembly below stands** — it is static and does not depend on a scene.
+> **The on-device test does not support a win.** `llvm_residency_ladder_thor`,
+> the **first run ever with `cpu_backend_llvm` actually on**:
+>
+> | Arm | VdSwap/s | `LLVMmap` |
+> | --- | --- | --- |
+> | a64 baseline | 7.8 | — |
+> | L0 llvm | 8.1 | 222 |
+> | **L1 + context_residency + writeback** | **9.9** | **5,685** |
+> | L2 + residency_abi | 8.1 | 450 |
+> | L3 + saverest | 8.1 | 354 |
+>
+> **L1's apparent +27% is the cross-run scene confound.** The title's intro
+> advances at a rate that depends on emulation speed, so **a fixed wall-clock
+> sample lands on a different frame per run** — and the `LLVMmap` spread shows
+> the arms executed very different amounts of code.
+>
+> **`CONFOUNDED` is not `DEAD`.** Residency may still win; **it has not been shown
+> to**, and the in-JIT route still crashes.
+>
+> **And the same entry carries a larger, solid finding:** **30+ functions fall
+> back from LLVM to the a64 emitter and every one is `mul_add`/`mul_sub`**, from a
+> deliberate `cpu_backend_llvm_lower_vmaddfp=false` workaround. **So every
+> `vmaddfp`-using function is excluded from LLVM, from residency, and from the AOT
+> object cache at once.** **Fixing `vmaddfp` is a coverage lever, not only a
+> correctness fix.**
+>
+> See [`../research_log/20260824_1910_residency_on_device_is_confounded.md`](../research_log/20260824_1910_residency_on_device_is_confounded.md).
+
 ## CONFIRMED BY DISASSEMBLY, 2026-06-26, and the mechanism has a name
 
 **xenia proved this with no device.** `scratch/thor-debug/residency_killtest.c`:

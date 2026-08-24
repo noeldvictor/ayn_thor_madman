@@ -4753,6 +4753,12 @@ Wi-Fi adb rules:
   *not* disputed is measured directly: **bindless regressed 129 ms to 161 ms**,
   native GMEM render targets `DEAD`, fragment levers capped low — **and the
   tile-store lever did not pay either**, `CONFOUNDED` once and **`FLAT` twice.**
+- **A THIRD WAY TO MAKE ARMS COMPARABLE: FIX THE WORK UNIT.** Time a **fixed
+  frame range** of a deterministic opening, **content-matched by construction**.
+  It removes the scene confound without a savestate — which matters because
+  **Cemu and eden have none.** The three routes: **fix the work unit**,
+  **normalise by something the change does not touch**, or **restore a
+  savestate**.
 - **CHECK THE LEDGER FOR A LATER MEASUREMENT OF THE SAME THING.** This file
   carried the 2026-07-04 anatomy as settled for most of a day because **one
   document was read and the ledger was not queried.** `exp_ledger.py check` is one
