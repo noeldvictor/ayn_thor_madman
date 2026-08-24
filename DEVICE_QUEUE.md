@@ -516,11 +516,34 @@ produced**, via Capstone:
 **Inflation = total instruction lines / lines that carry a guest address.** A
 five-line script, no judgement calls.
 
-### Why this still needs the device
+### CORRECTED 2026-08-25: this does NOT need the device
 
-**The a64 backend only runs on ARM64.** A desktop xenia build uses the x64
-backend, which would measure the wrong emitter. **There is no ARM64 host here
-other than the Thor.**
+**The first half stands.** The a64 backend is compiled inside
+`#elif XE_ARCH_ARM64`, so an x86-64 build does not contain it and would measure
+the wrong emitter.
+
+**The claim "there is no ARM64 host here other than the Thor" is false.** Checked
+in WSL Ubuntu on this machine:
+
+```
+/usr/bin/aarch64-linux-gnu-g++      <- the compiler premake5.lua's --linux-arm64 names
+/usr/bin/qemu-aarch64               <- the runner xenia's own ABI-poison test assumes
+```
+
+> **The route: cross-build the PPC test harness for ARM64 Linux, run it under
+> `qemu-aarch64` with `--cpu=arm64` and the disassembly flags, count.**
+
+**Timing under qemu would be meaningless, and this measurement is not a timing.**
+**Inflation is a STATIC COUNT of emitted instructions** — total instruction lines
+over lines carrying a guest address — **which is exactly why this route serves
+this entry and would serve none of the benchmarks in this queue.**
+
+**NOT ESTABLISHED, and it is the whole remaining risk: whether the cross build
+succeeds and whether the harness runs under qemu-user.** Neither was tried. **A
+route existing is not a route working.**
+
+**One practical note**: WSL path translation failed with a `D:\` drive present in
+the environment, and the check had to run from a translatable directory.
 
 **But it is a cheap run**: load a title, dump one function, pull the log. **No
 scene navigation, no timing, no thermal soak, no A/B.** It is a capture, not a

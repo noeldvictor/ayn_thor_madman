@@ -882,8 +882,18 @@ Direct the exploration at these:
   and rustup (melonDS), vcpkg (Vita3K), `pkg-config` and `glslangValidator`
   (eden), and `git` with `core.longpaths` on Windows.
 
-  **ADD `ccache`, 2026-08-25, and it belongs to a SECOND class.** Checked on this
-  box: **neither `ccache` nor `sccache` is on `PATH`.** Unlike the tools above it
+  **ADD `ccache`, 2026-08-25, and it belongs to a SECOND class.** **Neither
+  `ccache` nor `sccache` is on the WINDOWS `PATH`, which is the environment
+  Gradle's NDK build runs in — but `/usr/bin/ccache` exists in WSL on this same
+  machine.** The recommendation stands and **the first wording of this row did
+  not, because it said "on this box".**
+
+  > **"Present on this machine" is not a fact. "Present in the environment that
+  > runs the build" is.** This list needs an environment beside every tool —
+  > Windows Gradle, WSL, or the device — **and the same error is what
+  > `adb shell` against the app already taught this project.**
+
+  Unlike the tools above it
   is **not needed to build anything** — it is needed to build a *second* time
   cheaply.
 
