@@ -169,9 +169,24 @@ enum class AcceptedInput : uint8_t {
 struct TextEntryConfig {
   AcceptedInput accept;
   bool multiline;
+  // UTF-16 CODE UNITS, terminator excluded. The unit was unstated until
+  // 2026-08-25; XenDroid's equivalent says so in its own comment, and a
+  // backend and a shell that disagree about bytes, code units or code points
+  // truncate a name or over-run a guest buffer without either side erring.
   uint16_t max_length;
   uint16_t max_digits;
   std::string_view hint;
+  // The guest's own flags, UNINTERPRETED, carried through for a backend or a
+  // shell that knows what they mean. XenDroid: "raw guest flags,
+  // uninterpreted".
+  //
+  // These exist because AcceptedInput above is a FIXED enum taken from one
+  // guest's taxonomy, and this project has rejected exactly that shape three
+  // times already -- texture classes, filter lists and cheat memory regions
+  // are all DECLARED by the backend rather than enumerated here, for the same
+  // reason. AcceptedInput is kept because it is what a shell can actually act
+  // on without guest knowledge; the raw flags are what stops it being lossy.
+  uint32_t guest_flags;
 
   // Button labels the guest supplies. The app styles them; it does not rename
   // them. A guest may ask for one, two or three.
@@ -223,6 +238,34 @@ struct GuestUser {
 
 // RULE: an applet request BLOCKS THE GUEST. Show it immediately. Do not queue
 // it behind an animation and do not batch it with a frame.
+
+// RULE, added 2026-08-25: A BLOCKING APPLET NEEDS A CANCELLER.
+//
+// The rule above parks a guest thread until a person answers. Nothing here
+// said what happens if the host tears down first, and the answer is a
+// deadlock: the shell joins a thread that is waiting on a dialog nobody will
+// ever answer.
+//
+// XenDroid hit this and its header states the remedy exactly:
+//
+//   "Fails every blocked request. The kernel calls this before waiting on the
+//    dispatch thread, which could otherwise be parked inside a request."
+//
+// This is the SECOND instance of the same shape found on 2026-08-25. The other
+// is XenDroid's audio pause: "a worker parked on resume_event_ never sees
+// worker_running_ go false." Any design that parks a thread awaiting an
+// external event owes an answer for teardown.
+//
+// The shell MUST call CancelApplets() before joining, and a cancelled request
+// resolves as a DISMISSAL rather than an error, so the guest always gets an
+// answer. XenDroid's rule: "False means it could not be presented; treat as a
+// dismissal."
+//
+// NOTE: azahar's design does not need this, because it is asynchronous --
+// Setup/Execute then DataReady/ReceiveData, with nothing parked. The canceller
+// is the price of the blocking model, and it is stated here because the rule
+// above chose blocking.
+void CancelApplets();
 
 // ------------------------------------------------------------------ settings
 //
