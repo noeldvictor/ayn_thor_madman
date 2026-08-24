@@ -1146,6 +1146,22 @@ while the control may be warm. **Clear the shader cache before every arm**, or
 the control wins on cache state rather than on code quality. This is the same
 trap as the persisted-config rule.
 
+**HOW TO SET IT, answered 2026-08-25 — the mechanism is shipping in XenDroid.**
+The app sets the driver's environment from inside its own process, before Vulkan
+initialises, and logs what it set:
+
+```c
+setenv("TU_DEBUG", tu_debug.c_str(), 1);
+XELOGI("Set TU_DEBUG={} for the Turnip Vulkan driver", tu_debug);
+```
+
+**`GCM` is read the same way — `debug_get_num_option` — so the same route
+works.** Two details to copy: **check whether the user already specified the
+flag** before appending, so an explicit setting is neither duplicated nor
+overridden; and **log the final value**, which is this project's
+verify-the-emitted-artefact rule applied to an environment variable and is
+exactly what the gate below asks for.
+
 **Gates.** Confirm the variable reached the process — read it back from the
 app's own environment, not from the shell that launched it, because
 `adb shell` and the app are different processes. **Prove the instrument first:**

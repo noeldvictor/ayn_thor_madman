@@ -363,6 +363,32 @@ line backend**, and that 2% is the entire extractable surface.
 **So this is not its own extraction.** Fold it into candidate 0, which already
 owns host-side memory and device lifetime.
 
+### Candidate 9 gains a rule: record the part each entry was MEASURED on
+
+**Added 2026-08-25.** Three Turnip defects are now recorded in this repo, and
+**two are about Adreno 6xx while this device is 7xx** — ARMSX2's
+attachment-self-read rule was measured on an **Adreno 650 with Mesa 26.1.2**, and
+XenDroid's shared-consts push defect is **explicitly gated to 6xx**.
+
+> **The fleet's accumulated Turnip knowledge is disproportionately about a GPU
+> generation the Thor does not have**, which is unsurprising — 6xx parts are far
+> more common in Android handhelds — **but it means a rule inherited without its
+> provenance is probably a 6xx rule.**
+
+**ARMSX2's confidence rank (`Vendor < Model < Driver < DriverVersion`) is the
+right mechanism and is not sufficient by itself.** The rank says what a rule
+APPLIES to. **Add a field for what it was MEASURED on**, because a workaround
+with no measured-on value cannot be re-evaluated when the target GPU changes, and
+**an unmeasured 7xx entry inherited from a 650 costs performance for a defect
+that may not exist here.**
+
+**A device fact for the same candidate**: `/sys/class/kgsl/kgsl-3d0/gpu_model` is
+world-readable and identifies the part **before Vulkan is up**, which matters
+because a driver environment variable must be set before the driver reads it.
+**It is the GPU analogue of `midr_el1`.**
+
+See [`../research_log/20260825_1900_the_fleets_turnip_knowledge_is_mostly_about_the_wrong_gpu.md`](../research_log/20260825_1900_the_fleets_turnip_knowledge_is_mostly_about_the_wrong_gpu.md).
+
 ### Candidate 9: a driver database is the "one driver, one bug surface" claim made concrete
 
 **`CLAUDE.md` justifies the pinned driver partly as "one driver, one bug
