@@ -7864,6 +7864,19 @@ the numbering.
   changes every frame is not a texture to upscale**, and nothing in this file's
   per-class routing design excludes it.
 
+  > **GENERALISED 2026-08-25, because this is the second instance and they are
+  > the same bug.** XenDroid found that **analog hardware never reports exactly
+  > zero**, so its `emitAxis` equality check — which exists to forward only
+  > CHANGED values — **never matched, and a resting controller crossed into
+  > native on every motion sample.** Its fix snaps below a 0.08 deadzone to
+  > exactly `0f` *"so `emitAxis`' equality check can match."*
+  >
+  > **THE RULE: a skip-if-unchanged test is defeated by any input that never
+  > exactly repeats.** An animated texture's hash, an analog axis at rest, a
+  > timestamp, an accumulating float. **The de-duplication does not fail loudly —
+  > it silently stops de-duplicating**, and the cost lands on whatever the check
+  > was protecting. **Quantise the input, or the check is decoration.**
+
 **Two more from the same file.** The injection point is
 `GSTextureCache::InjectHashCacheTexture` with
 `GSTextureReplacements::QueueWorkerThreadItem` as the existing async worker
