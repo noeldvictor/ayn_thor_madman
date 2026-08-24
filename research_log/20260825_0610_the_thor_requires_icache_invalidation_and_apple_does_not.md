@@ -119,8 +119,13 @@ almost none of, and `CLAUDE.md` already says so.
   Thor model but not re-run here.
 - **The sweep counts calls; it does not verify each is correct or in the right
   place.** A fork can call `__builtin___clear_cache` on the wrong range.
-- **`finalizeMemory` returning false was rpcsx's specific MCJIT hole**; no fork
-  here uses MCJIT, so that shape was not swept.
+- **`finalizeMemory` returning false was rpcsx's specific MCJIT hole.** **rpcsx
+  and xenia are the two forks with an LLVM backend**, so xenia is the one place
+  it could recur here. **Checked:**
+  `git grep -c "finalizeMemory\|SectionMemoryManager" -- '*.cc' '*.h'` with
+  `third_party` excluded returns **nothing in xenia's own source** — it does not
+  use a custom MCJIT memory manager. **The shape is absent from the packed
+  binary.**
 
 ## Sources
 
