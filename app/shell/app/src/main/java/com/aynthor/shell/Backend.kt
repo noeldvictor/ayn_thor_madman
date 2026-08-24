@@ -106,6 +106,19 @@ enum class SettingScope {
  * restart says so **before** it is changed, not after.
  */
 data class SettingSpec(
+    /**
+     * Stable identity. **Changing this orphans every stored override.**
+     *
+     * INVARIANT: the key is independent of [group]. Moving a setting between
+     * groups must never change its key.
+     *
+     * XenDroid learned this the loud way. Its keys are `section|name`, so a
+     * commit titled "put settings in the TOML section their cvar is read from"
+     * renamed `XConfig|user_language` to `Console|user_language` and crashed
+     * two screens. The crash was the lucky outcome: overrides are stored by
+     * key, so the silent version reverts a user's saved setting to the default
+     * with nothing thrown -- from a commit whose subject line is a tidy-up.
+     */
     val key: String,
     val label: String,
     val type: SettingType,
