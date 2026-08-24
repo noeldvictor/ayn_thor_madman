@@ -4223,6 +4223,44 @@ Wi-Fi adb rules:
 - **Watts, not only frames.** The stated target for xenia on this device is
   about 5 W and 50 C. Throughput alone answers the wrong question on a
   handheld. A change that holds fps and lowers temperature is a win.
+- **SAY WHICH THERMAL SENSOR, AND NEVER TAKE A MAX OVER ALL OF THEM.**
+  `/sys/class/thermal` on this device exposes **two different quantities**, and
+  comparing a limit against the wrong one **manufactured a false alarm twice**.
+
+  | Sensor | Reading | What it is |
+  | --- | --- | --- |
+  | `cpu-1-9` | **90.7 C** under load, **55.0 C** idle | **per-core junction (Tj)** |
+  | `cpu-1-10` | 83.9 C | junction |
+  | `cpuss-0` | 68.7 C under load, 49.4 C idle | CPU subsystem |
+  | `gpuss-*` | 43-46 C | GPU subsystem |
+  | AYN FanBase / on-device readout | **57-61 C** | **package** |
+
+  **A ~35 C swing with load is the junction signature.** **Roughly 90 C Tj under
+  load is ordinary for this SoC**, which throttles nearer **95-105 C**.
+
+  **This device exposes NO `skin` zone at all** — nothing matches
+  `skin|case|shell|quiet` — so there is no package sensor in `/sys/class/thermal`
+  to fall back on.
+
+  > **A limit and a measurement taken from different sensors cannot be compared**,
+  > and a `max` over a heterogeneous sensor set silently does exactly that.
+  > **Never `sort -rn | head -1` over every zone.**
+
+  **The failure mode is worse than a bad number: it systematically favours the
+  slower arm.** rpcsx's guard compared a **junction maximum** against a
+  package-shaped 72 C limit, so **the arm using the big cores tripped almost
+  immediately and the arm pinned to the A510s did not** — because little cores run
+  cooler at the junction. *"The measurement was faithfully recording which arm ran
+  on faster cores."* **A510 pinning was then adopted to satisfy a limit that was
+  measuring the wrong quantity.**
+
+  **An unthrottled compile was once reported as "81.5 C, above the 72 C gate" and
+  nearly reversed a good change. The device was at 57 C.**
+
+  **With the right sensor the same comparison reads:** throttled to three A510s,
+  ~10 minutes at 51-58 C package; **unthrottled on all cores, ~3 minutes at
+  57-61 C.** **Three times faster for about three degrees.** See
+  [`research_log/20260824_1050_read_the_right_thermal_sensor.md`](research_log/20260824_1050_read_the_right_thermal_sensor.md).
 - **State the expected signature before the run.** Name what the numbers
   should do if the change works. A run with no prediction cannot fail.
 - **Run for 15 minutes or more when heat matters.** Thermal behaviour only
