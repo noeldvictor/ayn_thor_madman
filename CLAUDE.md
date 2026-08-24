@@ -4115,6 +4115,38 @@ Gate every power measurement on `status=Discharging` and refuse to report
 otherwise. `xenia-thor/tools/thor/power_affinity_ab.sh` already does this.
 Copy the gate.
 
+**SHARPENED 2026-08-24, and one word above is wrong.** A USB-attached reading is
+**a FLOOR, not fiction** — the charger supplies an unknown share, so the battery
+figure understates rather than randomises. rpcsx's probe prints **`on battery,
+exact`** against **`FLOOR, USB attached`**, which is the right way to report it.
+
+**And two claims had been merged into one blocker:**
+
+- **Attributing watts to the CPU specifically is genuinely unavailable.** There is
+  **no per-rail sensor** separating CPU from GPU, display, memory and radio, so a
+  spin reduction cannot be converted to a wattage without assuming a model.
+- **Measuring TOTAL SYSTEM power is available and exact.** `charge_counter` is
+  cumulative in microamp-hours; **differenced across a window it gives mean
+  current**, and the probe measured **0.002 W spread across four idle runs.**
+
+> **So the blocker is a cable, not a missing sensor.** Unplug the device, drive it
+> over the Wi-Fi adb endpoint this file already prefers, and system power becomes
+> exact. **And system draw is the user's actual question** — "did this use less
+> power" — not CPU-attributed draw, which is the one that is not available.
+
+**Its meta-lesson, and this repo should adopt it:** that was **the third
+self-declared blocker in that effort found to be partly self-inflicted** — one
+blocked on integration rather than analysis, one on a proposal that was wrong
+rather than on risk, and this one on a cable. **Re-read your own blockers before
+treating them as facts.**
+
+**Two power reference points to keep:** **device idle with the emulator not
+running is 0.48 cores busy at 0.628 W**, and the useful metric set is
+`residency_mcycles` (**cycles the core was clocked for, not work**), `busy_ratio`
+(**fraction of wall time outside cpuidle — the cleanest WFE signal**),
+`work_mcycles` = residency x busy_ratio, and `mean_mhz`, **because power rises
+faster than linearly with clock.**
+
 Wi-Fi adb exists to make that possible: the device stays reachable with no
 cable attached.
 
@@ -4234,6 +4266,13 @@ Wi-Fi adb rules:
   migrate the thread off its big core onto an A510**, so cores-busy and power
   both drop **while the emulator gets slower**. Its instruction: **check
   per-cluster residency.** **No entry in `DEVICE_QUEUE.md` does this yet.**
+- **RE-READ YOUR OWN BLOCKERS BEFORE TREATING THEM AS FACTS.** rpcsx found
+  **three self-declared blockers in one effort to be partly self-inflicted**: one
+  blocked on integration rather than analysis, one on a proposal that was wrong
+  rather than on risk, and **one on a USB cable rather than a missing sensor.**
+  **Saying "blocked on hardware" when the truth is "blocked on unplugging it" is
+  the difference between an item nobody can act on and thirty seconds of physical
+  access.**
 - **Stop after two failed or inconclusive guesses in one subsystem.** The next
   move is instrumentation, dumps, RenderDoc or Ghidra — **not a third guess.**
 - **A diagnostic toggle is not a fix.** A prop, a draw skip or a forced path is
