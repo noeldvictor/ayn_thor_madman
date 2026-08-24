@@ -3662,8 +3662,27 @@ them **off by default**; `EOR3`/`BCAX` fusion measured **`DEAD`**; the
 >
 > **The useful prior survives: a one-sided, single-instruction argument from a
 > manual has a poor record.** Of the items named HERE, **two are genuine
-> refutations** (A510 shared VPU, `TBX2`), and **rpcsx's ten are its own and are
-> not audited.** See
+> refutations** (A510 shared VPU, `TBX2`).
+>
+> ### AND THE SOURCE ALREADY DIAGNOSED ITS OWN FAILURES — read 2026-08-26
+>
+> **rpcsx's own count is TWELVE, not ten**: *"twelve refuted predictions from
+> the manuals, and one profile that located three quarters of all cycles in an
+> afternoon."* **The figure was never stable in the source either.**
+>
+> **And it names the cause, in the same ledger:** *"`TBL` is `2 2 V` on A715 —
+> full width, **unlike the `V0`/`V1` traps that sank most manual-derived
+> ideas**."* **This file quoted the headline and not the diagnosis beside it.**
+>
+> **It also says the work was not wasted**: *"it confirmed the lowerings, closed
+> `sse2neon`, and found the empty `mov_rdata` branch. But the ratio is stark."*
+> **The `sse2neon` closure is a major finding in this file in its own right.**
+>
+> > **So the fork's actual position is about ORDERING, not manuals:** *"getting
+> > the profile working should have been the first task of the audit, not the
+> > last."* **Carry that, not "do not pick a lever from a manual".**
+>
+> See [`research_log/20260826_1300_the_fork_that_coined_the_prior_already_diagnosed_it.md`](research_log/20260826_1300_the_fork_that_coined_the_prior_already_diagnosed_it.md). See
 > [`research_log/20260826_1215_thirteen_for_thirteen_does_not_survive_being_counted.md`](research_log/20260826_1215_thirteen_for_thirteen_does_not_survive_being_counted.md).
 
 > **REFINED 2026-08-26, and the `TBX2` null is the evidence.** The guides carry a
