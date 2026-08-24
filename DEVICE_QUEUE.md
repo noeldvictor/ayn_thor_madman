@@ -707,6 +707,61 @@ the cutscene band to the savestate band, about +/-5%.
 **Prediction: `OPEN`.** A global-lock deadlock during pause may be a symptom of
 the object model rather than of the save path.
 
+## 21. Does Turnip honour LAZILY_ALLOCATED — a probe, not an A/B
+
+**Cheap, and it gates entry 22.** The Thor reports a memory type
+`DEVICE_LOCAL | LAZILY_ALLOCATED`, 11,441 MB — **Adreno's on-chip tile memory.**
+An attachment backed by it need never touch DRAM.
+
+**No fork binds it** — searched all eight forks' own source for
+`LAZILY_ALLOCATED` and `eLazilyAllocated`, vendored trees excluded, and read the
+one hit: rpcsx's is a **log-format string** in its memory-type dump, not a use.
+Vita3K is the only fork that sets `TRANSIENT_ATTACHMENT` usage and `DONT_CARE`
+ops, so it does two of the three parts. See
+[`research_log/20260824_0940_one_heap_and_nobody_uses_tile_memory.md`](research_log/20260824_0940_one_heap_and_nobody_uses_tile_memory.md).
+
+**The probe:** allocate a transient depth attachment with
+`VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT`, then read
+`vkGetDeviceMemoryCommitment`. **A driver is allowed to commit the whole thing
+anyway.**
+
+**Expected signature: committed bytes stay far below the allocation size while
+the pass runs.** If the driver commits it all, the idea is closed and no A/B is
+needed.
+
+**Prediction: it is honoured.** Adreno is a tiler and this is the memory type that
+exists for exactly this. **Stated so it can fail.**
+
+## 22. Direct-write uploads on a unified-memory device
+
+**Gated on entry 21 and on reading the fleet's upload paths.**
+
+**The Thor has one heap.** Types 0-2 are the same 11.4 GB of DRAM described three
+ways, and **type 1 is device-local, host-visible, coherent AND cached.** So the
+staging copy every fork performs on the way to device-local memory **has no
+destination that differs from its source.** Every fork stages, from 5 files in
+Vita3K to 32 in eden.
+
+**Cached is the precondition and it holds** — an uncached or write-combined
+mapping would have sunk this.
+
+**The run:** one backend, one title, texture-heavy scene, staged upload against a
+direct write into a type-1 mapping. **Hold the async-compile and cache settings
+fixed across arms**, and use a **work-normalised metric** — bytes uploaded is the
+natural denominator and the change does not touch it — so the scene may vary.
+
+**Expected signature: fewer bytes moved and lower GPU busy at the same clock.**
+Read `/sys/class/kgsl/kgsl-3d0/gpubusy`, which resets on read.
+
+**Prediction: `OPEN`, leaning `FLAT`.** rpcsx's own words: **host-visible does not
+mean fast to write**, and cached-and-device-local still has to beat cached staging
+plus a driver-side copy. **And this repo's record is that reasoned optimisations
+lose.**
+
+**The confound that would fake a win:** a direct write moves the copy from the
+GPU's timeline onto the CPU's. **GPU busy falling while frame time is unchanged is
+not a win** — check CPU cores-busy in the same window.
+
 ## Not ready to run
 
 These need a decision or a build first, not device time.
