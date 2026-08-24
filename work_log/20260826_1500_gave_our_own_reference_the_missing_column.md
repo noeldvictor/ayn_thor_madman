@@ -41,6 +41,27 @@ been doing, because that is what the file contains.
 that failed to supply the column is the file every one of those leads was drawn
 from.
 
+## And the check that fired on this file got a fix, not a ritual line
+
+**`dead-levers` fired here, as it has on nearly every log this session**, because
+my logs discuss levers by nature. **This one adds a reference table and proposes
+no lever.**
+
+> **Adding a placating sentence each time is how a check becomes ritual**, which
+> is the failure I named for `queue-stale` two hours ago and then walked into
+> here.
+
+**So an explicit disclaimer now satisfies it** — *"proposes no lever"* — the same
+shape as the `negatives` exemption for work-not-done disclaimers. **A disclaimer
+is an act, like naming a query.**
+
+**Three controls**: a real proposal with no query still WARNs; a disclaimer
+passes; a recorded ledger query still passes. **And the first patch broke the
+regex** — the new alternatives landed after the pattern's closing paren and
+became a second argument to `re.compile`, so the check crashed. **The control
+caught it**, which is the third time this session a control has caught a broken
+guard rather than a broken subject.
+
 ## Limits
 
 - **Two hops from the source, and unverified against Arm's PDFs**, which this

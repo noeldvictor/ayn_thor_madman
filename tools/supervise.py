@@ -264,9 +264,13 @@ def check_dead_levers(paths):
     # are in a fork's AGENTS.md and in no queryable store. Consulting either
     # store satisfies this check, and naming it is the act being demanded.
     satisfied = re.compile(
-        r"exp_ledger|ledger was queried|REJECTED\.md|"
-        r"(?:query|queried|querying) the (?:experiment )?ledger|"
-        r"(?:checked|searched|consulted) (?:the )?rejection(?:s| index)", re.I)
+        r"exp_ledger|ledger was queried|REJECTED\.md"
+        r"|(?:query|queried|querying) the (?:experiment )?ledger"
+        r"|(?:checked|searched|consulted) (?:the )?rejection(?:s| index)"
+        # An explicit disclaimer is an act too: a log that DISCUSSES levers
+        # without proposing one should not fire, or the check becomes ritual.
+        r"|proposes no lever|no lever is proposed|not a lever proposal",
+        re.I)
     hits = [p for p in paths if proposing.search(chr(10).join(_lines(p)))
             and not satisfied.search(chr(10).join(_lines(p)))
             and not p.startswith("research_log/")]
