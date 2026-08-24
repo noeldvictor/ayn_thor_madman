@@ -1122,6 +1122,24 @@ guest-thread function with `llvm-objdump`. **If the hot path holds no atomics, t
 lever is dead before it is built** — the applicability rule that already closed
 the Armv8.4 question above.
 
+**WHY contention is the only arm that can move, added 2026-08-26.** rpcsx searched
+both optimisation guides for the AArch64 atomic family — `CAS`, `LDADD`/`LDSET`/`SWP`,
+`LDXR`/`STXR`/`LDAXR`, "atomic", "exclusive" — and found **a clean zero in both**;
+the apparent `CAS` hits are the substring in "cases" and "broadcast".
+
+> **The omission is coherent rather than an oversight.** An atomic's cost on a
+> multi-core part is dominated by **the coherence state of the line it touches**,
+> which is not a property of one core's pipeline — **so a per-core guide has
+> nothing to say about it, and no further reading will produce a number.**
+
+**So this entry's FLAT prediction now has a mechanism rather than a hunch**, and
+the corollary is sharper than the entry: **`+lse` changes instruction selection,
+and for atomics the cost is line placement.** rpcsx's own instance —
+`g_range_lock_bits[0]`, **one 64-bit word serialising every SPU atomic across all
+eight cores regardless of guest address** — is where its win actually is, and it
+is not an instruction change at all. See
+[`research_log/20260826_0950_for_atomics_optimise_the_line_not_the_instruction.md`](research_log/20260826_0950_for_atomics_optimise_the_line_not_the_instruction.md).
+
 ## 26. Two Turnip behaviours, one game-free probe session
 
 **ARMSX2's driver profile records Turnip on Adreno as breaking BOTH forms of
