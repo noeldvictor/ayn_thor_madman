@@ -4822,7 +4822,9 @@ hardcoded Lego title IDs**, inline, inside a memory function.
 
 **And it is the THIRD instance of "ship it as data, not code"** — after
 GameThor's per-game fixes and the cheat formats. **ARMSX2 is halfway: named and
-persisted, still compiled in. Nobody in the fleet ships quirks as data.**
+persisted, still compiled in.** **No fork was found shipping quirks as data** —
+and that is an observation about **the three implementations read** rather than a
+census; no fork's data directories were searched for a quirk file format.
 
 **One quirk exists for an x86 reason and is worth re-checking here**:
 `VUOverflowHack` — *"not really possible on x86 without soft floats"*. **Whether

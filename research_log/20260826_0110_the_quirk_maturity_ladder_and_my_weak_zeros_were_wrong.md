@@ -66,8 +66,13 @@ Foundation point 4 requires installing a fix to take one action in the app — s
 ship them as DATA."*
 
 > **Quirks are the same argument in a new subsystem.** ARMSX2 is halfway there —
-> named and persisted, but the bits are still compiled in. **Nobody in the fleet
-> ships quirks as data.**
+> named and persisted, but the bits are still compiled in.
+
+**No fork was found shipping quirks as data**, and the search behind that is
+narrow: **the three quirk implementations read here** — ARMSX2's bitfield,
+XenDroid's module, Cemu's inline chain — **are all compiled in.** No fork's data
+directories were searched for a quirk file format. **Treat it as an observation
+about three implementations, not a fleet census.**
 
 ## What I am correcting
 
