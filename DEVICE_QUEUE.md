@@ -29,6 +29,38 @@ Ordered by what unblocks the most.
 | **`simpleperf` needs `<profileable android:shell="true"/>`** | without it, it **cannot attach at all**. Use `/proc/<pid>/stat` fields 14+15 for any A/B spanning an older build |
 | **VERIFY THE STOP.** `am force-stop` on a package that is not installed **exits zero and prints nothing** — check with `pidof` against the real `applicationId`, not the APK or build-variant name. A ~1.78 W result was withdrawn because both arms were the same configuration | rpcsx `instruments.md` |
 
+### The package names, because six of nine forks are not what you would type
+
+**`am force-stop` on a package that is not installed exits zero and prints
+nothing**, so a wrong name makes an A/B compare a configuration against itself.
+**Read from each fork's build files, 2026-08-24:**
+
+| Fork | base `applicationId` | suffixes it applies |
+| --- | --- | --- |
+| **xenia** | `jp.xenia.emulator` | **`.debug`, `.checked`, `.github`** — and the build measured here is `githubDebug` |
+| **eden** | `dev.eden.eden_emulator` | `.nightly`, `.relWithDebInfo`, `.debug` |
+| **melonDS** | `me.magnum.melondualds` | `.dev`, `.nightly` |
+| **GameThor** | `app.gamenative` | `.hgo`, `.gold` |
+| **azahar** | `org.azahar_emu.azahar` | `.debug` |
+| **Cemu** | `info.cemu.cemu_thor` | `.debug` |
+| ARMSX2 | **`com.armsx2`** | none — **but overridable by `-Parmsx2.applicationId`** |
+| Vita3K | `org.vita3k.emulator` | none found in the build files — **yet its own reports launch `org.vita3k.emulator.debug`** |
+| rpcsx | `net.rpcsx.easy` | none — **its APK is named `thortest`, which is what caused the incident** |
+
+> **`CLAUDE.md`'s `am force-stop com.armsx2` is correct**, checked directly:
+> ARMSX2 is the one Tier 1 fork with no suffix.
+
+**Three cautions, because this table is a build-file reading and not an install
+list.**
+
+- **How a flavour and a build type compose into one suffix chain was not
+  verified.** `githubDebug` may be `.github`, `.debug`, or both.
+- **Vita3K is the warning in the table**: no suffix in its build files, and a
+  `.debug` package in its own reports. **Check, do not assume.**
+- **The authoritative answer is on the device**: `pm list packages | grep <base>`,
+  then `pidof <exact>` after the stop. **This table tells you what to look for,
+  not what is installed.**
+
 ### Resolving an entry matters as much as adding one
 
 **Taken from Vita3K's `AGENTS.md`, 2026-08-24.** Its rule:
