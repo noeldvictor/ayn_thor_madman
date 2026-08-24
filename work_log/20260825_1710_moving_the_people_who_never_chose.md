@@ -47,12 +47,36 @@ when `v2` was also the previous default, is moved to `v3`.
 **`the_mechanism_cannot_tell_a_chosen_value_from_a_matching_old_default` asserts
 that behaviour**, so it is a known property rather than a surprise. **The real
 fix is to record WHETHER a value was chosen, not only what it is** — which is
-ARMSX2's per-game "sticky once overridden" rule, already recorded here and not
-yet built. **When that lands, this limit disappears.**
+ARMSX2's per-game "sticky once overridden" rule. **That rule turns out to be
+already built for the per-game layer; see the correction below.** The limit
+therefore applies to the GLOBAL layer only, where no record of choice exists.
+
+## CORRECTED WITHIN THE HOUR, by reading the code next to it
+
+**I wrote that the sticky-once-overridden rule was "recorded here and not yet
+built". It IS built.** `SettingResolver.writeOverride` maintains a `pinned` set —
+existing per-game keys plus whatever the caller just changed — and writes exactly
+those into the per-game map.
+
+> **So presence in the per-game map is PROOF the person chose, and that is a
+> STRONGER signal than value equality.**
+
+**Which makes the function as first written defective.** Run over a per-game map,
+it would move a deliberate choice that happened to equal an old default — **which
+is precisely the bug ARMSX2's pinning rule exists to prevent**, and which this
+repo records as a shipped bug where a per-game cheat setting was silently lost.
+
+**Fixed by making the layer explicit in the signature** — `migrateGlobal`, with
+the reason in the doc comment — **and by adding `chosenKeys`, which is skipped
+unconditionally.** The global layer has no record of choice, which is exactly why
+it needs this and per-game does not.
+
+**One behaviour worth stating: the watermark still advances for a skipped key**,
+because the change WAS considered. A test asserts it.
 
 ## Result
 
-**`DefaultMigrationTest`, 9 cases. Suite 245, 0 failures**, up from 236.
+**`DefaultMigrationTest`, 10 cases. Suite 246, 0 failures**, up from 236.
 
 ## What this is not
 

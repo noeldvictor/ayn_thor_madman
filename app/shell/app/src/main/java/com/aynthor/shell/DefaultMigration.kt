@@ -49,19 +49,38 @@ data class MigrationResult(
 object DefaultMigration {
 
     /**
-     * @param stored what the person's config holds today, sparse.
+     * THE GLOBAL LAYER ONLY. Never pass a per-game map.
+     *
+     * Corrected within the hour of writing this file, by reading the code next
+     * to it. [SettingResolver.writeOverride] maintains a `pinned` set and
+     * writes exactly those keys into the per-game map, so
+     * **PRESENCE IN THE PER-GAME MAP IS PROOF THE PERSON CHOSE** -- that is
+     * ARMSX2's sticky-once-overridden rule, learned from a shipped bug where
+     * a per-game cheat setting was silently lost.
+     *
+     * Value equality is a WEAKER signal than presence. Running this over a
+     * per-game map would move a deliberate choice that happened to equal an
+     * old default, which is precisely the bug the pinning rule exists to
+     * prevent. The global layer has no such record, which is why it needs
+     * this and per-game does not.
+     *
+     * @param global what the person's GLOBAL config holds today, sparse.
      * @param specs the current schema, whose [SettingSpec.default] is the NEW
      *   default.
      * @param changes every default change ever shipped, in any order.
      * @param watermark the highest stamp already applied, or null for a fresh
      *   install.
+     * @param chosenKeys keys the person demonstrably chose, never migrated.
+     *   Empty is the normal case for the global layer.
      */
-    fun migrate(
-        stored: Map<String, String>,
+    fun migrateGlobal(
+        global: Map<String, String>,
         specs: List<SettingSpec>,
         changes: List<DefaultChange>,
         watermark: String?,
+        chosenKeys: Set<String> = emptySet(),
     ): MigrationResult {
+        val stored = global
         val byKey = specs.associateBy { it.key }
         val values = stored.toMutableMap()
         val moved = mutableListOf<String>()
@@ -74,6 +93,13 @@ object DefaultMigration {
             if (highest != null && change.at <= highest) continue
             if (change.at > (highest ?: "")) highest = change.at
 
+            // Presence in chosenKeys is proof of a deliberate choice, and it
+            // outranks value equality. Recorded as `kept` so a log line can
+            // say the change was skipped rather than silently doing nothing.
+            if (change.key in chosenKeys) {
+                if (change.key in values) kept.add(change.key)
+                continue
+            }
             val spec = byKey[change.key] ?: continue
             // Absent means the person never stored anything, so they already
             // resolve to the current default. Nothing to move.

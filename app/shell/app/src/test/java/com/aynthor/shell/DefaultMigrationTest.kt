@@ -25,8 +25,8 @@ class DefaultMigrationTest {
     /** The xenia case: a validated fastpath shipped default-on, users stuck off. */
     @Test
     fun a_user_still_on_the_old_default_is_moved() {
-        val r = DefaultMigration.migrate(
-            stored = mapOf("cpu|rlwinm_fastpath" to "false"),
+        val r = DefaultMigration.migrateGlobal(
+            global = mapOf("cpu|rlwinm_fastpath" to "false"),
             specs = listOf(spec("cpu|rlwinm_fastpath", "true")),
             changes = listOf(DefaultChange("cpu|rlwinm_fastpath", "2026-08-25", "false")),
             watermark = null,
@@ -39,8 +39,8 @@ class DefaultMigrationTest {
     /** The half that makes it safe. A deliberate choice is not a stale default. */
     @Test
     fun a_user_who_chose_is_left_alone() {
-        val r = DefaultMigration.migrate(
-            stored = mapOf("gpu|scale" to "3"),
+        val r = DefaultMigration.migrateGlobal(
+            global = mapOf("gpu|scale" to "3"),
             specs = listOf(spec("gpu|scale", "2")),
             changes = listOf(DefaultChange("gpu|scale", "2026-08-25", "1")),
             watermark = null,
@@ -52,8 +52,8 @@ class DefaultMigrationTest {
 
     @Test
     fun a_change_at_or_below_the_watermark_is_not_reapplied() {
-        val r = DefaultMigration.migrate(
-            stored = mapOf("a" to "old"),
+        val r = DefaultMigration.migrateGlobal(
+            global = mapOf("a" to "old"),
             specs = listOf(spec("a", "new")),
             changes = listOf(DefaultChange("a", "2026-08-01", "old")),
             watermark = "2026-08-01",
@@ -69,8 +69,8 @@ class DefaultMigrationTest {
      */
     @Test
     fun a_key_whose_default_changed_twice_walks_both_steps() {
-        val r = DefaultMigration.migrate(
-            stored = mapOf("a" to "v1"),
+        val r = DefaultMigration.migrateGlobal(
+            global = mapOf("a" to "v1"),
             specs = listOf(spec("a", "v3")),
             changes = listOf(
                 // Declared newest-first on purpose.
@@ -91,8 +91,8 @@ class DefaultMigrationTest {
      */
     @Test
     fun the_mechanism_cannot_tell_a_chosen_value_from_a_matching_old_default() {
-        val r = DefaultMigration.migrate(
-            stored = mapOf("a" to "v2"),
+        val r = DefaultMigration.migrateGlobal(
+            global = mapOf("a" to "v2"),
             specs = listOf(spec("a", "v3")),
             changes = listOf(DefaultChange("a", "2026-08-20", "v2")),
             watermark = null,
@@ -103,8 +103,8 @@ class DefaultMigrationTest {
     /** Never stored means already resolving to the current default. */
     @Test
     fun an_absent_key_is_not_written() {
-        val r = DefaultMigration.migrate(
-            stored = emptyMap(),
+        val r = DefaultMigration.migrateGlobal(
+            global = emptyMap(),
             specs = listOf(spec("a", "new")),
             changes = listOf(DefaultChange("a", "2026-08-25", "old")),
             watermark = null,
@@ -116,8 +116,8 @@ class DefaultMigrationTest {
     /** A change for a key the schema no longer declares must not resurrect it. */
     @Test
     fun a_change_for_a_removed_key_is_ignored() {
-        val r = DefaultMigration.migrate(
-            stored = mapOf("gone" to "old"),
+        val r = DefaultMigration.migrateGlobal(
+            global = mapOf("gone" to "old"),
             specs = emptyList(),
             changes = listOf(DefaultChange("gone", "2026-08-25", "old")),
             watermark = null,
@@ -128,7 +128,7 @@ class DefaultMigrationTest {
 
     @Test
     fun a_fresh_install_with_no_changes_reports_no_watermark() {
-        val r = DefaultMigration.migrate(emptyMap(), emptyList(), emptyList(), null)
+        val r = DefaultMigration.migrateGlobal(emptyMap(), emptyList(), emptyList(), null)
         assertNull(r.watermark)
         assertTrue(r.moved.isEmpty())
         assertTrue(r.kept.isEmpty())
@@ -140,13 +140,35 @@ class DefaultMigrationTest {
      */
     @Test
     fun the_watermark_advances_even_when_nothing_moved() {
-        val r = DefaultMigration.migrate(
-            stored = mapOf("a" to "chosen"),
+        val r = DefaultMigration.migrateGlobal(
+            global = mapOf("a" to "chosen"),
             specs = listOf(spec("a", "new")),
             changes = listOf(DefaultChange("a", "2026-08-25", "old")),
             watermark = null,
         )
         assertEquals("2026-08-25", r.watermark)
         assertTrue(r.moved.isEmpty())
+    }
+
+    /**
+     * PRESENCE OUTRANKS VALUE EQUALITY. writeOverride maintains a pinned set
+     * and writes exactly those keys per game, so presence there is proof the
+     * person chose -- a stronger signal than the value happening to match an
+     * old default, and the reason this function is global-only.
+     */
+    @Test
+    fun a_key_the_person_demonstrably_chose_is_never_migrated() {
+        val r = DefaultMigration.migrateGlobal(
+            global = mapOf("a" to "old"),
+            specs = listOf(spec("a", "new")),
+            changes = listOf(DefaultChange("a", "2026-08-25", "old")),
+            watermark = null,
+            chosenKeys = setOf("a"),
+        )
+        assertEquals("old", r.values["a"])
+        assertTrue(r.moved.isEmpty())
+        assertEquals(listOf("a"), r.kept)
+        // The watermark still advances: the change WAS considered.
+        assertEquals("2026-08-25", r.watermark)
     }
 }
