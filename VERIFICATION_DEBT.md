@@ -37,7 +37,7 @@ about this, and the precision is what stops an entry being read as "unknown":
 
 ---
 
-## The debt, 2026-08-24
+## The debt, updated 2026-08-25
 
 ### Verified as EMITTED, unmeasured as speed
 
@@ -72,6 +72,13 @@ about this, and the precision is what stops an entry being read as "unknown":
 | **generic R8 8.022% / Sysmem 9.775% / PurpleVK 8.008%** | azahar | one 3DS scene at one clock |
 | BD frame anatomy; the ~2-3x emulation tax | xenia | one Xbox 360 title, and **two of its own instruments disagreed** |
 | `rlwinm` +2.88%, stackpoint prolog +2.04% | xenia | one title, same-session A/B |
+| **`RSHRN` first-class IR op, 3.5x - 14.8x** | **azahar** | **kernel benchmarks, not a frame.** The fork itself says *"keep the claim path-local until a matched title and power A/B exists"* |
+| **four fusion rejections, 0.66x - 0.99x** | azahar | its own kernels; benchmark shapes not described beyond "exact four-chain" |
+| **Vulkan: `Map`/`Commit` -18.64%, descriptor leaves -38.53%, `SetupVertexArray` +2.41%** | azahar | **Super Mario 3D Land**, three alternating traces |
+| **439,504 of 439,505 assertions, then a crash in one second** | azahar | 7th Dragon. **The assertion count is the thing being criticised — do not quote it as a virtue** |
+| **power modes: 59.256 FPS / 20.673 ms P95 against 27.6 ms** | azahar | **one scene at 2x**, one firmware |
+| **Cubeb 118-131 ms; 4,096 frames -> 271.84 ms and 989 underruns** | azahar | its Thor. **"Reported latency", not a measured round trip** |
+| **A510 Q-form 32-bit `ST4` throughput `1/50`** | azahar, **quoting the manual** | **not measured** — belongs with the argued rows below as much as here |
 
 **Rule: every one of these must name its fork and its workload wherever it is
 quoted.** They are evidence about a fork, and only a prior about this project.
@@ -83,8 +90,11 @@ quoted.** They are evidence about a fork, and only a prior about this project.
 | **The whole CPU-lead list** — FP status stalls, the A710 lane-assembly stall, A715 branch density, the A510 shared VPU | **manual-derived, and this fleet's record on manual-derived predictions is 0 for 13** |
 | **PMULL for texture swizzle** | **no fork's swizzle code has been read** |
 | **A shared render graph pays** | the frame anatomy that would decide it is one title, and contested |
-| **Turnip attachment self-read is broken on the a740** | **measured on an Adreno 650 with Mesa 26.1.2.** Queue 26 |
-| **The Thor is one machine** | **ARMSX2 says the line has an 865 variant.** Recorded as a scope decision |
+| **Turnip attachment self-read is broken on the a740** | **measured on an Adreno 650 with Mesa 26.1.2.** Queue 26. **2026-08-25: xenia device-verified `VK_KHR_dynamic_rendering_local_read` as AVAILABLE on the 740 under Turnip 26.3.0 — that is availability, not correctness, and does not resolve this row** |
+| **The Thor is one machine** | **ARMSX2 says the line has an 865 variant.** Recorded as a scope decision. **2026-08-25: the METHOD to settle it is now recorded** — `midr_el1` per core through sysfs, read with `run-as`. Still needs a second unit |
+| **The guest sample rate explains azahar's 118-131 ms audio latency** | **mine, and explicitly a hypothesis.** One correlation plus three Oboe forks doing the opposite. **Not azahar's claim** |
+| **Gradle 9.x still rejects a configuration-time `git` call** | azahar's note is about **8.13**. The pattern is incompatible by design rather than by version, **but no 9.x build was run** |
+| **`GCM=1` does anything on this device** | the knob is upstream, old and **default-off**, which usually means it was not a clear win. Queue 27 |
 
 ---
 
@@ -92,6 +102,10 @@ quoted.** They are evidence about a fork, and only a prior about this project.
 
 - **Before quoting a number in a decision, find it here.** If it is in the last
   two sections, say whose it is.
+- **This file records what is UNVERIFIED. It is not the do-not-retry list.**
+  Before proposing an experiment, query xenia's `exp_ledger.py` and read
+  [`shared_layer/REJECTED.md`](shared_layer/REJECTED.md) — **a lever can be
+  well-verified here and already measured dead there.**
 - **When something moves state, move it here** — and **delete the row when it
   reaches `measured`,** because a debt list that only grows stops being read.
 - **A new claim that cannot be placed in one of the four states is not ready to
