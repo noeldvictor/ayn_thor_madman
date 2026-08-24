@@ -997,6 +997,32 @@ Packing together is not free. Accept these:
   This is why [One toolchain](#0-one-toolchain--do-this-first) is Phase 1 and
   blocks everything.
 
+## Did it apply? The most repeated failure in this fleet
+
+**Ten instances, five forks, found independently by different people at
+different times. They are not ten bugs — they are one disease with ten
+mechanisms**, and this project accumulated defences against them one at a time
+without noticing they were the same thing.
+
+> **A setting that exists is not a setting that applies.**
+
+**The user-visible symptom is always the same: a control moves and nothing
+happens.** Sometimes the control is a switch, sometimes a compile flag, sometimes
+a default in code. **Nobody is told, because from the software's point of view
+nothing went wrong.**
+
+**Nine of the ten cost frames or convenience. The tenth costs the truth**:
+xenia's desktop HLE intercepts returned `count=0` for weeks from a dispatcher
+that never reached the handler, and the fix **corrected an earlier research
+conclusion that had been built on that zero.**
+
+> **An instrument that can return zero must be proved able to return non-zero.**
+
+**[`shared_layer/DID_IT_APPLY.md`](shared_layer/DID_IT_APPLY.md) is the index**:
+every mechanism, how it presents, what detects it, and the four rules — **verify
+from the emitted artefact**, **derive rather than enumerate**, **declare rather
+than infer**, and **prove the instrument before believing a zero.**
+
 ## Read before you claim
 
 **Every claim of the form "no fork has this" made in this repo has been wrong.**
