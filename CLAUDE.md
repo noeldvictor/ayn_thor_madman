@@ -2268,7 +2268,25 @@ unprompted, with no intrinsic. A `seq_cst` load correctly keeps `ldar`. **Whethe
 
 **Do not target `armv9-a`.** All four cores are ARMv9, ARMv9.0-A mandates SVE2,
 and **this device has no SVE**. A compiler told `armv9-a` may emit instructions
-that do not exist here. That is why the baseline forks were not simply being
+that do not exist here.
+
+**DEMONSTRATED 2026-08-24, and it is specific.** Four verified links: the device
+reports no `sve` in `/proc/cpuinfo`; **`-march=armv9-a` defines
+`__ARM_FEATURE_SVE`, `__ARM_FEATURE_SVE2` and `__ARM_FEATURE_SVE_VECTOR_OPERATORS`**
+on this box's NDK clang, and `armv8.2-a` and `armv8.4-a` do not; **`xxhash.h`
+selects its implementation purely at compile time and tests
+`__ARM_FEATURE_SVE` BEFORE NEON**, with **no runtime check**; and **eden ships a
+`YUZU_BUILD_PRESET=armv9` that sets `-march=armv9-a`.**
+
+**SVE is selected instead of NEON, not in addition to it**, so the failure is
+**`SIGILL` at the first hash, not a slower hash** — and **xxHash is the fleet's
+texture-hashing workhorse.** Files branching on it: **ARMSX2 seven** (vendored
+xxHash twice, plus **zstd**), **melonDS one, in its own source.**
+
+**Nothing in the build would warn**, because the compiler is correct — it was told
+the target is ARMv9. **The device is the thing that disagrees with the flag.**
+**Not executed**; the chain is compiler test plus source reading. See
+[`research_log/20260824_1210_armv9_would_select_sve_in_xxhash.md`](research_log/20260824_1210_armv9_would_select_sve_in_xxhash.md). That is why the baseline forks were not simply being
 lazy, and it is why the target names its features explicitly.
 
 **Caveat checked, and it rescues nobody.** Searching the ARM64 backends
