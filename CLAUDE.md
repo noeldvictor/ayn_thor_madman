@@ -4948,6 +4948,20 @@ bare `adb` command fails with "more than one device/emulator".
   be Windows-style, because `adb.exe` cannot read `/c/Users/...`.
 - **Check what is running before foregrounding anything.** The Thor is a
   device somebody uses. Starting an activity interrupts a game in progress.
+- **The device is SHARED, and ARMSX2's `AGENTS.md` states the etiquette from the
+  other side.** Another session's app taking foreground focus is **normal, not a
+  fault to debug**. **Never fight for it**, and **never force-stop another app to
+  take focus — that is someone else's session mid-run.** **Always `am force-stop`
+  your OWN package when finished**, so the next session gets a clean device. And:
+  **"the device being busy is never a reason to stop working or to end a turn"** —
+  build, compile checks and code review need no device, so schedule those first
+  and take the device only for the step that genuinely requires it.
+- **Compiling is not running.** After a change touching startup, the game list or
+  cover rendering, launch on device and check `adb logcat -b crash`.
+- **Android compiles regexes with ICU, which is stricter than desktop Java.** A
+  pattern that compiles in Kotlin can throw `PatternSyntaxException` at run time
+  on device — escape `]` and `}` inside patterns. **A green Gradle build is no
+  evidence a regex is valid.**
 
 **Do not hardcode the address.** It was `192.168.1.3:5555` on 2026-08-22. A
 Wi-Fi address changes when the DHCP lease changes. Resolve it at run time:
@@ -6993,6 +7007,32 @@ rather than fixed, exactly as texture classes are.
 **A rule worth taking, stated inside ARMSX2's enum:** the enum is persisted as
 an integer, so **entries can only ever be appended**. Group in the UI, never in
 the numbering.
+
+### Three requirements the texture-upscaling design does not name
+
+**From ARMSX2's `AGENTS.md`, 2026-08-24, and the third is a real failure mode:**
+
+- **A VRAM budget with batch eviction to a low-water mark.** Not a cap — a
+  budget with hysteresis, so eviction is not per-upload.
+- **A "do not retry" mark on evicted hashes.** Without it, an evicted texture is
+  re-upscaled the moment it is seen again, and the budget causes the work it was
+  meant to bound.
+- **A hash-stability heuristic**, because *"animated textures re-hash every
+  frame and will otherwise generate unbounded work."* **A texture whose hash
+  changes every frame is not a texture to upscale**, and nothing in this file's
+  per-class routing design excludes it.
+
+**Two more from the same file.** The injection point is
+`GSTextureCache::InjectHashCacheTexture` with
+`GSTextureReplacements::QueueWorkerThreadItem` as the existing async worker
+queue — **so texture-time work has a home and a queue already.** And **world/3D
+and UI/2D are separate user-facing classes, each with its own on/off and its own
+algorithm, kept independent everywhere including the config keys** — which is
+this file's per-class routing, already shipped for two classes.
+
+**And the NPU question is closed:** *"Prefer Vulkan compute over the Hexagon
+NPU: the data is already in GPU memory, QNN/SNPE is a per-SoC packaging burden,
+and **NNAPI is deprecated as of Android 15**."*
 
 See [`research_log/20260822_2350_upscale_algorithm_sets.md`](research_log/20260822_2350_upscale_algorithm_sets.md).
 

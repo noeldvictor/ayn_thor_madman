@@ -351,7 +351,22 @@ planes. ARMSX2 declares two texture classes. None pretends to be the others.
    | --- | --- | --- | --- |
    | **1** | **embedded in the dump** | 3DS, Switch, DS/DSiWare, Vita, PS3, Wii U | azahar and eden `GameIconUtils`, **melonDS `RomIconBuilder`** from the DS banner, Vita3K `apps_list.cpp`, rpcsx |
    | 2 | external database by title id | **Xbox 360** | xenia `x360db`, cached 7 days |
-   | 3 | a user-supplied file | **PS2** | ARMSX2 `GetCoverImagePathForEntry` |
+   | 3 | a user-supplied file | **override, every system** | ARMSX2 `GetCoverImagePathForEntry` |
+
+   **Corrected 2026-08-24: PS2 has a tier-2 source too** — ARMSX2's `AGENTS.md`
+   defaults cover art to **xlenore's PS2/PS1 cover repositories** and calls it a
+   hardcoded default to preserve. **Missed first time by reading the fork's
+   desktop C++ instead of its Android frontend**, which is where the product
+   decisions live.
+
+   **And the badge question is answered by the same file.** A cheat badge must
+   work **before a game has ever booted**, so ARMSX2 ships
+   `assets/cheats/index.tsv` mapping bundled CRC filenames to serials and titles,
+   with **`CheatPresenceIndex` owning the indexing** and an explicit rule to
+   invalidate it whenever PNACH files are imported, installed or deleted.
+   **Badges come only from real `.pnach` files — never inferred from widescreen,
+   60 FPS, compatibility or patch folders**, which is the cheat-versus-fix
+   distinction reaching the library screen.
 
    **Tier 1 always succeeds, offline, and is always right for the copy in
    hand.** Its limit is size — a DS banner icon is 32x32 and a 3DS SMDH icon

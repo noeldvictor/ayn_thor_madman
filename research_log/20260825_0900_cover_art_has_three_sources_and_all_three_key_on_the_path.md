@@ -26,6 +26,16 @@ and rpcsx's `banner` hits were `sys_ppu_thread`.
 | 2 | **An external database keyed on title id** | **Xbox 360** | xenia `XeniaCoverArt.java`, 406 lines, `xenia-manager/x360db`, cached 7 days |
 | 3 | **A user-supplied file** | **PS2** | ARMSX2 `GameList::GetCoverImagePathForEntry` |
 
+> **CORRECTED the same day: PS2 has a tier-2 source too, and I missed it by
+> reading the desktop path.** ARMSX2's `AGENTS.md` states *"Cover art defaults to
+> **xlenore's PS2/PS1 cover repositories**. Preserve that hardcoded default."*
+> **So PS2 is tier 2 with a tier-3 override**, like the 360, and only the
+> desktop `GetCoverImagePathForEntry` is tier 3 alone.
+>
+> **The instrument error is the familiar one:** I read the fork's shared C++ and
+> not its Android frontend, which is where the product decisions live. **The
+> same fork, the wrong half.**
+
 > **Six of eight systems carry their own art. The two that need an external
 > source are the two disc-based Western consoles.**
 
