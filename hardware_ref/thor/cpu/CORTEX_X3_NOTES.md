@@ -315,9 +315,9 @@ region, so the consumer waits one more.
 0.62.** **The mid cluster is where the work is, and its tables are more
 restrictive on exactly these instructions:**
 
-| operation | X3 | **A715** |
-| --- | --- | --- |
-| **`MLA`, `MLS`** | 4(1), thr 2, `V02` | 4(1), thr **1**, **`V0`** |
+| operation | X3 | **A715** | verified |
+| --- | --- | --- | --- |
+| **`MLA`, `MLS`** | 4(1), thr 2, `V02` | 4(1), thr **1**, **`V0`** | **PIPES VERIFIED AT SOURCE 2026-08-26** in both PDFs; the A715 throughput column did not render and is unverified |
 | **`SSHL`, `USHL`** | 2, thr 2, `V13` | 2, thr **1**, **`V1`** |
 | `CMEQ`, `AND`/`EOR`/`ORR` | 2, thr 4, `V` | 2, thr **2**, `V` |
 | `SDOT`/`UDOT` 8-bit | 3(1), thr 4, `V` | 3(1), thr **2**, `V` |
