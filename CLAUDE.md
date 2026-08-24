@@ -999,8 +999,8 @@ Packing together is not free. Accept these:
 
 ## Did it apply? The most repeated failure in this fleet
 
-**Ten instances, five forks, found independently by different people at
-different times. They are not ten bugs — they are one disease with ten
+**Eleven instances, five forks, found independently by different people at
+different times. They are not eleven bugs — they are one disease with eleven
 mechanisms**, and this project accumulated defences against them one at a time
 without noticing they were the same thing.
 
@@ -1011,7 +1011,7 @@ happens.** Sometimes the control is a switch, sometimes a compile flag, sometime
 a default in code. **Nobody is told, because from the software's point of view
 nothing went wrong.**
 
-**Nine of the ten cost frames or convenience. The tenth costs the truth**:
+**Ten of the eleven cost frames or convenience. The eleventh costs the truth**:
 xenia's desktop HLE intercepts returned `count=0` for weeks from a dispatcher
 that never reached the handler, and the fix **corrected an earlier research
 conclusion that had been built on that zero.**

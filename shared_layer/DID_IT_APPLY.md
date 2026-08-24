@@ -41,15 +41,15 @@ becomes a research bug.
 | 5 | **A second writer runs later.** The config file holds the value, and a profile applier overwrites it on every launch | rpcsx | freeing the CPU affinity mask looked like it did nothing — a separate compile-thread cap was still 2 |
 | 6 | **The gate is too wide.** A restriction meant for one class of thing catches another | ARMSX2 | hardcore mode dropped every on-disk patch, killing everything the Patch Manager wrote, "with no message explaining why" |
 | 7 | **The feature is not a value at all.** It is a cross-cutting property of every clock, cache or path in the backend | Vita3K | fast-forward shipped twice and gameplay ran at real time both times |
-| **11** | **A rendering cache whose rebuild is skipped in exactly the state where the change is made.** The live path exists; the change happens while it is not running | ARMSX2 | **every OSD toggle looked inert**, because the line strings rebuild only while the VM runs and the menu is only open while paused. Its invalidation also watched the enabled set **emptying** rather than **changing**, so one line off and another on left the old text |
+| **8** | **A rendering cache whose rebuild is skipped in exactly the state where the change is made.** The live path exists; the change happens while it is not running | ARMSX2 | **every OSD toggle looked inert**, because the line strings rebuild only while the VM runs and the menu is only open while paused. Its invalidation also watched the enabled set **emptying** rather than **changing**, so one line off and another on left the old text |
 
 ### Build and launch layer
 
 | # | Mechanism | Found in | Presented as |
 | --- | --- | --- | --- |
-| 8 | **A persisted config beats a compiled default, forever.** Written back when the default was genuinely off | xenia | three validated `rlwinm` fastpaths were off on the device. **−2.88%**, and every measurement that session was on a handicapped baseline |
-| 9 | **The default is set on a launch path the real launch does not take** | xenia | the AOT object cache was enabled only when no cvar bundle was supplied, and the launcher always supplies one. **111 MB of cache sat unused while every real launch recompiled ~10,000 functions** |
-| 10 | **The dispatcher never reaches the handler.** The lever is configured, allowlisted and installed, and the call goes past it | xenia | desktop HLE intercepts returned `count=0` for weeks — **"ALL desktop diag intercepts were FALSE NEGATIVES"**, and the fix **corrected an earlier research conclusion built on that zero** |
+| 9 | **A persisted config beats a compiled default, forever.** Written back when the default was genuinely off | xenia | three validated `rlwinm` fastpaths were off on the device. **−2.88%**, and every measurement that session was on a handicapped baseline |
+| 10 | **The default is set on a launch path the real launch does not take** | xenia | the AOT object cache was enabled only when no cvar bundle was supplied, and the launcher always supplies one. **111 MB of cache sat unused while every real launch recompiled ~10,000 functions** |
+| 11 | **The dispatcher never reaches the handler.** The lever is configured, allowlisted and installed, and the call goes past it | xenia | desktop HLE intercepts returned `count=0` for weeks — **"ALL desktop diag intercepts were FALSE NEGATIVES"**, and the fix **corrected an earlier research conclusion built on that zero** |
 
 **And two near-misses that belong here:** Vita3K's `USE_LTO` defaulted to
 `RELEASE_ONLY`, which covers a configuration neither shipped build uses, so LTO
@@ -58,9 +58,9 @@ specialisation, and **uses it nowhere.**
 
 ---
 
-## Why #10 is the expensive one
+## Why #11 is the expensive one
 
-**Nine of these cost frames or convenience. The tenth costs the truth.**
+**Ten of these cost frames or convenience. The eleventh costs the truth.**
 
 An unfired lever makes every measurement taken through it a false negative, and a
 false negative reads exactly like a real one: the feature does not help, the
@@ -88,9 +88,10 @@ paid.
 | 5 | `bug_class_sweep.py --class setting_written_by_multiple_writers` |
 | 6 | `IntegrityPolicy.allowsPatch` — the gate keys on **intent**, not on "is this a patch" |
 | 7 | `TimeScaleSupport.scaled` — a backend **declares** which clock domains it moves, and one that HLEs guest time from the host clock without declaring it is **refused** |
-| 8 | `bug_class_sweep.py --class stale_default`; and **read the persisted config, not the compiled default**. **Query the experiment ledger too** — `python <xenia>/tools/exp_ledger.py check "<lever>"` — because a lever recorded `DEAD` while silently disabled was never really tested |
-| 9 | `bug_class_sweep.py --class wrong_launch_path`; and **verify a hit, never infer one from a non-empty cache** |
-| 10 | **A positive control.** `capability_probe.py --self-test` |
+| 8 | **Rebuild on the state the change happens in.** A setting reachable from an in-game menu must take effect WHILE PAUSED, because paused is the only state that menu is open in — and invalidate on the set CHANGING, not on it emptying |
+| 9 | `bug_class_sweep.py --class stale_default`; and **read the persisted config, not the compiled default**. **Query the experiment ledger too** — `python <xenia>/tools/exp_ledger.py check "<lever>"` — because a lever recorded `DEAD` while silently disabled was never really tested |
+| 10 | `bug_class_sweep.py --class wrong_launch_path`; and **verify a hit, never infer one from a non-empty cache** |
+| 11 | **A positive control.** `capability_probe.py --self-test` |
 | build flags | `tools/emitted_flags.py` — the flags that reached the compiler, from `compile_commands.json`, **with `--dates`**, because a stale build describes an artefact rather than the source |
 | target claims | `tools/target_check.py` — 4 probes, proven against 4 real traps |
 
@@ -113,7 +114,7 @@ paid.
 
 ## Limits
 
-- **Ten instances, five forks.** Cemu, azahar, melonDS and GameThor have
+- **Eleven instances, five forks.** Cemu, azahar, melonDS and GameThor have
   contributed none, which almost certainly means nobody has looked rather than
   that they are clean.
 - **Every instance here was found by reading, not by a tool.** The tools were
