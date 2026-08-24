@@ -156,6 +156,7 @@ duplication before it moves.**
 | 6 | Code patch engine | **read** | Cemu's symbolic assembler as the engine, xenia's TOML as the authoring format |
 | 7 | Texture upload and per-class routing | **algorithm sets read** | The flagship feature. Needs **two axes**, algorithm and cost tier. Safe only after the test harness |
 | 8 | **Code cache only** | **read** | There is no shared recompiler. The code cache under it is ~2% of a backend and **folds into candidate 0** |
+| **9** | **Mobile driver bug and workaround database** | **read 2026-08-25** | **ARMSX2 `GSGPUProfile.h`: 29 named `DriverBug` values, 15 `DriverWorkaround` values, confidence-ranked matching on driver + version, explicit `conservative_fallback`.** Guest-agnostic by construction, like candidate 3. **Composes with candidate 2 rather than competing** — rpcsx's advisor answers *is this package suitable* before install, this answers *what is broken in what is running* after. **The pin makes one row live and the per-game override makes the rest live again.** See below |
 
 ### REVISED 2026-08-24, after a day of reading the fleet's own measurements
 
@@ -309,6 +310,41 @@ line backend**, and that 2% is the entire extractable surface.
 
 **So this is not its own extraction.** Fold it into candidate 0, which already
 owns host-side memory and device lifetime.
+
+### Candidate 9: a driver database is the "one driver, one bug surface" claim made concrete
+
+**`CLAUDE.md` justifies the pinned driver partly as "one driver, one bug
+surface". ARMSX2 has the surface written down** — for mobile GPUs generally, in
+a table with **30 rules** covering Arm proprietary, Mesa PanVK, Qualcomm
+proprietary, Mesa Turnip, Imagination, Mesa PowerVR and ANGLE.
+
+**Four properties make it extractable rather than merely useful:**
+
+- **No guest semantics.** A driver defect is a property of the driver, exactly
+  as candidate 3's pipeline cache blob is. **This is the second candidate in the
+  queue that cannot be guest-specific.**
+- **Bugs and workarounds are separate `u64` bitfields**, so one mitigation can
+  answer several defects **and a workaround can be forced on for testing without
+  claiming the device has the bug.** That second property is what this project's
+  measurement discipline needs and would otherwise have to add.
+- **Confidence-ranked matching**, `Vendor < Model < Driver < DriverVersion`, so
+  a broad rule never overrides a precise one.
+- **`conservative_fallback` is an explicit field**, which is what the "off
+  baseline" warning should be built on rather than a string comparison against
+  the pinned build name.
+
+**Two cautions before it moves.**
+
+**The table is mostly not about this device.** 30 rules across seven driver
+stacks; the Thor needs Turnip on a7xx. **Extraction here is largely DELETE** —
+the same operation as the seven device layers, for the same reason.
+
+**And its one Turnip rule is unverified for this part.**
+`vk-turnip-attachment-self-read` comes from a device A/B on **Adreno 650 with
+Mesa 26.1.2**, and the Thor is an **Adreno 740** on a newer pin. **`DEVICE_QUEUE.md`
+entry 26 settles it.** Taking the table without re-testing its rows would import
+another fork's device conclusions as our own, which is the trap this repo has
+already recorded four times.
 
 ### Rejected candidates
 
