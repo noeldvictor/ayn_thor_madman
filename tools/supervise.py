@@ -376,6 +376,44 @@ def check_instrument(paths):
     )
 
 
+def check_queue_staleness(paths):
+    """A log that cites a queue entry should say whether the entry still holds.
+
+    A queue entry is a hypothesis with a date. Three times in two days a finding
+    landed that bore on an entry and the entry was not updated: XenDroid's
+    in-pass resolve series and xenia's local_read probe both bore on entry 26,
+    and entries 12 and 13 turned out to be one experiment without citing each
+    other.
+
+    This does NOT assert a fault. A log may cite an entry for context. It asks
+    the question at the moment the citation is written, which is the only moment
+    somebody can cheaply answer it.
+    """
+    cites = re.compile(
+        r"(?:DEVICE_QUEUE(?:\.md)?\s*)?(?:queue\s+)?entr(?:y|ies)\s+([0-9]+)"
+        r"|(?<![A-Za-z])queue\s+([0-9]+)", re.I)
+    queue_touched = any(p.endswith("DEVICE_QUEUE.md") for p in paths)
+    if queue_touched:
+        return OK, "a log cites a queue entry and the queue was updated too", []
+    hits = []
+    for path in paths:
+        if not path.startswith(("research_log/", "work_log/")):
+            continue
+        for lineno, line in _added_lines(path):
+            for m in cites.finditer(line):
+                n = m.group(1) or m.group(2)
+                hits.append("%s:%d  cites entry %s" % (path, lineno, n))
+                break
+    if not hits:
+        return OK, "no log cites a queue entry", []
+    return (
+        WARN,
+        "%d log line(s) cite a queue entry while DEVICE_QUEUE.md is unchanged. "
+        "Does that entry still hold?" % len(hits),
+        hits[:6],
+    )
+
+
 CHECKS = [
     ("negatives", check_negatives),
     ("fork-writes", check_fork_writes),
@@ -383,6 +421,7 @@ CHECKS = [
     ("session-log", check_session_log),
     ("instrument", check_instrument),
     ("dead-levers", check_dead_levers),
+    ("queue-stale", check_queue_staleness),
 ]
 
 
