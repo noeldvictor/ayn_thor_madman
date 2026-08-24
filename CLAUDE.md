@@ -5711,6 +5711,21 @@ a good port from a regression, and the fan-out in
 
 ### Rules
 
+- **A DIFFERENTIAL TEST IS ONLY MEANINGFUL IF BOTH SIDES WERE BUILT WITH THE SAME
+  FLOATING-POINT SEMANTICS.** ARMSX2's Release build emits **`-ffp-contract=fast`
+  on 320 translation units**, of which **44 are guest-FP code** — `FPU.cpp`,
+  `Interpreter.cpp`, `COP2.cpp`, `R5900OpcodeImpl.cpp`. That flag lets the
+  compiler fuse `a*b+c` into an **FMA, rounding once instead of twice**.
+  **The recompiler is unaffected**, because its output is emitted machine code —
+  **so the flag changes the reference, not the implementation.** Its CPU
+  differential suite compares interpreter against recompiler, and **a fused
+  reference against an unfused implementation would attribute the disagreement to
+  the recompiler.** **A hazard to check, not a proven bug**, and checkable with no
+  device.
+  **And the target decides the effect**: baseline x86-64 has no FMA, so the flag
+  is nearly inert there; **ARM64 has FMA in the baseline, so the fusion actually
+  happens.** See
+  [`research_log/20260824_1745_fp_contraction_reaches_the_reference_interpreter.md`](research_log/20260824_1745_fp_contraction_reaches_the_reference_interpreter.md).
 - Every shared-layer change needs a test that fails before the change.
 - Every performance claim needs a number from the device, and the commit it was
   measured at.
