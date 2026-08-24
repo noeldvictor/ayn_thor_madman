@@ -38,6 +38,12 @@ correct and the list had become unnavigable.
 
 | Rule | Stated in |
 | --- | --- |
+| **PLACE THE PROBE WHERE THE DATA IS UNCONDITIONAL, not inside the feature being studied.** xenia's depth-transfer census sat inside a block gated on an experimental cvar and produced **no output at all** on a healthy run. It moved to *"the one place EVERY transfer passes through, with no experimental cvar between it and the data"*, **with a comment left at the old site saying why** | `research_log/20260825_0540_*` |
+| **ABSENCE OF OUTPUT MEANS CHECK THE GATE** before it means anything about the workload. **Four silent no-ops in one session** — an un-allowlisted cvar, a backend flag never passed, a frame-capped benchmark, and a census behind an unrelated gate | same |
+| **When the defect is in REGISTER ALLOCATION, the IR is the wrong artefact.** *"Use `_dump_asm` not `_dump_ir`"* | same |
+
+| Rule | Stated in |
+| --- | --- |
 | **Sampling profiler, not instrumented counters**, for "where does the time go" | `research_log/20260824_0810_*` |
 | **Measure the frame anatomy before designing a render path** | `CLAUDE.md`; `shared_layer/THOR_RENDER.md` banner |
 | **Per-stage GPU split is available headlessly**, no root, no GUI — **needs a debuggable app** | `CLAUDE.md`; xenia `xenia-thor-adb-gpu-stage-split` |
@@ -65,6 +71,7 @@ correct and the list had become unnavigable.
 | --- | --- |
 | **THE TOTAL AND THE COMPONENT MUST AGREE.** azahar rejected in BOTH directions: a `FlushRegion` early return whose **total looked 0.5% lower while the function's own share ROSE 1.03% -> 1.12%** (the total was noise), and four Vulkan changes whose **component improved 15-38% while the complete path regressed** (displaced work). **Neither number is sufficient alone; when they disagree the smaller signal is usually the artefact** | `research_log/20260825_0015_*`, `20260824_2305_*` |
 | **PROFILE THE CALLERS, OR DISPLACED COST READS AS A WIN.** Moving a scan out of `SwitchContext` cut `UnscheduleEvent` **0.33% -> 0.08%** while `ResumeFromWait` rose 0.14% -> 0.24% and `ThreadWakeupCallback` 0.16% -> 0.22%; whole-app cycles regressed 0.532%. azahar: *"it merely moved cost"* | `research_log/20260825_0015_*` |
+| **Report the intermediate sample points.** xenia's corrected census read **86% at each of 4096, 6144 and 8192** samples — **stability of the proportion across sample sizes is evidence the census reached the population**, and it costs nothing | `research_log/20260825_0540_*` |
 | **Noise floors: 0.2% gated title screen, 5% savestate, ~50% cutscenes** | `CLAUDE.md` |
 | **Never quote n=1.** Report `[min..max]`, not the mean | `CLAUDE.md` |
 | **LABEL A MICROBENCHMARK RATIO AS A KERNEL RATIO AT THE POINT OF MEASUREMENT**, not when somebody quotes it. azahar does this three times in three consecutive entries — *"treat the 1.15x-14.84x measurements as **uploader-kernel ratios, not whole-game FPS or watts**"*. **Even a 14.84x** | azahar `AGENTS.md` |

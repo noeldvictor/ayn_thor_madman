@@ -7086,6 +7086,33 @@ a good port from a regression, and the fan-out in
   **This bears directly on the one shared scheduler this file proposes**, which
   is the same kind of object. See
   [`research_log/20260825_0015_439504_assertions_did_not_catch_a_one_second_crash.md`](research_log/20260825_0015_439504_assertions_did_not_catch_a_one_second_crash.md).
+- **A TEST AT A LOWER OPTIMISATION LEVEL CANNOT EXERCISE A REGISTER-ALLOCATION
+  BUG.** xenia's LLVM-to-a64 guest call passed `opt=0` **and a qemu differential,
+  twice**, and still crashed the device. The cause was an **ABI contract
+  violation**: the a64 backend expects `x19` to hold its context and **LLVM never
+  reserves `x19`**, and a64 code clobbers `x22`-`x28` and the **full `q8`-`q15`**
+  while **AAPCS guarantees only the LOW 64 BITS of `v8`-`v15`** survive a call.
+  **At `opt=2` LLVM allocates exactly those registers for values live across the
+  call; at `opt=0` it never does.**
+
+  > **The tests were not weak. They ran in a regime where the contested
+  > registers are never allocated** — the coverage-shape lesson again, one day
+  > after 439,504 assertions missed a one-second crash.
+
+  **The device-free test it specifies is worth building:** an **AArch64 ABI
+  poison test** — AOT-compile an `opt=2` caller to a `.o` via `TargetMachine`
+  (**not ORC, which segfaults under qemu-user**), link it against a hand-written
+  a64 callee that **asserts `x19` and deliberately clobbers `x22`-`x28` and the
+  full `q8`-`q15`**, and run it under `qemu-aarch64`. **Read `_dump_asm`, not
+  `_dump_ir` — the bug is in register allocation.**
+
+  **And the AAPCS detail is worth knowing on its own.** *"`v8`-`v15` are
+  callee-saved"* is the half-known version; **the guarantee covers only the low
+  64 bits.** **Four forks hand-write ARM64 emitters** — ARMSX2, xenia, Cemu,
+  melonDS — and every one is entered from compiled code. **Not swept, and no
+  claim about any fork**; it is recorded because half-knowing it produces a
+  delayed, data-dependent corruption. See
+  [`research_log/20260825_0540_absence_of_output_means_check_the_gate.md`](research_log/20260825_0540_absence_of_output_means_check_the_gate.md).
 - A test that needs a human to look at a screenshot is not a test. Automate the
   comparison or record it as a known limit.
 
