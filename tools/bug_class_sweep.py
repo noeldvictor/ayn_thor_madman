@@ -141,6 +141,20 @@ CLASSES = {
         "pattern": r"defined\(__SSE2__\)|defined\(__AES__\)|defined\(_M_X64\)|"
                    r"defined\(__AVX2__\)|defined\(__BMI2__\)",
     },
+    "x86_correction_on_arm": {
+        "what": "A hand-written correction for an x86 quirk, applied on a target that "
+                "does not have the quirk.",
+        "paid": "rpcsx: SPU CFLTS was INCORRECT on ARM64. x86 CVTTPS2DQ returns 0x80000000 "
+                "on overflow so the shared code XORs it to 0x7fffffff; FCVTZS already returns "
+                "0x7fffffff and the same XOR turns it into 0x80000000. Every value at or above "
+                "2^31 was wrong, upstream included. CFLTU was correct but redundant.",
+        "why": "The most dangerous x86-detour form: the others cost speed, this one changes "
+               "RESULTS, on values a test may never reach. CORRECT code states which parts of "
+               "the guest semantics the host already provides -- ARMSX2's iCOP2-arm64.cpp says "
+               "'finite overflow and +/-Inf already saturate correctly in Fcvtzs; only NaN lanes "
+               "need the fixup'.",
+        "pattern": r"0x80000000|0x7[fF]{7}|cvttps|CVTTPS|fptosi|fptoui|_mm_cvttps",
+    },
     "stale_default": {
         "what": "A persisted setting that can outlive and override a compiled default.",
         "paid": "xenia: three rlwinm fastpaths were defaultEnabled=true in code and "

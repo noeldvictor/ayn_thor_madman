@@ -1932,6 +1932,36 @@ environments — `FPUFPCR`, `VU0FPCR`, `VU1FPCR` — not one.
 switching (xenia), set `FZ` once and leave guest `FPSCR` writes unimplemented
 (Cemu), have no guest FP mode at all (melonDS).
 
+**AND FP CONVERSION IS A SEPARATE, LARGER RISK THAN FP MODE — found 2026-08-24.**
+This section discusses rounding and denormals. **The correctness bug the fleet
+actually shipped was in float-to-int conversion.**
+
+`fptosi`/`fptoui` are **poison on overflow**, so shared emulator code bolts a
+correction on by hand **and that correction is written for x86.** On x86,
+`CVTTPS2DQ` returns `0x80000000` on overflow, so the code XORs it to
+`0x7fffffff`. **On ARM64 `FCVTZS` already returns `0x7fffffff`, and the same XOR
+turns it into `0x80000000`.**
+
+> **rpcsx's SPU `CFLTS` was incorrect on ARM64 — every value at or above 2^31,
+> upstream included.** Its sibling `CFLTU` was correct but redundant.
+> **`llvm.fptosi.sat` fixed the bug and shortened four instructions to one.**
+
+**The general rule, from the fork that found it:** *"on a target whose hardware
+semantics are stronger than the IR's, a portable correction can be worse than
+nothing."* **This is the most dangerous x86-detour form: the others cost speed,
+this one changes results.**
+
+**ARMSX2 shows the correct method**, in `pcsx2/arm64/iCOP2-arm64.cpp`: *"ARM64
+NEON `Fcvtzs` returns 0 for a NaN input, but the PS2 saturates NaN to a
+sign-based INT_MAX/INT_MIN. **Finite overflow and ±Inf already saturate correctly
+in `Fcvtzs`; only NaN lanes need the fixup.**"*
+
+> **Enumerate what the host already does correctly, and fix only the delta.** The
+> ARM64 branch of any guest operation should say which parts the hardware already
+> provides. **ARMSX2's comment does; rpcsx's did not, and that is where the bug
+> lived.** See
+> [`research_log/20260824_1620_an_x86_correction_can_become_a_corruption.md`](research_log/20260824_1620_an_x86_correction_can_become_a_corruption.md).
+
 **And the spill lead has an argument this repo did not have.** It is off in xenia
 because **the 360 guest is a 128-vector-register machine already squeezed into
 28**, so reserving vector registers worsens vector pressure to relieve integer
