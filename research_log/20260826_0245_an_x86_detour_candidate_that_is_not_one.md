@@ -61,8 +61,18 @@ is this project's own "a propagation lands with a test" rule met by a fork.
 ## Limits
 
 - **Two files read.** Nothing built or run, no device.
-- **This closes ONE of the eighteen ARMSX2 quirks.** The other seventeen were not
-  examined for x86 rationales, and at least one more may carry a stale one.
+- **CLOSED THE SAME SESSION: all eighteen were examined.** Grepping the whole
+  `GamefixOptions` block for `x86|sse|soft ?float|intel|amd|host` returns **one
+  genuine hit — `VUOverflowHack`, the one above.** The other seventeen comments
+  describe **guest** behaviour: a title that hangs, a game needing an unmapped
+  address, FIFO timing, VU sync. **The x86 rationale in this quirk list is
+  singular.**
+
+  **And the second hit was a FALSE POSITIVE worth a line**: `VIF1StallHack`
+  matched because **"proce`sse`s" contains `sse`.** A substring search for an
+  ISA name matches ordinary English — **the inverse of the vocabulary trap this
+  session keeps hitting, a false POSITIVE from matching too loosely rather than a
+  false negative from matching too narrowly.** Both are fixed by reading the hit.
 - **No claim that soft-float is impossible**, only that it is what the fix would
   require — and both ports declined it for the same reason.
 - **`Config.h`'s comment is misleading and it is not this repo's file to fix.**
