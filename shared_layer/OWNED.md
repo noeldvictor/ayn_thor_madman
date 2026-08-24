@@ -17,6 +17,7 @@ half-converted subsystem is how duplication returns.
 | --- | --- | --- | --- |
 | **Driver pipeline cache** | **policy owned, no fork converted** | `app/shell` `PipelineCache.kt` + **14 tests**; native contract `pipeline_cache.h`, syntax-checked under NDK 29 clang at C++20 for `aarch64-linux-android33` | **no native implementation, no fork converted, no build guard** |
 | **Hotkey layer** | **owned outright; no fork converted** | `app/shell` `Hotkeys.kt` + **15 tests**. **17 shared actions, 3 binding kinds, 6 distinct denials** | **no fork converted, no build guard** |
+| **Guest activity state** | **policy owned; no backend reports it** | `app/shell` `GuestActivity.kt` + **13 tests**. 4 states, 3 sources, 4 distinct denials, plus the input-acknowledged signal | **no backend declares it — four forks receive the guest's declaration and discard it** |
 
 **A subsystem is either owned or not owned, and this one is not.** The row is
 here so the partial state is visible rather than assumed, which is the same
