@@ -5813,6 +5813,54 @@ Wi-Fi adb rules:
   177 entries: 75 `OPEN`, 57 `WIN`, 32 `DEAD`, 8 `FLAT`, 5 `CONFOUNDED`.** The
   **75 `OPEN` entries are analysed levers awaiting a run**, and are a resource
   this repo had never named.
+
+  **CORRECTED 2026-08-25: the aggregate overstates it, and the correction is the
+  `backfill` lesson again — a ledger's COUNT is not a measure of available work
+  until the entries are read.** By date: **2026-07-06 has 19 and 2026-07-05 has
+  13 — 43% of the total** — and reading them shows **the working notes of a
+  blocked effort**, not queued levers: *"Baseline ALSO hangs"*, *"even samples1
+  minimal native render crashes the driver"*, *"Must REST the device."* **They
+  are `OPEN` because nothing resolved them.** That is the same lane whose 26
+  `rearch` `WIN` milestones rest on a premise later refuted.
+
+  **The actionable queue is the 18-entry 2026-08-06 burst**, and three of its
+  `cpu` levers are x86-detour instances this file did not have:
+
+  - **`a64_v128_const_pool`.** ARM64 cannot encode a 128-bit immediate, so
+    `LoadV128Const` builds one with `MOVZ` + up to three `MOVK` per half then
+    `FMOV`/`INS` — **up to TEN instructions, eight on the ARITHMETIC ports and
+    serially dependent.** *"x86 encodes 64-bit immediates inline so the x64
+    backend never faced this; the ARM port inherited the gap."* **A PC-relative
+    `LDR Qd,literal` is one instruction on the LOAD ports** — which is
+    [the load-over-arithmetic lead](#prefer-a-load-over-arithmetic-on-the-mid-cores)
+    this file argues from port counts, **already implemented, default off.** Its
+    gate is a **device-free qemu-a64 differential**, because *"a wrong constant is
+    SILENT data corruption rather than a crash."*
+  - **`arm64_offset_memory_address_fastpath`, compiled DEFAULT-OFF.** *"x86 folds
+    base+index+disp into ONE addressing mode so the x64 backend never faced the
+    displacement."* What ships copies the register and then adds
+    (`mov`/`add`/`ldr`); the folded form is `add`/`ldr`. **One instruction per
+    offset access, on one of the hottest instruction classes in PowerPC** —
+    **and a FOURTH default-off fastpath after the three `rlwinm` ones worth
+    +2.88%.**
+  - **The inline MMIO range check** uses two full-width `mov`+`cmp` pairs where
+    ARM64 needs `lsr w0,w17,#22` + `cmp w0,#0x1FF`. **Latent**, because
+    `emit_inline_mmio_checks` is also default-off.
+
+  **And one correctness bug from the same burst is worth more than the three
+  levers.** LLVM emitted **`LDP x22, x20, [x20, #72]`** — using x20 as base **and
+  writing it** — where **x20 is the reserved guest-context register and LLVM was
+  handed `+reserve-x20`.** The mitigation gap generalises:
+  `cpu_llvm_no_runtime_compiles` *"stops LLVM COMPILING during gameplay, but this
+  is bad code LLVM produced during the LOAD WINDOW and executed later."*
+
+  > **A guard on WHEN code is produced does not protect against code already
+  > produced.** And the proposed fix is this file's own rule pointed at a JIT:
+  > **scan emitted code for a write to x20/x21 BEFORE publishing it**, and reject
+  > to the a64 fallback. **Verify from the emitted artefact, at run time, on
+  > generated code.**
+
+  See [`research_log/20260825_0330_the_75_open_levers_decomposed_and_three_the_repo_lacks.md`](research_log/20260825_0330_the_75_open_levers_decomposed_and_three_the_repo_lacks.md).
 - **ASK WHETHER THE CODE IS EXECUTED BEFORE ASKING FOR A BETTER INSTRUCTION.**
   **Two forks reached this independently.** rpcsx: *"the interesting question is
   almost never 'is there a better instruction', it is **is this code executed, and
