@@ -4749,6 +4749,32 @@ them twice.**
 | **Code patch** | modify guest instructions at run time | Cemu `GraphicPack2Patches`, xenia `patcher` |
 | **File mod** | replace game assets | eden `mod_manager` |
 | **Host config fix** | **change the host's setup for one game, no guest bytes touched** | **GameThor `gamefixes/`** |
+| **Game quirk** | **change the BACKEND'S OWN SEMANTICS for one title**, no guest bytes and no host config | **XenDroid `game_quirks.cc`** |
+
+**The fifth kind, added 2026-08-25, and it is none of the four above.** XenDroid
+added `game_quirks.{cc,h}` to fix an **Ace Combat 6 audio deadlock** by switching
+its kernel's auto-reset event to **strict NT hand-off semantics** for that title
+alone: *a Set releases one ALREADY-WAITING thread via a per-waiter FIFO, so the
+setter can never reclaim its own signal.* **A naive implementation lets the
+setter race back in and consume its own signal**, starving the intended waiter.
+**That is emulator-kernel behaviour, not guest bytes, not a file, not host
+configuration.**
+
+> **AND ITS CONSTRAINT IS STRONGER THAN `liveChangeable = false`.** The comment
+> says **flipped per title at launch, BEFORE GUEST THREADS EXIST.** A quirk
+> cannot be toggled mid-game at all, because the semantics of objects threads are
+> already waiting on would change underneath them. **`liveChangeable = false`
+> means "needs a restart"; a quirk means "must be decided at load."**
+
+**Two consequences.** `SettingScope` has `PER_GAME`, `PROMOTED` and
+`GLOBAL_ONLY` — **all about WHERE a value is stored, none about WHEN it may be
+decided.** And **a quirk is backend-declared by construction**, since only the
+backend knows its kernel has an auto-reset event — **a per-backend extension, not
+a shared list**, which is the ownership test arriving in the patch taxonomy.
+
+**One note from the same diff:** *Signal first and drop its lock (ABBA/
+self-deadlock otherwise).* **The fix for a deadlock had its own lock-ordering
+hazard.**
 
 **The fourth was found on 2026-08-23 and it unifies something.** A host config
 fix changes an environment variable, a registry key, a launch argument or an INI
