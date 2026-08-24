@@ -37,7 +37,7 @@ about this, and the precision is what stops an entry being read as "unknown":
 
 ---
 
-## The debt, updated 2026-08-25
+## The debt, updated 2026-08-26
 
 ### Verified as EMITTED, unmeasured as speed
 
@@ -79,6 +79,12 @@ about this, and the precision is what stops an entry being read as "unknown":
 | **power modes: 59.256 FPS / 20.673 ms P95 against 27.6 ms** | azahar | **one scene at 2x**, one firmware |
 | **Cubeb 118-131 ms; 4,096 frames -> 271.84 ms and 989 underruns** | azahar | its Thor. **"Reported latency", not a measured round trip** |
 | **A510 Q-form 32-bit `ST4` throughput `1/50`** | azahar, **quoting the manual** | **not measured** — belongs with the argued rows below as much as here |
+| **~187 Hz click train at a 5.3 ms block** | **XenDroid**, in a comment | **arithmetic, not a measurement**, and it depends on their block size |
+| **a 32,728 Hz, 1,962-frame AudioTrack** | azahar | **1,962 is probably a SUBSTITUTED value**, not a requested one — unverified, and azahar does not say what it asked for |
+| **eighteen `GamefixOptions` bits; `XgKickHack` fixes one title and breaks Tri-ace** | ARMSX2, **its own comments** | **read, not tested.** No title was run either way |
+| **a guest function called ~21M times/sec = 85% of all guest calls** | xenia | **its profile, its title (Burnout)**, on-device |
+| **Cemu reduces reported memory for ~15 Lego title IDs** | Cemu, **read from source** | **why** those titles need it is not stated in the code and was not investigated |
+| **Turnip shared-consts push delivery broken on Adreno 6xx** | XenDroid, in a comment | **no reproduction shown, no titles named**, and gated to a GPU this device is not |
 
 **Rule: every one of these must name its fork and its workload wherever it is
 quoted.** They are evidence about a fork, and only a prior about this project.
@@ -95,6 +101,9 @@ quoted.** They are evidence about a fork, and only a prior about this project.
 | **The guest sample rate explains azahar's 118-131 ms audio latency** | **mine, and explicitly a hypothesis.** One correlation plus three Oboe forks doing the opposite. **Not azahar's claim** |
 | **Gradle 9.x still rejects a configuration-time `git` call** | azahar's note is about **8.13**. The pattern is incompatible by design rather than by version, **but no 9.x build was run** |
 | **`GCM=1` does anything on this device** | the knob is upstream, old and **default-off**, which usually means it was not a clear win. Queue 27 |
+| **A quirk taxonomy shipped as DATA would work** | **no fork does it.** ARMSX2 is named and persisted but compiled in; the argument is by analogy with cheats and GameThor's fixes |
+| **xenia's `--linux-arm64` cross build succeeds** | **the toolchain is tested and the build is not.** `premake5` is absent from the WSL where it would run |
+| **the PPC harness runs under qemu-user with threads** | **untested.** A ten-line static program is not xenia |
 
 ---
 
