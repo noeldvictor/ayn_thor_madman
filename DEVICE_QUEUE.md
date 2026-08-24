@@ -791,6 +791,28 @@ single-threaded loop there is nothing for the stronger ordering to cost.
 from the same tree with only the flag changed, and diff the disassembly of the
 benchmark to confirm exactly one instruction differs.
 
+## 24. Does this device report `textureCompressionBC` — one boolean
+
+**The cheapest entry after 18, and it closes or opens a whole finding.**
+
+**Read `VkPhysicalDeviceFeatures::textureCompressionBC` on the Thor.** Nothing in
+this fleet has captured it — searched xenia's device baseline and its Turnip
+feature-gap audit.
+
+**Why it matters.** ARMSX2's BC7 texture decompressor has an SSE2 fast path and
+**no ARM path at all** — searched the file for `ARM`, `NEON`, `aarch64` and
+`__arm`, zero matches. Its two call sites are both the **HD texture pack
+loader**, and the decoder only runs when the GPU cannot sample BC7 directly. See
+[`research_log/20260824_1300_x86_only_fast_paths.md`](research_log/20260824_1300_x86_only_fast_paths.md).
+
+**Prediction: `false`.** Adreno implements ASTC and ETC2 rather than the BC
+family. **Stated so it can fail** — and if it is `true`, BC7 uploads compressed,
+the CPU decoder never runs, and the finding closes.
+
+**If `false`, the follow-up is an applicability count, not a build**: how many
+textures in a real PS2 pack are BC7 rather than PNG or DXT? **Per the `EOR3`
+rule, count before writing a NEON decoder.**
+
 ## Not ready to run
 
 These need a decision or a build first, not device time.
