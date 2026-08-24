@@ -269,7 +269,12 @@ def check_dead_levers(paths):
         r"|(?:checked|searched|consulted) (?:the )?rejection(?:s| index)"
         # An explicit disclaimer is an act too: a log that DISCUSSES levers
         # without proposing one should not fire, or the check becomes ritual.
-        r"|proposes no lever|no lever is proposed|not a lever proposal",
+        # WHITESPACE-TOLERANT: markdown wraps at ~80 columns, so any
+        # multi-word phrase eventually splits across a line break. The
+        # first version matched literal spaces and missed a disclaimer
+        # that had wrapped -- the exemption existed and did not fire.
+        r"|proposes\s+no\s+lever|no\s+lever\s+is\s+proposed"
+        r"|not\s+a\s+lever\s+proposal",
         re.I)
     hits = [p for p in paths if proposing.search(chr(10).join(_lines(p)))
             and not satisfied.search(chr(10).join(_lines(p)))

@@ -42,6 +42,28 @@ and make the control go through that:
 **The fix in each case was one line and none of them was obvious before the
 failure.**
 
+## And the exemption I added two hours ago did not fire on this file
+
+**`dead-levers` warned on this very log, which opens with "This proposes no
+lever."** The exemption was there. It did not match.
+
+> **The phrase had WRAPPED across a line break** — *"This proposes
+no lever."* —
+> and the pattern matched a literal space.
+
+**Markdown wraps at about 80 columns, so ANY multi-word magic phrase eventually
+splits.** The exemption was correct and unreachable for a reason that has nothing
+to do with its logic.
+
+**Fixed to be whitespace-tolerant** (`proposes\s+no\s+lever`), with two
+controls: **a wrapped disclaimer now satisfies it, and a bare proposal still
+fires.**
+
+> **Fourth guard defect today, and the third whose failure mode was "the rule
+> exists and cannot fire."** A backspace byte, a lookahead the engine rejects,
+> a fixture in an excluded directory, and now a phrase split by word wrap.
+> **Every one was invisible in the source.**
+
 ## Limits
 
 - **Three instances, two from one session, all mine or rpcsx's.** No claim about
