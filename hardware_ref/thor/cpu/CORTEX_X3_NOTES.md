@@ -153,6 +153,32 @@ constantly, so these matter:
 
 ### 9. Dispatch limits shape instruction mix
 
+> ### THIS FILE IS MISSING THE COLUMN THAT DECIDES BORDERLINE CASES
+> **Added 2026-08-26.** Arm's guides give three numbers per instruction:
+> **latency, throughput, and UTILISED PIPELINES.** These notes carry the first
+> two and **no per-instruction pipe assignment** — the table below is a
+> DISPATCH CAP, which is about pipelines but is not the same thing.
+>
+> **`V` is all four FP/ASIMD pipes; `V01` and `V13` are two; `V0` is one.**
+> A "faster" instruction confined to `V0` can lose to a slower pair spread
+> across `V`.
+>
+> **This is the likely mechanism for this project's thirteen refuted
+> manual-derived predictions.** Every one was argued from an instruction's own
+> cost rather than from what it contends with. **The one manual prediction that
+> HELD — `BCAX` at 2.00x latency, measured 1.96x / 2.01x / 2.00x on X3 / A715 /
+> A510 — used the pipe column and predicted a throughput LOSS alongside the
+> latency win.**
+>
+> **AND THIS IS NOT A SUGGESTION TO USE `BCAX`.** `exp_ledger.py check "bcax"`:
+> that fusion is **`DEAD`** in xenia — **0 of 1 V128 XORs were fusable chains**,
+> so a HIR pass would have folded nothing. **The instruction is settled; the
+> matched prediction is evidence about the METHOD, measured on a bench rather
+> than in an emulator.**
+>
+> **Quote all three columns, or do not quote the guide.** See
+> [`../../../research_log/20260826_1120_the_pipelines_column_is_why_manuals_kept_failing.md`](../../../research_log/20260826_1120_the_pipelines_column_is_why_manuals_kept_failing.md).
+
 Up to 8 MOPs in per cycle, up to 16 μOPs dispatched, with per-cycle caps:
 
 | Pipelines | Max μOPs |
