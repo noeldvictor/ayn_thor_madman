@@ -76,6 +76,46 @@ single pipe `V0` on A715.**
 
 **Two independent measurements, both explained by the column everybody skips.**
 
+## And it RETRO-PREDICTS one of the thirteen
+
+**The hypothesis was that the refutations came from reading an instruction's own
+cost. Test it on a documented failure.**
+
+**xenia's `TBL2`-for-`TBX2` rewrite is one of the thirteen.** It was chased
+because `TBX2` measured **2x** `TBL2` on this SoC — 0.377 ns against 0.178 on the
+A715 — **and the fix measured null: 0.555 against 0.555.**
+
+**The table, from the same guide extract:**
+
+| instruction | latency | throughput | pipes |
+| --- | --- | --- | --- |
+| `TBL`, 1-2 table regs | **2** | 2 | `V01` |
+| **`TBX`, 2 table regs** | **4** | 2 | `V` |
+
+**Two predictions fall straight out:**
+
+1. **The instruction gap.** Table says latency 4 against 2 = **2.00x**. Measured
+   0.377 / 0.178 = **2.12x**. Within 6%.
+2. **The substitution.** `TBL2` plus a dependent `ORR` is **2 + 2 = 4**, which is
+   **exactly `TBX` 2-reg's 4.** **The table predicts a WASH.** Measured: **0.555
+   against 0.555.**
+
+> **The table predicted both the 2x instruction gap AND the null result of
+> replacing it.** The lever was chased on the first number and refuted by the
+> second, **and both were in the guide before anybody ran anything.**
+
+**That is precisely the failure mode named above**: xenia read the INSTRUCTION's
+cost — `TBX` is twice `TBL` — and not the SEQUENCE's cost, where the replacement
+pays the difference back in the `ORR`.
+
+> **So the claim is no longer one matched prediction.** It is **one forward
+> prediction that held to 2% on three cores, plus one of the thirteen
+> refutations retro-predicted exactly.**
+
+**One caveat that matters, given this session's own correction**: **these are X3
+table rows and the measurement was on A715**, whose tables are tighter. **The
+prediction held anyway**, but the row quoted is not the row for the core measured.
+
 ## Ledger checked before treating this as a lever
 
 **`exp_ledger.py check "bcax"` and `shared_layer/REJECTED.md`:** xenia's

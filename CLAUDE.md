@@ -3637,6 +3637,23 @@ profiled here.**
 them **off by default**; `EOR3`/`BCAX` fusion measured **`DEAD`**; the
 `TBL2`-for-`TBX2` rewrite measured **null**. **Thirteen for thirteen.**
 
+> **REFINED 2026-08-26, and the `TBX2` null is the evidence.** The guides carry a
+> third column — **utilised pipelines** — that this project's own extracted notes
+> do not. Read with it, the `TBX2` case predicts itself: **`TBX` 2-reg is latency
+> 4, `TBL` is 2**, so the 2x instruction gap is in the table (measured 2.12x) —
+> **and `TBL2` plus a dependent `ORR` is 2 + 2 = 4, exactly `TBX`'s 4, so the
+> substitution is a WASH before anybody runs it.** Measured 0.555 against 0.555.
+>
+> **The lever was chased on the first number and refuted by the second, and both
+> were in the guide.** The failure was reading an INSTRUCTION's cost rather than
+> the SEQUENCE's. **The one manual prediction that HELD — `BCAX`, 2.00x predicted
+> against 1.96x / 2.01x / 2.00x measured — used the pipe column and predicted a
+> throughput LOSS alongside the latency win.**
+>
+> **The prior stands for one-sided, single-instruction arguments and is weakened
+> for readings that quote all three columns.** See
+> [`research_log/20260826_1120_the_pipelines_column_is_why_manuals_kept_failing.md`](research_log/20260826_1120_the_pipelines_column_is_why_manuals_kept_failing.md).
+
 **This does not make the leads false. It makes them hypotheses with a bad
 prior.** Treat every one as `OPEN` at best, and **profile before choosing which
 to chase.**
