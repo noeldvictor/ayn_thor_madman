@@ -3799,6 +3799,28 @@ an existing fix is the exact failure mode this section describes.
   > either way for this device**, and the rule carries no version bound because
   > it was written from one A/B — not because it was re-tested.
 
+  **And the blast radius is wider than the PCSX2 port**, because there are
+  **three** ways to read an attachment in-pass and this fleet uses all three.
+  The correction table above records that xenia, ARMSX2 and rpcsx use **input
+  attachments**. Searched 2026-08-25 for the other two, vendored trees and Vulkan
+  headers removed:
+
+  | Fork | fbfetch / `subpassLoad` | feedback loop |
+  | --- | --- | --- |
+  | **ARMSX2** | **23 files** | **16 files** |
+  | Cemu | 8 | 0 |
+  | Vita3K | 8 | 0 |
+  | azahar | 6 | 2 |
+  | xenia | 4 | 0 |
+  | eden | 0 | **6** |
+  | melonDS | 0 | 0 |
+
+  **The Turnip rule marks subpass feedback AND the feedback-loop layout broken,
+  and its workaround also disables framebuffer fetch**, because it is the same
+  in-tile read. **So it reaches all three mechanisms.** These are file counts and
+  a file count is not a use — each fork gates its own path and none was read —
+  **but the mechanism is not hypothetical in this fleet.**
+
   **So the premise of the transfer is exactly what is unproven here**: the
   technique needs in-pass attachment self-read, and that is the thing recorded
   broken on the neighbouring part. **`DEVICE_QUEUE.md` entry 26 is a

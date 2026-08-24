@@ -112,6 +112,45 @@ mechanism 10 in `DID_IT_APPLY.md`, caught deliberately and scoped out. **Worth
 recording as the first instance in this fleet of that mechanism being AVOIDED on
 purpose rather than found afterwards.**
 
+## Three ways to read an attachment in-pass, and the fleet uses two of them
+
+**A survey done here earlier concluded "nobody uses input attachments", verified
+by counting `pInputAttachments` and reading every hit.** That is correct and it
+covers **one** of three mechanisms.
+
+**Searched all seven packed-binary forks** for the other two —
+`framebuffer_fetch|subpassLoad|rasterization_order_attachment` and
+`FEEDBACK_LOOP|attachment_feedback` over `*.cpp *.h *.glsl *.frag`, vendored
+trees and the Vulkan headers removed:
+
+| Fork | fbfetch / `subpassLoad` | feedback loop |
+| --- | --- | --- |
+| **ARMSX2** | **23 files** | **16 files** |
+| Cemu | 8 | 0 |
+| Vita3K | 8 | 0 |
+| azahar | 6 | 2 |
+| xenia | 4 | 0 |
+| eden | 0 | **6** |
+| melonDS | 0 | 0 |
+
+> **Five of seven forks carry in-pass attachment-read code.** The earlier
+> negative was about **subpass input attachments** specifically, and the fleet
+> reaches the same capability through **framebuffer fetch** and **feedback
+> loops** instead.
+
+**That raises the stakes on the Turnip rule considerably.** It marks
+`BrokenSubpassFeedback` **and** `BrokenAttachmentFeedbackLoopLayout`, and its
+workaround **also disables framebuffer fetch**, because *"it is the same in-tile
+read"*. **So the defect reaches all three mechanisms and five forks' existing
+code, not only future render-graph work.**
+
+**Stated carefully: these are file counts, and a file count is not a use.** Each
+fork gates its own path — ARMSX2 has `DisableFramebufferFetch` and the profile
+table itself, and **whether any of this is live on the Thor was not read.** What
+the count establishes is that **the mechanism is not hypothetical in this fleet**,
+which is what the earlier input-attachment negative could have been taken to
+imply.
+
 ## Limits
 
 - **The rule is a real device A/B, and it is on Adreno 650 with Mesa 26.1.2.**
