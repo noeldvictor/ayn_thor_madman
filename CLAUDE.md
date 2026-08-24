@@ -2448,6 +2448,37 @@ See [`research_log/20260823_1520_cpu_leads_already_done.md`](research_log/202608
 the reason these flags exist.**
 
 
+**READ THIS FIRST, added 2026-08-26: THESE ARE X3 TABLES AND THE X3 IS NOT WHERE
+THE WORK IS.** rpcsx measured cluster load on a real workload:
+
+```
+A510       3 cores   0.54 cores busy   2016 MHz
+A710/A715  4 cores   1.06 cores busy   2707 MHz   <- most loaded
+X3         1 core    0.62 cores busy   3187 MHz
+```
+
+**And the A715 tables are consistently TIGHTER on exactly these instructions:**
+`MLA`/`MLS` go from throughput 2 on `V02` to **throughput 1 on the single pipe
+`V0`**; `SSHL`/`USHL` from 2 on `V13` to **1 on `V1`**; `CMEQ` and the bitwise
+ops from 4 to 2; `ADDV 8H` from latency 4 to **5**.
+
+> **Quoting the X3 because it is the fastest core is a mistake.** For anything on
+> the mid cluster the A715 and A710 guides are the applicable tables, and they
+> are more restrictive. **The X3 is the right reference only for work pinned to
+> `cpu7`.**
+
+**THE RULE: a table quotation must name the core whose table it is, and a lever
+must name the cluster it would run on.** This file already requires every
+performance CLAIM to state the cluster; **it did not require the same of a claim
+drawn from a MANUAL.**
+
+**And it supplies the mechanism for a measurement recorded two days earlier.**
+azahar found that fusing `MLA` into `MADD` regressed **both A715 patterns** —
+**`MLA` is throughput 1 on a single pipe there**, so the fused form contends for
+`V0` while the split `MUL` + `ADD` can spread. **Two forks, one measured and one
+tabled, neither citing the other.** See
+[`research_log/20260826_0820_quote_the_cluster_that_runs_the_code.md`](research_log/20260826_0820_quote_the_cluster_that_runs_the_code.md).
+
 From the Cortex-X3 optimization guide, distilled in
 [`hardware_ref/thor/cpu/CORTEX_X3_NOTES.md`](hardware_ref/thor/cpu/CORTEX_X3_NOTES.md).
 Both are unmeasured and both are cheap to check.
