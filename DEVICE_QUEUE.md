@@ -548,9 +548,28 @@ in WSL Ubuntu on this machine:
 over lines carrying a guest address — **which is exactly why this route serves
 this entry and would serve none of the benchmarks in this queue.**
 
-**NOT ESTABLISHED, and it is the whole remaining risk: whether the cross build
-succeeds and whether the harness runs under qemu-user.** Neither was tried. **A
-route existing is not a route working.**
+**THE TOOLCHAIN HALF IS NOW TESTED, 2026-08-25.** A C++20 program was
+cross-compiled and executed on this machine, touching no fork:
+
+```
+aarch64-linux-gnu-g++ -O2 -std=c++20 -static -o t t.cpp
+file t   -> ELF 64-bit LSB executable, ARM aarch64
+qemu-aarch64 t   -> "running as aarch64"
+```
+
+**So `__aarch64__` is defined at compile time and the binary executes.** That is
+exactly what entry 13 needs, because `XE_ARCH_ARM64` gates the a64 backend into
+the build and the emitter then runs.
+
+**`-static` is load-bearing and is the next obstacle.** qemu-user running a
+DYNAMICALLY linked ARM64 binary needs the ARM64 sysroot and `QEMU_LD_PREFIX`;
+a static link sidesteps it. **xenia's cross build will be dynamic**, so either
+`QEMU_LD_PREFIX` is set to the aarch64 sysroot or the harness is linked static.
+**Named so it is met deliberately rather than discovered as a crash.**
+
+**STILL NOT ESTABLISHED: whether xenia's `--linux-arm64` premake path configures
+and builds, and whether the PPC harness runs under qemu-user with threads.**
+**The toolchain is proven; the fork build is not.**
 
 **One practical note**: WSL path translation failed with a `D:\` drive present in
 the environment, and the check had to run from a translatable directory.
