@@ -4826,7 +4826,22 @@ persisted, still compiled in.** **No fork was found shipping quirks as data** �
 and that is an observation about **the three implementations read** rather than a
 census; no fork's data directories were searched for a quirk file format.
 
-**One quirk exists for an x86 reason and is worth re-checking here**:
+**CLOSED 2026-08-26: one quirk's x86 rationale was checked and is NOT a detour.**
+`VUOverflowHack`'s comment says *"not really possible on x86 without soft
+floats"*, and **ARMSX2's own ARM64 port re-derived the same conclusion**: *"we
+can't distinguish a genuine FLT_MAX result from a saturated overflow without
+soft-float."* **The PS2's VU saturates to FLT_MAX where IEEE hardware produces
+Inf, so once the result exists the two are the same bits — on any IEEE-754
+host.** The constraint is the format, not the ISA.
+
+> **Recording this matters because a lens that only ever confirms is a hammer.**
+> It looked exactly like the real detours — an x86 rationale, in a comment, on a
+> hot path. **The tell in hindsight: the real ones are about how the host
+> EXPRESSES an operation; this is about what information SURVIVES it, and no ISA
+> recovers what the format discarded.** See
+> [`research_log/20260826_0245_an_x86_detour_candidate_that_is_not_one.md`](research_log/20260826_0245_an_x86_detour_candidate_that_is_not_one.md).
+
+**The original candidate note follows**:
 `VUOverflowHack` — *"not really possible on x86 without soft floats"*. **Whether
 ARM64 changes that is unexamined**, and it is the shape of the x86-detour audit
 this file already runs. See
