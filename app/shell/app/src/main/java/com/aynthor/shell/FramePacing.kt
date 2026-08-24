@@ -133,5 +133,22 @@ object FramePacingPolicy {
      * **Bounded, because a lost present must not deadlock the frame loop.**
      * Cemu uses 40 ms, which is about two and a half vsyncs at 60 Hz.
      */
+    /**
+     * ACQUIRE BLOCKS. IT DOES NOT POLL.
+     *
+     * rpcsx's present path sets its swapchain-acquire timeout to zero and
+     * continues, on a comment naming "AMD Crimson 17.7.2" -- a 2017 desktop
+     * driver -- applied unconditionally. On Android the acquire goes through a
+     * BufferQueue, so a zero timeout is a busy-wait against the compositor:
+     * 37,000 iterations per second, burning a core in the flip path, and a log
+     * storm that evicted the fault it was meant to help diagnose.
+     *
+     * A driver workaround with no driver condition is a timing constant tuned
+     * for hardware you are not running on. Four forks that will be in the packed
+     * binary pass UINT64_MAX and block correctly; this rule exists so the shared
+     * present path does not acquire the habit from anywhere else.
+     */
+    const val ACQUIRE_MUST_BLOCK = true
+
     const val PRESENT_WAIT_TIMEOUT_NS: Long = 40_000_000
 }

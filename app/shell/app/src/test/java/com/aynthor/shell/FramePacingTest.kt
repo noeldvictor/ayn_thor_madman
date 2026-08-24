@@ -119,4 +119,12 @@ class FramePacingTest {
         assertFalse(FramePacingPolicy.mayPresentGeneratedFrame(movie))
         assertTrue(FramePacingPolicy.mayPresentGeneratedFrame(play))
     }
+
+    @Test
+    fun `acquire blocks rather than polling`() {
+        // rpcsx's present path sets the acquire timeout to zero on a 2017 AMD
+        // desktop-driver comment, which on a BufferQueue is a busy-wait against
+        // the compositor: 37,000 iterations a second in the flip path.
+        assertTrue(FramePacingPolicy.ACQUIRE_MUST_BLOCK)
+    }
 }

@@ -333,6 +333,22 @@ proprietary, Mesa Turnip, Imagination, Mesa PowerVR and ANGLE.
   baseline" warning should be built on rather than a string comparison against
   the pinned build name.
 
+**A concrete case it would have caught, found 2026-08-25.** rpcsx's present path
+sets its swapchain-acquire timeout to **zero and spins**, justified by a comment
+naming **"AMD Crimson 17.7.2"** — a 2017 desktop driver — applied
+unconditionally on an Adreno. On Android the acquire goes through a
+`BufferQueue`, so a zero timeout is a busy-wait against the compositor:
+**37,000 iterations per second, burning a core in the flip path.**
+
+> **A driver workaround with no driver condition is a timing constant tuned for
+> hardware you are not running on.** That is precisely what a table keyed on
+> **driverID and version** prevents, and it is the argument for this candidate
+> stated as an incident rather than as a principle.
+
+**It does not propagate into the packed binary** — xenia, Cemu, azahar and
+Vita3K all pass `UINT64_MAX` and block; ARMSX2, melonDS and eden were not
+resolved by that search. **rpcsx is out of the binary.**
+
 **Two cautions before it moves.**
 
 **The table is mostly not about this device.** 30 rules across seven driver
