@@ -873,6 +873,41 @@ Float16 shader module "would be invalid usage on it regardless of what the
 physical device reports". **eden runs the fp16 path. The Thor probes
 `shaderFloat16 = 1`.** The comment names the fix and its size: two lines.
 
+**COUNTED 2026-08-25, and the ARMSX2 instance is a fleet property.** Searched
+each fork's own device layer for **both** spellings — the extension name and
+`VkPhysicalDeviceShaderFloat16Int8Features`, since the extension is **core in
+Vulkan 1.2** and this device reports **1.3.128** — with the vendored Vulkan
+headers filtered out, because a first pass counted **12 ARMSX2 hits that were all
+in `vulkan_core.h`**:
+
+| Fork | fp16 in its OWN device layer |
+| --- | --- |
+| **ARMSX2, xenia, Cemu, azahar, melonDS** | **none** |
+| **Vita3K** | requests the extension **and** checks the feature bit |
+| **eden** | queries `shader_float16_int8.shaderFloat16` |
+
+> **Five of seven backends cannot legally execute a Float16 shader module on this
+> device, whatever the hardware reports.**
+
+**Take Vita3K's device layer shape.** Its extension list is a table of
+`{extension, &capability_flag}` **with a comment saying what each is FOR**, and
+it validates in two stages against a **named feature** rather than a generic
+flag: `support_fsr &= shaderInt16`, then a deeper `getFeatures2KHR` check for
+`shaderFloat16`, under the comment *"needed for FSR"*.
+
+> **Requesting an extension and having its feature are different things.** A
+> device layer that stops at the extension name has not established the
+> capability. **That is a third layer under the ceiling argument**, below "does
+> the fork ask" and "does the device support".
+
+**And FSR needs `shaderInt16` AND `shaderFloat16`** — so the device requirement
+for a well-known upscaler, which is this project's flagship feature area, **is
+already discovered and guarded inside the fleet.** One more rule from the same
+table: **rasterized order attachment access and fragment shader interlock are
+mutually exclusive**, and Vita3K's comment records which wins.
+
+See [`research_log/20260825_1530_five_of_seven_forks_cannot_run_an_fp16_shader.md`](research_log/20260825_1530_five_of_seven_forks_cannot_run_an_fp16_shader.md).
+
 **So the packing argument gains a leg.** One shared device layer enables the
 Thor's real feature set once, and every backend then sits above the same ceiling.
 
