@@ -99,6 +99,22 @@ kind of patch, distinct from content patches, code patches and file mods.
 one are the same mechanism seen twice. Decide whether they are one screen before
 building either.
 
+### A screen this list is still missing: multi-disc swap
+
+**Found 2026-08-25 in XenDroid**, which shipped it in two commits: *"Ask which
+disc to insert when a multi-disc game requests one"* and *"Offer every disc of
+the title, **including the launched one**."*
+
+**Several systems in this fleet ship multi-disc titles**, and the guest asks the
+host to change disc at a scripted moment. **No screen here covers it**, and it
+is not a settings question — **it is a modal the guest triggers mid-game**, which
+makes it a [guest system applet](#7-guest-accounts-and-guest-system-ui) in the
+same family as a keyboard or a profile picker.
+
+**Take the second commit's detail**: offer **every** disc including the one
+already inserted. A person swapping back is a normal case, and a list that hides
+the current disc makes it impossible.
+
 ### A requirement no screen carries, and the gamepad-first decision GUARANTEES the bug
 
 **Added 2026-08-25. Three lines, and without them a session presents as a hang.**

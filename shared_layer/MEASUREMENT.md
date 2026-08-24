@@ -41,6 +41,7 @@ correct and the list had become unnavigable.
 | **PLACE THE PROBE WHERE THE DATA IS UNCONDITIONAL, not inside the feature being studied.** xenia's depth-transfer census sat inside a block gated on an experimental cvar and produced **no output at all** on a healthy run. It moved to *"the one place EVERY transfer passes through, with no experimental cvar between it and the data"*, **with a comment left at the old site saying why** | `research_log/20260825_0540_*` |
 | **ABSENCE OF OUTPUT MEANS CHECK THE GATE** before it means anything about the workload. **Four silent no-ops in one session** — an un-allowlisted cvar, a backend flag never passed, a frame-capped benchmark, and a census behind an unrelated gate | same |
 | **When the defect is in REGISTER ALLOCATION, the IR is the wrong artefact.** *"Use `_dump_asm` not `_dump_ir`"* | same |
+| **INSTRUMENTING A REALTIME CONTEXT: relaxed atomic counters, drained by another thread.** You cannot allocate, lock or log in an audio callback. XenDroid publishes `stat_callbacks_`, `stat_gaps_`, `stat_queue_depth_sum_` and `stat_queue_depth_max_` this way — **and the sum beside the max is the right pair, because a mean says the buffer is adequate and a maximum says why it broke** | `research_log/20260825_0800_*` |
 
 | Rule | Stated in |
 | --- | --- |
