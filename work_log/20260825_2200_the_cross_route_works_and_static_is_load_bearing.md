@@ -60,6 +60,35 @@ broke.
 **And it cost one temporary file.** No fork was touched, nothing was installed,
 and the file was removed.
 
+## NARROWED AGAIN, same session: the blocker is one package
+
+**Checked what the fork build needs in that WSL:**
+
+| Tool | State |
+| --- | --- |
+| `make`, `cmake`, `python3`, `pkg-config` | **present** |
+| **`premake5`** | **MISSING — xenia's build system** |
+| the aarch64 sysroot | **present**, `/usr/aarch64-linux-gnu/lib/libpthread.so.0` |
+
+**The sysroot answers the `-static` obstacle raised above**:
+`QEMU_LD_PREFIX=/usr/aarch64-linux-gnu` should serve a dynamically linked build.
+**Untested, but no longer unanswered.**
+
+> **THIRD TIME TODAY a blocker resolved to a missing host tool rather than to the
+> thing it was written as.** ccache was *"a second full build is a long job"*;
+> entry 13 was *"there is no ARM64 host here other than the Thor"*; the cross
+> build is `premake5`. **When work looks blocked, check the tools before
+> believing the reason.**
+
+**Nothing installed.** Installing packages changes the user's machine, so the
+finding is recorded rather than acted on.
+
+**And the narrowing has a shape worth noticing.** Each step replaced a large
+vague obstacle with a smaller specific one: *no ARM64 host* became *no cross
+toolchain*, which was false; then *does qemu work* became *tested*; then *does
+the fork build* became *one apt package*. **None of the steps cost more than a
+few commands, and the first framing would have justified never starting.**
+
 ## Limits
 
 - **A ten-line program is not xenia.** Threads, dynamic linking, filesystem
