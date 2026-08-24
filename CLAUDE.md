@@ -1959,7 +1959,23 @@ in `Fcvtzs`; only NaN lanes need the fixup.**"*
 > **Enumerate what the host already does correctly, and fix only the delta.** The
 > ARM64 branch of any guest operation should say which parts the hardware already
 > provides. **ARMSX2's comment does; rpcsx's did not, and that is where the bug
-> lived.** See
+> lived.**
+
+**AND THERE IS A STRUCTURAL REMEDY, which is the design rule for the shared
+layer.** ARMSX2 is clean of this whole class, and not by care alone: **it wrote
+dedicated ARM64 files** — `GSVector4_arm64.h`, `GSVector4i_arm64.h`,
+`GSDrawScanlineCodeGenerator.arm64.h`, and the whole `pcsx2/arm64/` tree — **so
+the x86 intrinsics in its source sit in paths only an x86 build compiles.**
+
+> **A separate ARM64 file cannot inherit an x86 correction by accident. A shared
+> file behind a portability shim can.**
+
+**That is the same DELETE argument as everywhere else in this file, pointed at
+`sse2neon` and its relatives.** A shim exists so one source can serve two
+machines; **it is also the vector through which an x86 assumption reaches ARM64
+silently.** **This project has one host ISA. Prefer a per-target file over a
+shared file behind a shim**, and the class above becomes unreachable rather than
+merely audited. See
 > [`research_log/20260824_1620_an_x86_correction_can_become_a_corruption.md`](research_log/20260824_1620_an_x86_correction_can_become_a_corruption.md).
 
 **And the spill lead has an argument this repo did not have.** It is off in xenia
