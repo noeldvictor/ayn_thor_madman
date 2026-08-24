@@ -1651,6 +1651,28 @@ knows the other exists.**
   that makes the emitted vixl output relocatable.** Its own test states the
   result: the program "runs with **ZERO block compiles and a bit-identical
   post-state**".
+> **AND THE FIXUP TABLE IS THE SMALLER HALF, read 2026-08-24.** The header says
+> **"constant-VA arena layout + a placement-relative fixup table"**, and the
+> fixups patch only the **absolute** targets — `armEmitCall`,
+> `armMoveAddressToReg` — which are host addresses ASLR moves. **The arena is
+> mapped at a CONSTANT virtual address, so the code's internal layout is
+> identical across runs and every internal relative branch survives untouched.**
+>
+> **That matters because an AArch64 `B` reaches only +-128 MB, against x86-64
+> `JMP rel32`'s +-2 GB — sixteen times less.** A fixup can rewrite an offset only
+> if the new offset is still encodable, so **a branch in range at emit time can
+> be out of range at reload time, and no fixup table repairs that.**
+>
+> **The rule: pin the arena to a constant virtual address and keep it inside
+> +-128 MB.** For scale, **xenia reserves `kGeneratedCodeSize = 0x0FFFFFFF`, one
+> byte under 256 MiB, in the SHARED `code_cache_base.h`** — exactly twice the
+> reach, which is why its cross-function transfers are register-indirect
+> (`blr`, `MOVZ`/`MOVK` trampolines) while its direct `b(label)` sites stay
+> inside one function, bounded by `kMaxCodeSize = 1_MiB`. **A code region larger
+> than a direct branch can address buys size and pays in branch prediction.**
+>
+> See [`research_log/20260824_2145_a_branch_means_something_else_on_arm64.md`](research_log/20260824_2145_a_branch_means_something_else_on_arm64.md).
+
 - **GPU. Cemu ships a cache merger** — `src/tools/ShaderCacheMerger.cpp` folds
   another user's `shaderCache/transferable` into yours. **That is community cache
   pooling, shipped**, and it is why Wii U shader caches circulated for years.
