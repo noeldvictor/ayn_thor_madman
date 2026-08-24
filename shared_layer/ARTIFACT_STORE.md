@@ -143,11 +143,54 @@ schedule**, so the conflict does not arise here.
 
 See [`../research_log/20260823_2340_why_cemu_disables_fossilize.md`](../research_log/20260823_2340_why_cemu_disables_fossilize.md).
 
+## Warming the store: four rules xenia paid for on device
+
+**Added 2026-08-24 from xenia's experiment ledger. This is the "replay time"
+gate below, partly answered — and the answer is a user-visible failure, not a
+number.**
+
+**What happened.** xenia's LLVM AOT precompile ran at **85 functions per second**
+on a worker thread. **Android fired an ANR at 18 seconds** — *"Waited 5001ms for
+MotionEvent"* — **and the user force-closed the app mid-compile**, believing it
+had hung.
+
+> **A cache that warms slowly does not fail as a slow cache. It fails as a hang,
+> and the platform offers the user a button to kill it.**
+
+**Four rules follow, and they bind any warming path this store gets.**
+
+1. **The UI thread must never block while the store warms.** xenia's overlay had
+   correct logic and **still could not draw**, because the UI thread was blocked
+   at least five seconds in the paint path. **Correct progress code behind a
+   blocked painter is invisible.**
+2. **Progress must be monotonic and cumulative across units.** xenia's native
+   estimate **grew from 6,665 to 10,540 mid-module**, and both counters **reset
+   per module**. A raw done-over-total bar then jumps backwards, **which reads as
+   a hang even when nothing is wrong.** Report cumulative work with a per-unit
+   bar that cannot regress.
+3. **Say that the platform may accuse the app of hanging, and say to wait.**
+   Android offers "Close app" unprompted. **The user needs to be told before the
+   dialog appears, not after.**
+4. **Honour the budget.** xenia's log said *"budget 1500ms"* and the pass ran
+   about **60 seconds**, because a `drain_frontier` flag overrode it. **A budget
+   that a flag can silently override is not a budget.**
+
+**Two of these are architecture, not messaging.** xenia shipped the messaging and
+**recorded the root cause as still open**: the UI thread must not block in the
+paint path during precompile.
+
+**And 85 functions per second is the first real throughput number for warming
+anything in this fleet.** It is LLVM AOT on one guest, so it does not transfer as
+a rate — **but it does say the order of magnitude is tens of seconds, not
+milliseconds**, which is what makes rules 1 to 3 necessary rather than polite.
+
 ## Open, and none of it is measured
 
-- **Cache size per title, and replay time to warm it.** A store too large to ship
-  or too slow to replay fails whatever the frame numbers say. `DEVICE_QUEUE`
-  entries 15 and 17.
+- **Cache size per title.** A store too large to ship fails whatever the frame
+  numbers say. `DEVICE_QUEUE` entries 15 and 17.
+- **Replay time is partly answered above** — tens of seconds, not milliseconds —
+  **and the failure mode is an ANR, not a slow start.** What is still unmeasured
+  is replay time for *this* store's artifact kinds.
 - **Self-modifying guest code.** The standing risk for any persisted code cache.
   How ARMSX2 handles it was searched for and not found, so it is unread.
 - **Trust.** A cache built by one person and run by another is executable content

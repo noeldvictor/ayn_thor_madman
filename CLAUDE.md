@@ -4086,6 +4086,20 @@ Wi-Fi adb rules:
 - **A diagnostic toggle is not a fix.** A prop, a draw skip or a forced path is
   not a fix until it becomes emulator-semantics code and passes regression
   checks.
+- **A LONG WARM-UP FAILS AS A HANG, NOT AS A SLOW START.** xenia's AOT precompile
+  ran at **85 functions per second** and **Android fired an ANR at 18 seconds** —
+  *"Waited 5001ms for MotionEvent"* — **and the user force-closed it mid-compile.**
+  Three compounding failures: the UI thread blocked in the paint path so the
+  progress overlay **could not draw despite correct logic**; the progress numbers
+  **grew mid-module and reset per module**, so the bar jumped backwards and read
+  as a hang; and **nothing told the user to wait while Android offered "Close
+  app".** Its own note: **the log said "budget 1500ms" and the pass ran ~60s**,
+  because a drain flag overrode the budget. **Applies to any cache warming this
+  project ships.** See
+  [`shared_layer/ARTIFACT_STORE.md`](shared_layer/ARTIFACT_STORE.md).
+- **Attract mode is not gameplay.** xenia's ledger carries this as a standing
+  measurement-validity entry. **A benchmark scene must be the workload, not the
+  screen the title shows when nobody is playing.**
 
   All of the above from rpcsx `thor-measurement-validity` and Vita3K
   `vita3k-render-experiment-gate`. See
