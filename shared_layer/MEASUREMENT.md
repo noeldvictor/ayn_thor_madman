@@ -63,6 +63,8 @@ correct and the list had become unnavigable.
 
 | Rule | Stated in |
 | --- | --- |
+| **THE TOTAL AND THE COMPONENT MUST AGREE.** azahar rejected in BOTH directions: a `FlushRegion` early return whose **total looked 0.5% lower while the function's own share ROSE 1.03% -> 1.12%** (the total was noise), and four Vulkan changes whose **component improved 15-38% while the complete path regressed** (displaced work). **Neither number is sufficient alone; when they disagree the smaller signal is usually the artefact** | `research_log/20260825_0015_*`, `20260824_2305_*` |
+| **PROFILE THE CALLERS, OR DISPLACED COST READS AS A WIN.** Moving a scan out of `SwitchContext` cut `UnscheduleEvent` **0.33% -> 0.08%** while `ResumeFromWait` rose 0.14% -> 0.24% and `ThreadWakeupCallback` 0.16% -> 0.22%; whole-app cycles regressed 0.532%. azahar: *"it merely moved cost"* | `research_log/20260825_0015_*` |
 | **Noise floors: 0.2% gated title screen, 5% savestate, ~50% cutscenes** | `CLAUDE.md` |
 | **Never quote n=1.** Report `[min..max]`, not the mean | `CLAUDE.md` |
 | **LABEL A MICROBENCHMARK RATIO AS A KERNEL RATIO AT THE POINT OF MEASUREMENT**, not when somebody quotes it. azahar does this three times in three consecutive entries — *"treat the 1.15x-14.84x measurements as **uploader-kernel ratios, not whole-game FPS or watts**"*. **Even a 14.84x** | azahar `AGENTS.md` |

@@ -6976,6 +6976,26 @@ a good port from a regression, and the fan-out in
 - Every performance claim needs a number from the device, and the commit it was
   measured at.
 - Every harvested change needs the test that proves it survived the port.
+- **COVERAGE SHAPE, NOT COVERAGE COUNT. Measured 2026-08-24.** azahar deleted
+  `ready_queue.remove()` from `ThreadManager::SwitchContext`. It **passed 439,504
+  of 439,505 assertions** in the broad ARM64 `[core]` suite — the one failure was
+  an unrelated missing harness function — and **crashed 7th Dragon within one
+  second** with `Thread must be ready to become running`.
+
+  **The blind spot was one branch.** `PopNextReadyThread` normally pops the
+  selected thread, but **its no-better-thread branch returns the CURRENT RUNNING
+  thread without popping it**, so `SwitchContext` must remove the self-selected
+  thread again.
+
+  > **The suite was not thin. It was large, passing, and blind to the case that
+  > mattered.** A scheduler's dangerous states are the degenerate ones — one
+  > runnable thread, the running thread selected as its own successor, an empty
+  > queue — **and those are exactly the states a workload-derived suite
+  > under-samples. Enumerate them deliberately.**
+
+  **This bears directly on the one shared scheduler this file proposes**, which
+  is the same kind of object. See
+  [`research_log/20260825_0015_439504_assertions_did_not_catch_a_one_second_crash.md`](research_log/20260825_0015_439504_assertions_did_not_catch_a_one_second_crash.md).
 - A test that needs a human to look at a screenshot is not a test. Automate the
   comparison or record it as a known limit.
 
