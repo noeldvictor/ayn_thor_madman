@@ -2546,6 +2546,18 @@ graphics API, and now one driver.
   force every measurement to name which one ran.
 - xenia-thor already runs `mesa-turnip-v26.3.0-20260803-r7-vulkan-1.4.354-7`.
   This makes existing practice official.
+- **AND IT IS WORTH 14x ON A GMEM-HEAVY PATH, MEASURED.** Same title, same HLE
+  configuration, same session: **the stock Qualcomm driver rendered correctly and
+  stably at ~0.8 fps; Turnip ran the identical configuration at 11 fps.** xenia's
+  conclusion: *"the Qualcomm proprietary driver handles the native pass/GMEM ~14x
+  worse."*
+
+  **Scope it before quoting it.** One title, one backend, one native-HLE render
+  path that leans hard on GMEM behaviour. **It is not a general claim that Turnip
+  is 14x faster.** What it establishes is that **the gap can exceed an order of
+  magnitude on exactly the path this project's render work targets** — which
+  turns the driver pin from hygiene into a load-bearing decision. See
+  [`research_log/20260824_0645_turnip_is_14x_and_three_config_traps.md`](research_log/20260824_0645_turnip_is_14x_and_three_config_traps.md).
 
 ### Choosing the pin
 
@@ -4150,6 +4162,31 @@ Wi-Fi adb rules:
   because a drain flag overrode the budget. **Applies to any cache warming this
   project ships.** See
   [`shared_layer/ARTIFACT_STORE.md`](shared_layer/ARTIFACT_STORE.md).
+- **READ THE PERSISTED CONFIG BEFORE TRUSTING ANY A/B.** A persisted value
+  **overrides a compiled default forever** — across the process, the install and
+  the app update. xenia found **three `rlwinm` fastpaths with `defaultEnabled=true`
+  in code sitting false on the device**, written back when they were genuinely
+  default-off pending validation. **100% of translations were on the generic slow
+  path**; forcing them on measured **+2.88%, with 11 of 11 intervals favouring
+  on.** Its own note: *"every device number taken this session was on a
+  handicapped baseline."*
+- **CHECK WHICH LAUNCH PATH SETS A DEFAULT, not that a default exists.** xenia's
+  AOT object cache was enabled by a block guarded on *no cvar bundle supplied* —
+  **but the launcher always attaches one when a game starts from the app.** So
+  headless runs got the cache and filled it to 111 MB, **while every launch a
+  person performs recompiled ~10,000 functions from scratch.** That is the
+  60-second black screen and the ANR above, and **the full cache directory made
+  it look like it was working.**
+  **Verify a cache hit; never infer one from a non-empty cache directory.**
+- **A FASTER DRIVER EXPOSES RACES A SLOWER ONE HIDES.** The same title ran stably
+  on the stock Qualcomm driver at 0.8 fps and **crashed intermittently on Turnip
+  at 11 fps** — *"a GPU-TIMING RACE that Turnip's FASTER GPU completion exposes;
+  the slow Qualcomm driver never hits the race window."* **A shared device layer,
+  a warm cache and a persisted code cache all make things faster, so latent races
+  will start firing and will look like new bugs.**
+- **Count driver loads in a session.** Turnip's loader degraded into a *"No Vulkan
+  physical devices"* restart loop after roughly **30 load cycles in one day**, and
+  a reboot and cache clear did not fix it.
 - **Attract mode is not gameplay.** xenia's ledger carries this as a standing
   measurement-validity entry. **A benchmark scene must be the workload, not the
   screen the title shows when nobody is playing.**

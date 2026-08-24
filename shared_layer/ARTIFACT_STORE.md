@@ -184,6 +184,33 @@ anything in this fleet.** It is LLVM AOT on one guest, so it does not transfer a
 a rate — **but it does say the order of magnitude is tens of seconds, not
 milliseconds**, which is what makes rules 1 to 3 necessary rather than polite.
 
+## Verify a hit. Never infer one from a full cache directory.
+
+**xenia's AOT object cache held 111 MB on the device and was off for every launch
+a person performs.**
+
+Its enabling block was guarded on *no cvar bundle supplied*, and the launcher
+**always** attaches one when a game starts from the app. **Headless runs got the
+cache and filled it. Every real launch recompiled about 10,000 functions from
+scratch** — the 60-second black screen, and the ANR recorded above.
+
+> **A lever can be defaulted correctly, allowlisted correctly, and still never
+> apply, because the code path that sets it is gated on a condition the real
+> launch path does not meet.**
+
+**Two rules for this store:**
+
+1. **The acceptance test is a counted cold-compile of zero**, not a non-empty
+   directory. xenia's verification was *"ZERO cold LLVM begin compiles, a full
+   warm hit"*, and nothing weaker counts.
+2. **Test on the launch path people use.** A store validated only by a headless
+   harness will ship cold and the harness will not notice.
+
+**And check the persisted config, not the compiled default.** A persisted value
+outlives the process, the install and the app update — xenia lost **2.88%** to
+three optimisations that were `defaultEnabled=true` in code and `false` on the
+device.
+
 ## Open, and none of it is measured
 
 - **Cache size per title.** A store too large to ship fails whatever the frame
