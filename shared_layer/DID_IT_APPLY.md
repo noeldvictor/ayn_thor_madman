@@ -100,7 +100,7 @@ paid.
 | 9 | `bug_class_sweep.py --class stale_default`; and **read the persisted config, not the compiled default**. **Query the experiment ledger too** — `python <xenia>/tools/exp_ledger.py check "<lever>"` — because a lever recorded `DEAD` while silently disabled was never really tested |
 | 10 | `bug_class_sweep.py --class wrong_launch_path`; and **verify a hit, never infer one from a non-empty cache** |
 | 11 | **A positive control.** `capability_probe.py --self-test` |
-| 12 | **`clang -dM -E`.** Grep for `#if defined(X)` where nothing defines `X` |
+| 12 | **`tools/dead_guard.py`** — guards on macros nothing defines, with definitions taken from `compile_commands.json` rather than build files. Swept 2026-08-25: **one hit across seven forks, and it is a deliberate debug opt-in.** Also `clang -dM -E` for a single macro |
 | build flags | `tools/emitted_flags.py` — the flags that reached the compiler, from `compile_commands.json`, **with `--dates`**, because a stale build describes an artefact rather than the source |
 | target claims | `tools/target_check.py` — 4 probes, proven against 4 real traps |
 
