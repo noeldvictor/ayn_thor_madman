@@ -352,6 +352,52 @@ fixed mapping would be nearly the identity function.
 > carry a design that was correct for a 16-register machine with folded memory
 > operands onto a 31-register load/store machine.**
 
+### A FOURTH form of the detour, measured at ~11% of emulator CPU
+
+**Found 2026-08-24 in Cemu's `AGENTS.md`, and it is the sharpest instance in the
+fleet.** The three forms above are instruction selection, the register model and
+timing constants. **This one is a SYNCHRONISATION STRUCTURE that exists to paper
+over a guarantee x86 does not give and AArch64 does.**
+
+**`coreinit::OSGetTime()` measured 7.8% of all emulator CPU, plus 3.6% in its
+spinlock's atomic swap — and every guest `mftb` routes through it.**
+
+**The original design** accumulates deltas into a shared 128-bit accumulator
+under a **global `FSpinlock`**, with an **`mfence`** and a **128-bit division per
+call.**
+
+> **"That exists because x86 cannot assume the TSC is uniform across cores.
+> AArch64 can."** `CNTVCT_EL0` is one monotonic counter shared by every core, so
+> the guest tick is **a pure function of it** — **no shared state, no lock, no
+> barrier, no division.** The ARM path is a 32.32 fixed-point multiply, `mul` +
+> `umulh`, with only the timer shift factor stateful and republished through a
+> **seqlock**.
+
+> **"Three emulated cores were serialising on one lock to read a counter that is
+> already coherent between them."**
+
+**The lock, the barrier and the division are one artefact of one missing
+guarantee, and they delete together.** **That is DELETE on the CPU side with a
+measured size** — where this file's DELETE examples have otherwise been
+portability layers rather than correctness scaffolding.
+
+**And the rule beside it is the part to keep:** *"Do not reintroduce a global
+lock here."* **A deleted x86 scaffold grows back** unless somebody records why it
+went, because the remaining code looks under-synchronised to a reader who does
+not know the counter is coherent.
+
+**A second Cemu measurement connects to a number already in this file, and
+nobody had joined them.** Profiling Star Fox Zero put **23% of all emulator CPU**
+and **48% of one scheduler thread** in `__kernel_clock_gettime`, clustered at the
+vdso's **`isb` + `mrs CNTVCT_EL0`** sequence. **rpcsx measured `isb` at 11.42 ns
+against `yield` at 0.36 ns on this same SoC** — **32x.** **The two numbers fit:
+a sequence whose barrier alone costs 11.42 ns, at an extreme call rate, is
+exactly what 23% looks like.** The caller is still unidentified — the vdso has no
+frame pointers and DWARF cannot unwind it — and the fork's next step is the
+method note worth taking: **"interpose or count rather than sample."**
+
+See [`research_log/20260824_2020_the_guest_clock_is_the_x86_detour_measured.md`](research_log/20260824_2020_the_guest_clock_is_the_x86_detour_measured.md).
+
 **TWO CONCRETE INSTANCES, FOUND 2026-08-24 IN XENIA'S LEDGER.** This rule had a
 register-model argument and no opcode-level example. It now has two, both `OPEN`
 and both unbuilt:
@@ -6293,6 +6339,29 @@ Ranked by value. The fleet already has most of them, in one fork each.
 
    This repo recorded that nothing did the CPU form. **That was the third such
    claim to be wrong.**
+
+   **AND A CASE THAT WOULD PASS BOTH, found 2026-08-24.** Cemu records that
+   `psq_st` quantising a **NaN** to S16 produces **three different answers**:
+
+   | | value |
+   | --- | --- |
+   | **Espresso, per the Gekko manual** | **32767** — positive-overflow saturation |
+   | x64, `cvttsd2si` then clamp | **-32768** |
+   | AArch64, `fcvtzs` then clamp | **0** |
+
+   > **Neither backend matches the hardware and they do not match each other.**
+
+   **A differential harness comparing interpreter against recompiler on ONE host
+   passes this**, because each backend is self-consistent. **What catches it is
+   a case whose expected value comes from the CONSOLE'S manual, not from another
+   implementation.**
+
+   **Cemu recorded it rather than fixing it**, with the reason — unmeasured,
+   probably rare, and a fix costs instructions on a path that is ~1.7% of the
+   executed opcode mix — **and with the rule that matters:**
+
+   > **"If it is ever fixed, fix both backends together and add a cpu-test, or
+   > the divergence just moves."**
 
 8. **Sanitizer builds.** ASan, UBSan and TSan in the automated build. Many
    emulators cannot even compile with them. Getting there is the work.
