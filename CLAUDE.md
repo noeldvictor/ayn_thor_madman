@@ -4776,6 +4776,38 @@ a shared list**, which is the ownership test arriving in the patch taxonomy.
 self-deadlock otherwise).* **The fix for a deadlock had its own lock-ordering
 hazard.**
 
+**CONFIRMED THE SAME DAY, and not marginally: ARMSX2 ships EIGHTEEN of them.**
+`pcsx2/Config.h`'s `GamefixOptions` is an 18-bit field of per-title switches that
+change the emulator's own semantics — `GoemonTlbHack` **preloads the TLB** so an
+unmapped access is not an exception, `VuAddSubHack` makes **`VU ADDI`
+bit-accurate** for Tri-ace encryption, `VUSyncHack` **runs microVU behind the
+EE**, `SoftwareRendererFMVHack` **switches renderer for FMVs**. **Nineteen
+instances across two forks, and ARMSX2's is a shipped, named, persisted
+taxonomy to copy rather than design.**
+
+> **THE ARGUMENT FOR PER-TITLE, MADE BY A SHIPPED EMULATOR IN ONE COMMENT.**
+> `XgKickHack`: *"Erementar Gerad, adds more delay to VU XGkick instructions.
+> **Corrects the color of some graphics, but BREAKS TRI-ACE GAMES and others.**"*
+> **One quirk that fixes one title and breaks another. No global default is
+> correct.** Quote this whenever somebody proposes making a per-game fix global.
+
+**AND A QUIRK ID IS PERSISTED, so the list is APPEND-ONLY.** The first bit has
+**no reader left** and the comment says why it stays: *"the bit stays because its
+`GamefixId` indexes `vu_capture`'s on-disk gamefix mask."* **Removing it would
+shift every later index and invalidate every stored mask.**
+
+> **Third instance in ARMSX2 alone of "this enum is persisted, so it is
+> append-only"** — after `mVUbuildOptionsSentinel`'s reserved tail and
+> `GSTextureUpscaleAlgorithm`'s *"entries can only ever be appended"*. **A
+> backend that renumbers its quirks orphans every per-game record that referenced
+> them — the same failure as renaming a settings key.**
+
+**One quirk exists for an x86 reason and is worth re-checking here**:
+`VUOverflowHack` — *"not really possible on x86 without soft floats"*. **Whether
+ARM64 changes that is unexamined**, and it is the shape of the x86-detour audit
+this file already runs. See
+[`research_log/20260826_0020_the_fifth_patch_kind_has_eighteen_more_instances.md`](research_log/20260826_0020_the_fifth_patch_kind_has_eighteen_more_instances.md).
+
 **The fourth was found on 2026-08-23 and it unifies something.** A host config
 fix changes an environment variable, a registry key, a launch argument or an INI
 value — never guest memory. **A per-game driver override is exactly this kind**,
