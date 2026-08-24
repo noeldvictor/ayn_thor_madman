@@ -1964,6 +1964,38 @@ Register pressure is the central problem in a guest-to-host recompiler and the
 standard answer is a stack spill. On the X3 the vector file is faster than L1.
 Check whether any of the four recompilers does this.
 
+**ASSESSED 2026-08-24 BY TWO FORKS, AND IT IS CLOSED FOR BOTH — for opposite
+reasons.**
+
+**rpcsx: the cost is real and the lever does not exist.** Its JIT emits `sp`
+accesses as **10.1% of every instruction it emits — 51,474 of them.** But:
+
+- **Reach.** **21,706 are 128-bit `q` spills — already vector, with nowhere
+  better to go**, because there is no larger register file to spill a V register
+  into. Only **12,777 scalar accesses** are candidates, about **2.5%** of
+  emitted instructions.
+- **Decisive: it does not choose where spills go.** The recompiler emits IR and
+  **LLVM's register allocator decides placement.** *"Spill this GPR to a spare V
+  register" is an allocator policy, not something expressible from the IR we hand
+  over*, and its SPU JIT already uses the vector file hard for 128 guest
+  registers.
+
+> Its own words: **"a guide row that is true, aimed at a cost that is real, and
+> still not a change we can make."** Recorded there **"so nobody re-derives it as
+> an opportunity."**
+
+**xenia: implementable, and measured off.** It hand-writes its emitter, so it
+*can* do this — `a64_spill_gprs_to_vector` exists and it measured **`UMOV`
+latency 2 against `LDR` 4.** It is **off by default** because the Xbox 360 guest
+is a 128-vector-register machine already squeezed into 28, **so reserving vector
+registers worsens vector pressure to relieve integer pressure.**
+
+**The architectural point is the useful part.** Whether this lever is even
+*available* depends on whether a backend hand-writes its emitter or hands IR to a
+compiler. **That is a third entry in the IR trade-off ledger**, beside `flagm`
+and lazy flags: **an IR gives you the optimiser and takes away control.** See
+[`shared_layer/TRANSLATION.md`](shared_layer/TRANSLATION.md).
+
 ### MEASURED: the Thor has no SVE
 
 From `/proc/cpuinfo`, recorded in xenia's research on 2026-08-05:

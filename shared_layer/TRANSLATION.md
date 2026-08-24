@@ -363,6 +363,26 @@ flags" operation.
 
 > **The IR gives you the optimiser and takes away the instruction.**
 
+**A third instance, 2026-08-24, and it is about control rather than an
+instruction.** ARM's own guide recommends spilling GPRs to the vector file rather
+than to memory. **xenia can do it — it hand-writes its emitter — and measured
+`UMOV` latency 2 against `LDR` 4**, leaving it off because its guest already
+squeezes 128 vector registers into 28. **rpcsx cannot do it at all**: its
+recompiler emits IR, and *"spill this GPR to a spare V register" is an allocator
+policy, not something expressible from the IR we hand over.*
+
+**So the ledger now reads:**
+
+| An IR gives you | An IR takes away |
+| --- | --- |
+| **residency**, free, from the allocator over SSA values | **`flagm`** — portable IR has no "set the flags" operation |
+| **lazy flags**, free, from dead-code elimination | **spill placement** — the allocator owns it |
+| **one place to verify** memory-model correctness | |
+
+**Both columns are real and neither is decisive.** What decides is which costs
+this fleet's guests actually pay, and the residency measurement — **0 memory ops
+against ~4 per iteration** — is the largest number on either side.
+
 See [`../research_log/20260824_0730_rpcsx_checked_rosetta_first.md`](../research_log/20260824_0730_rpcsx_checked_rosetta_first.md).
 
 ### The half of Rosetta that does NOT transfer: TSO
