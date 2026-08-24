@@ -905,6 +905,15 @@ Direct the exploration at these:
   **A tool whose absence is silent needs a check that says so**, which is the
   prove-the-instrument rule applied to a build.
 
+  **ADD `premake5` (WSL) the same day** — xenia's build system, absent from the
+  WSL Ubuntu where an ARM64 cross build would run, while `make`, `cmake`,
+  `python3` and `pkg-config` are all present.
+
+  > **THREE TIMES IN ONE DAY a blocker resolved to a missing host tool rather
+  > than to the thing it was written as**: ccache "a long job", entry 13 "no
+  > ARM64 host exists", and now the cross build itself. **When a piece of work
+  > looks blocked, check the tools before believing the reason.**
+
   See [`work_log/20260823_0148_azahar_clean_build.md`](work_log/20260823_0148_azahar_clean_build.md)
   and [`work_log/20260823_0207_eden_build_attempt.md`](work_log/20260823_0207_eden_build_attempt.md).
 

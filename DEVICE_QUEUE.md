@@ -567,9 +567,28 @@ a static link sidesteps it. **xenia's cross build will be dynamic**, so either
 `QEMU_LD_PREFIX` is set to the aarch64 sysroot or the harness is linked static.
 **Named so it is met deliberately rather than discovered as a crash.**
 
-**STILL NOT ESTABLISHED: whether xenia's `--linux-arm64` premake path configures
-and builds, and whether the PPC harness runs under qemu-user with threads.**
-**The toolchain is proven; the fork build is not.**
+**NARROWED AGAIN, same day.** Checked what the fork build actually needs in that
+WSL:
+
+| Tool | State |
+| --- | --- |
+| `make`, `cmake`, `python3`, `pkg-config` | **present** |
+| **`premake5`** | **MISSING — and it is xenia's build system** |
+| the aarch64 sysroot | **present** — `/usr/aarch64-linux-gnu/lib/libpthread.so.0` |
+
+> **The `-static` obstacle has an answer**: a sysroot exists, so
+> `QEMU_LD_PREFIX=/usr/aarch64-linux-gnu` should serve a dynamically linked
+> build. **Untested.**
+>
+> **And the remaining blocker is one apt package.** `premake5` joins `ccache`,
+> `pkg-config` and `glslangValidator` on the known-host-tools list — **the third
+> time today a blocker resolved to a missing host tool rather than to the thing
+> it was written as.**
+
+**STILL NOT ESTABLISHED: whether the `--linux-arm64` path configures and builds
+once `premake5` exists, and whether the PPC harness runs under qemu-user with
+threads.** **The toolchain is proven, the sysroot is present, the build system is
+absent.**
 
 **One practical note**: WSL path translation failed with a `D:\` drive present in
 the environment, and the check had to run from a translatable directory.
