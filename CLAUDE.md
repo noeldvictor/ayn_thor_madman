@@ -4394,6 +4394,41 @@ skills. Port them. Do not write them again.**
 Vita3K-Thor use `.agents/skills/`. melonds_HD_2 uses `.claude/skills/`. Use
 `.claude/skills/` in this repo. Leave the forks alone until a reason appears.
 
+### Vita3K has the anti-loop machinery this repo describes and does not build
+
+**Found 2026-08-24.** `tools/supervise.py` exists because this repo's failure
+modes are repeated cycles. **Vita3K built the prevention, and it is structural
+rather than advisory.**
+
+- **An active-case lock.** *"Do not let newest `tmp/` folders, screenshot
+  mtimes, or stale planned attempts choose the active game."*
+- **An attempt fingerprint checked BEFORE the run**, on case + platform +
+  subsystem + hypothesis, with **`--supersedes`** for when old evidence stops
+  applying.
+- **A planned attempt is a BLOCKER.** *"Otherwise the ledger becomes a pile of
+  half-memory."* **`DEVICE_QUEUE.md` has 26 open entries and no such rule.**
+- **An experiment packet that REFUSES out-of-scope work** unless overridden
+  explicitly.
+- **A compatibility ledger keyed on title, platform, commit and scene** — *"the
+  answer to 'which commit did this game work on?'"* **This project specified a
+  compatibility sweep and a status classifier and never said where results
+  live. This is the storage.**
+
+**And it challenges this repo's convention directly:** *"`debug_knowledge.sqlite`
+is the canonical report store. **Markdown reports are legacy context or human
+exports only.**"* Its reasons are specific — fingerprints, supersession,
+recency-versus-long-term search, compatibility checkpoints keyed on commit —
+**none of which a directory of markdown files can express.**
+
+> **Keep markdown, and add the ledger.** A markdown log is diffable, reviewable
+> in a commit and readable without the tool that wrote it; **every correction
+> made in this repo is visible in a diff, which a row updated in place is not.**
+> **Markdown is the narrative and the audit trail; a queryable ledger is the
+> memory that prevents repetition.** This repo has the first and, apart from
+> xenia's borrowed experiment ledger, not the second.
+
+See [`research_log/20260824_2140_vita3k_has_an_anti_loop_gate_and_this_repo_does_not.md`](research_log/20260824_2140_vita3k_has_an_anti_loop_gate_and_this_repo_does_not.md).
+
 ### The supervision layer, taken from AVO
 
 **Added 2026-08-23.** NVIDIA's AVO architecture has four parts and **this

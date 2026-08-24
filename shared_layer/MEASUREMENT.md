@@ -136,6 +136,35 @@ writer**, not a wrong default.
 (structurally right, not yet faster) and **`route-miss`** (clean capture, wrong
 state). Stated in `CLAUDE.md`.
 
+### A SECOND vocabulary, for symptoms rather than numbers
+
+**Every verdict above is about a NUMBER.** Vita3K's are about a **SYMPTOM**, and
+a project that ships a product needs both:
+
+`fixed`, `improved`, `unchanged`, `worse`, **`mixed-supports-involvement`**,
+`contaminated-inconclusive`.
+
+> **`fixed` has a definition**: the original symptom gone, **no obvious
+> neighbouring-scene or game regression**, **no stale debug toggles**, and proof
+> on every platform the change affects.
+
+**`mixed-supports-involvement` is the one to take outright.** When an experiment
+improves the visible output **and damages adjacent geometry**, it is not a fix
+and not a failure — **and the next hypothesis must explain both.**
+
+## Before the next experiment, not just before the run
+
+| Rule | Stated in |
+| --- | --- |
+| **THE ANTI-LOOP GATE.** Write a preflight summary — commit, platform, scene, props, matching prior attempts, what they proved, and **the one reason this run is genuinely new. "If the only difference is 'try it again', stop and choose instrumentation or documentation instead."** | Vita3K `AGENTS.md` |
+| **A query you run and do not write down does not stop the next session repeating it.** The preflight summary is what makes "query the ledger first" durable | same |
+| **A PLANNED ATTEMPT IS A BLOCKER.** Resolve it before starting a nearby one, *"otherwise the ledger becomes a pile of half-memory"* | same |
+| **An active-case LOCK.** Do not let the newest `tmp/` folder, screenshot mtime or stale planned attempt choose what is being worked on | same |
+| **Clear and record debug props before every comparison**, then name the intentional ones in the result | same |
+| **A disable value can be a valid PREFIX.** `0`, `false`, `off` mean disabled — **check for them before prefix-matching a hash**, or a stale `setprop ... 0` matches every hash beginning with `0` and contaminates the rest of the session | same |
+| **Do not write code to fix a ghost frame.** If an old screenshot shows a symptom but the APK, config or props have changed, **retest at defaults in the same session first** | same |
+| **Leave the workspace knowable**: current props, whether the installed APK matches the tree, which patches are diagnostic only, and the next single hypothesis. **"Do not leave mystery toggles active for the next agent."** | same |
+
 ## The standing prior
 
 **Fourteen manual-derived predictions have been measured in this fleet and
