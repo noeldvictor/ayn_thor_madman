@@ -1,6 +1,7 @@
 package com.aynthor.shell
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
@@ -207,5 +208,38 @@ class GameDataTest {
         // Pinned deliberately. A video snap is a per-frame decode behind a menu
         // and is excluded by the cheap-UI rule, not by oversight.
         assertTrue(MediaRole.entries.none { it.name.contains("VIDEO") })
+    }
+
+    // ------------------------------------------ a dump with no title id
+
+    @Test
+    fun `an unidentified dump keys on its content hash, never its filename`() {
+        // eden's Game.settingsName falls back to the FILENAME when programId is
+        // 0, so an unrecognised title's settings are lost on rename. That is
+        // path identity by another name.
+        val key = GameKey.forUnidentifiedDump(System.SWITCH, DumpId("abc123"))
+        assertTrue(key.titleId.contains("abc123"))
+        assertTrue(key.isDerivedFromDump)
+    }
+
+    @Test
+    fun `a real title id is not marked as derived`() {
+        assertFalse(GameKey(System.PS2, "SLUS-20948").isDerivedFromDump)
+    }
+
+    @Test
+    fun `an unidentified dump still produces a usable storageId`() {
+        // It has to: the library shows the file, and its overrides, saves and
+        // screenshots need somewhere to live.
+        val key = GameKey.forUnidentifiedDump(System.SWITCH, DumpId("abc123"))
+        assertTrue(key.storageId.isNotBlank())
+        assertFalse("no separator characters may survive", key.storageId.contains(":"))
+    }
+
+    @Test
+    fun `renaming cannot change an unidentified key - the whole point`() {
+        val a = GameKey.forUnidentifiedDump(System.SWITCH, DumpId("samehash"))
+        val b = GameKey.forUnidentifiedDump(System.SWITCH, DumpId("samehash"))
+        assertEquals(a, b)
     }
 }

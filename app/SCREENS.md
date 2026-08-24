@@ -367,7 +367,26 @@ planes. ARMSX2 declares two texture classes. None pretends to be the others.
    belongs in `ArtifactStore`.
 
    See [`../research_log/20260825_0900_cover_art_has_three_sources_and_all_three_key_on_the_path.md`](../research_log/20260825_0900_cover_art_has_three_sources_and_all_three_key_on_the_path.md).
-2. Game identification: every fork does it differently and none was surveyed.
+2. Game identification: **SURVEYED 2026-08-25, and the answer is not eight
+   schemes.** Every fork carries a real title id — ARMSX2 a disc `serial`, eden
+   a `programId`, xenia an 8-hex title id, Vita3K and Cemu a `TITLEID` — which
+   `GAME_DATA.md` already assumed. **What nobody had looked at is what happens
+   to a game that has no title id, and that is where every design breaks.**
+
+   **eden's `Game` class holds three identities, the first two four lines
+   apart:** settings key on `programId`, **play history keys on `path`**, and
+   when `programId` is 0 — homebrew, a bad dump, an unrecognised file —
+   **`settingsName` falls back to the filename.** So a rename loses your play
+   history, and for homebrew it loses your settings.
+
+   **`GameKey` here had the right shape and no defined behaviour for the case
+   that breaks it.** Fixed: `GameKey.forUnidentifiedDump` keys on the **content
+   hash**, marked `isDerivedFromDump` so the UI can say the game is
+   unrecognised. **A `DumpId` survives a rename; a filename does not.** The cost
+   is stated: two near-identical homebrew copies become two entries, which is
+   wrong in one direction rather than both.
+
+   See [`../research_log/20260825_1000_one_class_three_identities.md`](../research_log/20260825_1000_one_class_three_identities.md).
 3. Is rewind in scope? **ANSWERED 2026-08-25: yes, as a declared per-backend
    extension that must declare its PER-STATE COST.** melonDS has a complete
    implementation — configured in seconds rather than slots, a screenshot per

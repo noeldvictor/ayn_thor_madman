@@ -36,6 +36,46 @@ data class GameKey(val system: System, val titleId: String) {
         get() = system.name + "_" + titleId.uppercase().map {
             if (it.isLetterOrDigit()) it else '-'
         }.joinToString("")
+
+    /**
+     * True when there was no title id and the key was derived from the dump.
+     *
+     * The UI needs this: an unrecognised game gets no cheats, no scraped
+     * metadata and no community fixes, and the person should be told why rather
+     * than left wondering.
+     */
+    val isDerivedFromDump: Boolean get() = titleId.startsWith(DUMP_PREFIX)
+
+    companion object {
+        internal const val DUMP_PREFIX = "dump:"
+
+        /**
+         * The key for a game whose backend cannot produce a title id.
+         *
+         * HOMEBREW, A BAD DUMP AND AN UNRECOGNISED FILE ALL LAND HERE, and
+         * something must be returned -- refusing would mean the library cannot
+         * show the file at all.
+         *
+         * EDEN'S ANSWER IS THE FILENAME, and it is wrong in a way worth
+         * recording. `Game.settingsName` falls back to
+         * `FileUtil.getFilename(Uri.parse(path))` when `programId` is 0, so an
+         * unrecognised title's settings live under its filename and are lost on
+         * rename. That is path identity by another name, and this file's whole
+         * opening argument is against it.
+         *
+         * FALL BACK TO THE CONTENT HASH INSTEAD. A DumpId is stable under
+         * rename and move, which is the property the filename lacks and the
+         * only property that matters here.
+         *
+         * The cost is stated rather than hidden: two copies of one homebrew
+         * title that differ by a byte are two entries, because without a title
+         * id there is nothing that says they are the same game. A filename
+         * fallback would merge them by accident and split them on rename --
+         * wrong in both directions rather than one.
+         */
+        fun forUnidentifiedDump(system: System, dump: DumpId): GameKey =
+            GameKey(system, DUMP_PREFIX + dump.contentHash)
+    }
 }
 
 /**
