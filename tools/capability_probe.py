@@ -63,6 +63,17 @@ VENDORED = re.compile(
     r"vk_mem_alloc|/imgui/|/glslang/|/boost/|/ffmpeg/|/SDL|toml11|/toml/|"
     r"xbyak|oaknut|vixl|/fmt/|catch2|gtest", re.I)
 
+
+# SUBMODULES. `git grep` in a parent repository DOES NOT SEE SUBMODULE CONTENTS.
+# That blind spot produced three wrong results in this project: dynarmic in
+# Vita3K, xxHash in Vita3K, and a fleet SVE search that reported Vita3K as clean
+# when its vendored xxHash carries five SVE branches. Every scan below therefore
+# passes --recurse-submodules.
+#
+# NOTE THE TENSION WITH THE VENDORED FILTER: excluding vendored trees is right
+# for "which fork IMPLEMENTS this", and wrong for "what will COMPILE INTO the
+# binary". A dependency's code is not the fork's work, but it is in the product.
+
 SOURCE = ["*.cpp", "*.cc", "*.h", "*.hpp", "*.inl", "*.kt", "*.java", "*.s"]
 
 # A capability: several probes, each a DIFFERENT vocabulary for the same idea.
@@ -230,7 +241,8 @@ def probe(fork_path, pattern):
     root = os.path.join(FLEET, fork_path)
     if not os.path.isdir(root):
         return None
-    cmd = ["git", "-C", root, "grep", "-nIE", pattern, "--"] + SOURCE
+    cmd = ["git", "-C", root, "grep", "--recurse-submodules",
+           "-nIE", pattern, "--"] + SOURCE
     try:
         r = subprocess.run(cmd, capture_output=True, timeout=180)
     except (OSError, subprocess.SubprocessError):

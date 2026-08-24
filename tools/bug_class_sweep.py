@@ -59,6 +59,17 @@ VENDORED = re.compile(
     r"toml11|xbyak|oaknut|vixl|catch2|gtest|/proot/|virglrenderer|"
     r"/gallium/|sysnums-|/wine/|/box64/|/fex/", re.I)
 
+
+# SUBMODULES. `git grep` in a parent repository DOES NOT SEE SUBMODULE CONTENTS.
+# That blind spot produced three wrong results in this project: dynarmic in
+# Vita3K, xxHash in Vita3K, and a fleet SVE search that reported Vita3K as clean
+# when its vendored xxHash carries five SVE branches. Every scan below therefore
+# passes --recurse-submodules.
+#
+# NOTE THE TENSION WITH THE VENDORED FILTER: excluding vendored trees is right
+# for "which fork IMPLEMENTS this", and wrong for "what will COMPILE INTO the
+# binary". A dependency's code is not the fork's work, but it is in the product.
+
 SOURCE = ["*.cpp", "*.cc", "*.h", "*.hpp", "*.inl", "*.kt", "*.java"]
 
 CLASSES = {
@@ -96,6 +107,25 @@ CLASSES = {
                "here is the candidate; a fork in both may already be correct.",
         "pattern": r"cntfrq|CNTFRQ|cntvct|CNTVCT|counter_frequency|"
                    r"QueryPerformanceFrequency",
+    },
+    "absent_feature_selected": {
+        "what": "Code selected at COMPILE TIME by a feature this device does not have.",
+        "paid": "Not yet paid here -- demonstrated, not observed. -march=armv9-a and "
+                "-mcpu=cortex-x3 both define __ARM_FEATURE_SVE on this box's clang, and "
+                "xxhash.h tests it BEFORE NEON with no runtime fallback. The Thor has no "
+                "SVE, so the result would be SIGILL at the first hash, not a slower hash.",
+        "why": "Clang models the CORE; these cores implement SVE2 and Qualcomm did not "
+               "expose it. Use -mtune, never -mcpu, and never -march=armv9-a. eden ships "
+               "a YUZU_BUILD_PRESET=armv9 that sets it.",
+        # Vendored code counts here: it compiles into the binary even though it is
+        # not the fork's own work. This is the class where the VENDORED filter is
+        # WRONG, so read the hits with that in mind.
+        "pattern": r"__ARM_FEATURE_SVE|arm_sve\.h|svbool_t|svfloat|"
+                   r"mcpu=cortex-|march=armv9",
+        # THE ONE CLASS WHERE VENDORED CODE COUNTS. A dependency is not the fork's
+        # own work, but it compiles into the product and will execute. Excluding
+        # 3rdparty/ here hid ARMSX2's seven files entirely.
+        "include_vendored": True,
     },
     "stale_default": {
         "what": "A persisted setting that can outlive and override a compiled default.",
@@ -140,16 +170,19 @@ CLASSES = {
 }
 
 
-def scan(fork, pattern):
+def scan(fork, pattern, include_vendored=False):
     root = os.path.join(FLEET, FORKS[fork])
     if not os.path.isdir(root):
         return None
-    cmd = ["git", "-C", root, "grep", "-nIE", pattern, "--"] + SOURCE
+    cmd = ["git", "-C", root, "grep", "--recurse-submodules",
+           "-nIE", pattern, "--"] + SOURCE
     try:
         r = subprocess.run(cmd, capture_output=True, timeout=240)
     except (OSError, subprocess.SubprocessError):
         return []
     out = r.stdout.decode("utf-8", errors="replace").splitlines()
+    if include_vendored:
+        return out
     return [ln for ln in out if not VENDORED.search(ln.split(":", 1)[0])]
 
 
@@ -178,7 +211,7 @@ def main():
         print("PAID    %s" % c["paid"])
         print("WHY     %s" % c["why"])
         for fork in FORKS:
-            hits = scan(fork, c["pattern"])
+            hits = scan(fork, c["pattern"], c.get("include_vendored", False))
             if hits is None:
                 print("  %-10s [not present beside this repo]" % fork)
                 continue

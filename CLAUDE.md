@@ -1050,6 +1050,15 @@ Rules:
    each reversed a plan that was already written down.
 4. **Similar names are not a shared capability.** Three LRU caches were three
    designs. Six driver pickers were four concerns.
+5. **`git grep` DOES NOT SEE SUBMODULE CONTENTS.** Three wrong results in this
+   project came from that alone — dynarmic in Vita3K, xxHash in Vita3K, and a
+   fleet SVE search that reported Vita3K clean while its submodule xxHash carried
+   five SVE branches. **Pass `--recurse-submodules`, and say whether a search
+   did.** The tools in `tools/` now do.
+6. **State whether vendored code counts, because it depends on the question.**
+   Excluding it is right for *"which fork implements this"* and **wrong for
+   *"what compiles into the binary"***. The same SVE search was wrong both ways
+   at once.
 
 ## Duplication must be structurally impossible
 
@@ -2330,8 +2339,20 @@ selects its implementation purely at compile time and tests
 
 **SVE is selected instead of NEON, not in addition to it**, so the failure is
 **`SIGILL` at the first hash, not a slower hash** — and **xxHash is the fleet's
-texture-hashing workhorse.** Files branching on it: **ARMSX2 seven** (vendored
-xxHash twice, plus **zstd**), **melonDS one, in its own source.**
+texture-hashing workhorse.**
+
+**Six of nine forks carry SVE-conditional code**, counted with
+`git grep --recurse-submodules` and **with the vendored filter off, because a
+dependency compiles into the product**: **rpcsx 303 lines in 48 files** (asmjit
+seeds detected features from compile-time macros), **ARMSX2 43 in 5**, **azahar
+27 in 3**, **Vita3K 27 in 3** (a submodule, plus a third xxHash copy via tracy),
+**melonDS 13 in 1**, xenia and Cemu 1 each, eden and GameThor none. **Four of
+them carry the same xxHash dispatch.**
+
+**A first count of this said "ARMSX2 seven, melonDS one, everyone else zero" and
+was wrong twice** — it excluded vendored trees, which is the wrong filter for a
+question about what compiles into the binary, **and it did not recurse
+submodules.**
 
 **Nothing in the build would warn**, because the compiler is correct — it was told
 the target is ARMv9. **The device is the thing that disagrees with the flag.**

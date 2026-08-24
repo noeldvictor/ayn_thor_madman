@@ -54,14 +54,26 @@ elseif (${YUZU_BUILD_PRESET} STREQUAL "armv9")
 records that the fleet uses it heavily and that azahar and Vita3K pin identical
 xxHash commits.
 
-Files branching on `__ARM_FEATURE_SVE` or including `arm_sve.h`, own source and
-vendored, searched across all nine forks:
+**RE-COUNTED with `--recurse-submodules` and with the vendored filter off**,
+because a dependency is not the fork's work but **it compiles into the product**:
 
-| Fork | Files | Where |
-| --- | --- | --- |
-| **ARMSX2** | **7** | vendored `xxhash.h` twice, and **zstd**'s `xxhash.h`, `compiler.h`, `hist.h` |
-| **melonDS** | **1** | **its own `melonDS-android-lib/src/xxhash/xxhash.h`** |
-| everyone else | 0 | — |
+| Fork | Lines | Files | Spot-checked |
+| --- | --- | --- | --- |
+| **rpcsx** | **303** | **48** | `asmjit/core/cpuinfo.cpp` — asmjit seeds *detected* features from compile-time macros |
+| **ARMSX2** | 43 | 5 | vendored `xxhash.h`, the SVE-before-NEON dispatch |
+| **azahar** | 27 | 3 | `externals/xxHash/xxhash.h`, same dispatch |
+| **Vita3K** | **27** | **3** | **submodule** `external/xxHash/xxhash.h`, plus a third copy via `external/tracy` |
+| **melonDS** | 13 | 1 | its own `melonDS-android-lib/src/xxhash/xxhash.h` |
+| xenia, Cemu | 1 | 1 | — |
+| eden, GameThor | 0 | 0 | — |
+
+**Six of nine forks carry SVE-conditional code**, and **four of them carry the
+same xxHash dispatch.**
+
+**The first version of this count said "ARMSX2 7, melonDS 1, everyone else 0" and
+was wrong twice**: it excluded vendored trees, which is the wrong filter for a
+question about what compiles into the binary, **and it did not recurse
+submodules**, which is how it reported Vita3K as clean.
 
 **zstd matters as much as xxHash** — it is the compression this fleet uses for
 caches and packs.

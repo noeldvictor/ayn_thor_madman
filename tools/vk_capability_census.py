@@ -134,8 +134,10 @@ def whole_fork(fork, extension):
     camel = "".join(w.capitalize() for w in rest.split("_"))
     pattern = "%s|%s|vk::%s%sExtensionName" % (
         extension, extension.upper(), vendor.upper(), camel)
-    cmd = ["git", "-C", root, "grep", "-lIE", pattern, "--",
-           "*.cpp", "*.cc", "*.h", "*.hpp"]
+    # --recurse-submodules: a parent-repo grep cannot see submodule contents,
+    # which produced three wrong results in this project.
+    cmd = ["git", "-C", root, "grep", "--recurse-submodules", "-lIE", pattern,
+           "--", "*.cpp", "*.cc", "*.h", "*.hpp"]
     try:
         r = subprocess.run(cmd, capture_output=True, timeout=120)
     except (OSError, subprocess.SubprocessError):
