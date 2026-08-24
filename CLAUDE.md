@@ -2270,6 +2270,43 @@ penalise 64 and 32.
 alternative is per-cluster codegen variants, which multiplies the code cache
 and the testing.
 
+### The Thor's core indices, and they decide every affinity question
+
+| Host CPU | Core | Clock |
+| --- | --- | --- |
+| **0, 1, 2** | **Cortex-A510** | **2.0 GHz** |
+| 3, 4, 5, 6 | Cortex-A715 / A710 | 2.8 GHz |
+| **7** | **Cortex-X3** | **3.19 GHz** |
+
+From xenia's `thor_topology.h`. **This file recorded the 1+4+3 layout and never
+which index is which**, and both bugs below are what happens without it.
+
+### Guest core N pinned to host core N — two forks, and it lands on the little cluster
+
+**The x86 detour is not only in the instruction stream. A scheduling decision
+that was correct for a homogeneous machine is the same class of mistake, and it
+costs more than any peephole in this file.**
+
+- **xenia.** `XThread::SetActiveCpu` does `set_affinity_mask(1 << cpu_index)`
+  where `cpu_index` is the **guest** CPU. Its own ledger: *"FOUND A MAJOR
+  x86-SHAPED STRUCTURAL BUG."* The map pinned guest CPUs 0-2 onto **the three
+  little cores and never gave the X3 any guest work at all** — and on the Xbox
+  360, **guest thread 0 is conventionally the main game thread.** *"This is a
+  power bug as much as a speed one."* The workaround
+  `thor_guest_thread_affinity_mask` **defaults to 0**, so this ships.
+- **eden.** `CpuManager::RunThread` calls
+  `PinCurrentThreadToPerformanceCore(core)` with the **guest** core index, and
+  that function pins to **host CPUs 0-3**. Its comment says it is *"Aimed
+  specifically for Snapdragon 8 Elite devices"* — **a part with no efficiency
+  cores, where indices 0-3 really are performance cores.** On the 8 Gen 2 it
+  pins three of four Switch guest cores to the **A510 cluster**, from a function
+  whose name says the opposite. **It is inside `#ifdef __ANDROID__` with no
+  device check.**
+
+**Neither is catchable by a build or a test**: both produce a working emulator
+that is slower and hotter. See
+[`research_log/20260824_0600_guest_core_n_to_host_core_n.md`](research_log/20260824_0600_guest_core_n_to_host_core_n.md).
+
 ### The A510 vector unit is shared between two cores
 
 > Cortex-A510 shares a VPU between all Cortex-A510 cores in a complex.
@@ -2284,6 +2321,22 @@ The datapath may also be 2x64-bit rather than 2x128-bit, which would halve
 128-bit vector throughput there. **Both are readable from the device**
 through `IMP_CPUCFR_EL1.Cores` and `IMP_CPUCFR_EL1.VPU`. Read them before
 placing vector work on the little cores.
+
+**MEASURED ON THIS DEVICE 2026-08-05 AND IT DID NOT REPRODUCE.** xenia's
+`thor_probe_a510_vector_units` pins an independent-chain NEON loop per little
+core and runs pairs concurrently. Solo: **390.3 / 407.1 / 462.6 Miter/s**. Pairs:
+**0+1 at 98.5% of the solo sum, 0+2 at 95.8%, 1+2 at 98.8%.** **All pairs scale
+near-linearly and no pair is halved.**
+
+**Its stated limitation keeps this open rather than closed:** the probe uses
+**integer** NEON, so **if the shared resource is specifically the FP SIMD pipe an
+integer test would not expose it.** Rerun with `vmlaq_f32` before calling it
+closed. **And Qualcomm can configure A510 complexes with per-core VPUs**, so this
+part may differ from the one measured in the talk that prompted the claim.
+
+> **Fourteenth manual-derived prediction measured here and refuted.** Checking
+> `/proc/cpuinfo` is not enough: **a vendor configures the part, so a manual
+> describes what a core may implement, not what this device does.**
 
 ### The A710 stalls three cycles on lane-assembled vector registers
 
