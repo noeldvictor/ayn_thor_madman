@@ -127,6 +127,20 @@ CLASSES = {
         # 3rdparty/ here hid ARMSX2's seven files entirely.
         "include_vendored": True,
     },
+    "x86_only_fastpath": {
+        "what": "A fast path guarded on an x86 macro, with no ARM sibling in the guard.",
+        "paid": "rpcsx: Crypto/aesni.cpp is entirely behind #if defined(__SSE2__), so every "
+                "AES operation runs the four-table software path on a chip reporting "
+                "aes/pmull/sha1/sha2/sha3 -- on the boot path, 1187 modules for one title. "
+                "ARMSX2: BC7DECOMP_USE_SSE2 with zero ARM/NEON in the file, so BC7 texture "
+                "blocks decode scalar.",
+        "why": "The fallback is correct, so nothing crashes, nothing fails a test and nothing "
+               "warns. Only the reference implementation runs. CORRECT code names ARM64 beside "
+               "x86 in the same guard -- Cemu's fast_float, Vita3K's spin_wait and eden's "
+               "uint128 all do. Look for an x86 macro with NO ARM sibling.",
+        "pattern": r"defined\(__SSE2__\)|defined\(__AES__\)|defined\(_M_X64\)|"
+                   r"defined\(__AVX2__\)|defined\(__BMI2__\)",
+    },
     "stale_default": {
         "what": "A persisted setting that can outlive and override a compiled default.",
         "paid": "xenia: three rlwinm fastpaths were defaultEnabled=true in code and "
