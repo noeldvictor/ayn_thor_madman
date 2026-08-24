@@ -1788,7 +1788,7 @@ Every item is already written somewhere in the fleet. None needs invention.
 | --- | --- | --- |
 | Transient colour attachments | Vita3K | everyone |
 | Depth and stencil `DontCare` by default | Cemu | eden, azahar |
-| `eClear` instead of `eLoad` when the pass clears | azahar | eden |
+| `eClear` instead of `eLoad` when the pass clears | azahar | eden — **but see below: measured null once** |
 | **Persisting relocatable emitted code, with a validity sentinel** | **ARMSX2** | **eden's NCE patcher, which has the key type and no cache** |
 | **Whole-text AOT patching keyed by build ID** | **eden NCE** | anything with a same-ISA or near-ISA guest |
 | **Merging another user's cache into yours** | **Cemu `ShaderCacheMerger`** | everyone |
@@ -1814,6 +1814,24 @@ host with no recompiler at all**, because its guest ISA is the host ISA. This
 file already recorded that fact as a *difficulty*. **It is also the opportunity.**
 
 See [`research_log/20260823_2250_eden_nce_deletes_the_translator.md`](research_log/20260823_2250_eden_nce_deletes_the_translator.md).
+
+**A FIFTH FORK, AND IT IS WORSE, 2026-08-24.** **rpcsx uses `LOAD_OP_CLEAR` zero
+times** — colour, depth and stencil are all `LOAD` and `STORE` unconditionally,
+so **even a full-screen clear unresolves the attachment into GMEM first.**
+
+**And rpcsx fixed it and measured no saving.** Correct, applying to 100% of
+clears, and **12.39% against 12.65% GPU busy at an identical 615 MHz clock** — so
+devfreq is not hiding a win. **Two unseparated explanations: Turnip may already
+fold a full-surface `vkCmdClearAttachments` into the load op, or the workload was
+too light.** Its instruction: **check what the driver already folds before
+blaming the scene.**
+
+> **So treat the two attachment-op rows in the propagation list as correctness
+> and hygiene, not as performance**, until somebody checks what Turnip folds.
+
+**And the instrument is one this file never recorded:**
+**`/sys/class/kgsl/kgsl-3d0/gpubusy`** — a cumulative busy/total pair that
+**resets on read**, needing no root and no perfetto.
 
 **The four-way spread is itself the argument for the shared layer.** Four forks
 gave four answers to one question, and the best answer is not in the newest or
@@ -5264,6 +5282,53 @@ Verdicts: `DEAD`, `FLAT`, `WIN`, `GFX-LOSS`, `CONFOUNDED`, `OPEN`.
 [`capability_inventory.md`](capability_inventory.md) stops a feature being
 rebuilt. The ledger stops a dead lever being re-run. The fleet needs both, and
 the ledger already exists. Adopt it rather than writing one.
+
+### THE PATTERN, 2026-08-24: every win in this fleet was a bug, not an optimisation
+
+**rpcsx's GPU review ends with the most useful sentence found in the fleet:**
+
+> **This emulator's ARM64 and GPU paths are already well matched to the hardware.
+> The wins have come from code that was broken, not code that was slow.**
+
+**Tested against everything read that day, the split is total.**
+
+| What paid | What it was |
+| --- | --- |
+| 74% of cycles in a nop-spin | a **timing constant** correct on x86, wrong by ~1300x here |
+| `rlwinm` fastpaths off, **+2.88%** | a **stale persisted config** beating a compiled default |
+| AOT object cache never enabled | a **guard on the wrong launch path** |
+| guest core N pinned to host core N | a **guest index used as a host index** on big.LITTLE |
+| ARMSX2 frame generation stuck at fp32 | an **extension the device layer never requests** |
+| eden's NCE patches re-derived every launch | a **cache key declared and never used** |
+
+| What did not pay | Result |
+| --- | --- |
+| native render path rearch | frame anatomy: **~7 ms of structure to reclaim** |
+| bindless resources | **regressed** 129 ms to 161 ms |
+| `EOR3`/`BCAX` fusion | **0 of 1 candidates** |
+| `TBL2` for `TBX2` | 0.555 against 0.555 |
+| `LOAD_OP_CLEAR` conversion | **12.39% against 12.65% GPU busy** |
+| A510 shared vector unit | pairs scale **near-linearly** |
+| `ISB` for `yield` | **+23% regression** swapped alone |
+
+**Three consequences.**
+
+**It reframes the section below.** Expect maintenance wins, yes — **but the frame
+wins do exist, and they are in broken code rather than slow code.**
+
+**It changes what the shared layer is for.** The stated case is one device, one
+cache, one budget, one scheduler. **The stronger case is that a shared owner makes
+a broken thing visible in eight backends at once** — and every row in the win
+column is a **class**, not an instance. A guest index used as a host index was
+found in two forks. A capability the device layer never requests is the whole
+capability census. **A cache that is off on the path people use is the failure
+mode this project's own artifact store is designing toward.**
+
+**And it is a warning about this project's instincts.** Most of what this repo has
+proposed is optimisation — a render graph, an upscaler, instruction repurposing,
+an IR decision. **The fleet's record says that lane is where the refutations
+live.** See
+[`research_log/20260824_0855_every_win_was_a_bug.md`](research_log/20260824_0855_every_win_was_a_bug.md).
 
 ### Expect maintenance wins from the shared layer, not large frame wins
 
