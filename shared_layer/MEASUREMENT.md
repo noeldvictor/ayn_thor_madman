@@ -62,6 +62,7 @@ correct and the list had become unnavigable.
 | **Measure the thread, not the process** | `CLAUDE.md` |
 | **Temperature proves the run happened** — but see the sensor rule | `CLAUDE.md` |
 | **A negative result needs a workload that could have produced a positive one** | `CLAUDE.md` |
+| **A run at any guest time scale but 100% is NOT a measurement.** Fast forward, slow motion and pause all invalidate frame time, noise floors and energy per frame | `research_log/20260825_0245_*`; `app/shell/TimeScale.kt` |
 
 ## From the number to the decision
 

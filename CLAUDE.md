@@ -5490,6 +5490,56 @@ and menu use the same input on every backend, always.
 A backend does not get to define its own hotkey. The app owns the hotkey layer
 and tells the backend what happened.
 
+### Fast forward is a TIME SCALE, and a boolean in the contract ships a known bug
+
+**Found 2026-08-25.** The hotkey list above names fast forward and rewind. **It
+never said what fast forward means to a backend, and "run the loop faster" is
+wrong for most of this fleet.**
+
+**Vita3K shipped the toggle twice and it did nothing both times.** The first pass
+scaled `sceKernelDelayThread`, kernel wait timeouts and timer scheduling; the
+user reported gameplay still ran at real time. **The second pass had to add an
+anchored speeded process clock** and route `sceKernelGetProcessTime`,
+`GetSystemTimeWide`, `LibcClock`, `LibcTime`, `LibcGettimeofday`, the RTC APIs,
+thread start ticks **and NetCtl adhoc peer timing** through it.
+
+> **The switch moved and nothing happened — the settings symptom with a fifth
+> cause. The feature is not a value, it is a cross-cutting property of every
+> clock in the backend.**
+
+**And the cost splits on HLE against LLE, the same axis that decides whether API
+translation is available:**
+
+| Fork | Guest time from | Mechanism | Size |
+| --- | --- | --- | --- |
+| **melonDS** | emulated cycles | **a bool the frame limiter reads** | **3 references** |
+| ARMSX2 | emulated cycles | limiter, **plus a fast-forward volume** | — |
+| eden | HLE kernel | `GetClockTicks()` **divides by the speed limit**, behind `sync_core_speed` | one function |
+| **Vita3K** | HLE kernel | **an anchored clock across ~12 time APIs**, plus audio and vblank | two attempts |
+
+**A backend whose guest asks the HOST what time it is gets real time no matter
+how fast the loop runs.** Most of this fleet is that kind.
+
+**Three forks link audio to speed and they do three different things**, searched
+across all eight with seven vocabularies and every hit read: Vita3K retimes
+against `speed_percent`; ARMSX2 drives resampling and time-stretching from a
+nominal rate **and adds `SPU2/Output/FastForwardVolume`**; and **azahar
+time-stretches when emulation speed drops to 95 or below.**
+
+> **azahar's runs in the opposite direction and is probably worth more here. On
+> a thermally-limited handheld, running BELOW 100% is the common case**, and
+> keeping audio intact while the emulator cannot keep up is a
+> quality-of-life feature a fast-forward design would never have found.
+
+**The contract consequence, implemented in `app/shell/TimeScale.kt` with 12
+tests:** a **scale**, not a toggle — pause is the same mechanism at zero, which
+is what the paused agent loop already relies on — and a backend **declares which
+clock domains it scales**. A backend that HLEs guest time from the host clock and
+does not declare `HOST_DERIVED_TIME` is **refused**, so the bug Vita3K shipped
+becomes visible at integration rather than in a user report.
+
+See [`research_log/20260825_0245_fast_forward_is_a_time_scale_not_a_toggle.md`](research_log/20260825_0245_fast_forward_is_a_time_scale_not_a_toggle.md).
+
 **ARMSX2 already has the action list and the binding interaction. Take them.**
 `ControllerMappings.SysHotkey` is an enum, and `HotkeysTab.kt` renders from
 `SysHotkey.entries`: menu, quick save and load, slot cycle, texture-dump toggle,
