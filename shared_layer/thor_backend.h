@@ -207,26 +207,55 @@ struct TextEntryConfig {
 };
 
 // Why the app rejected input, so it can say so in place rather than failing
-// silently. Superset of azahar's ValidationError.
+// silently.
+//
+// CORRECTED 2026-08-25. This was "a superset of azahar's ValidationError" and
+// carried kAtSignNotAllowed, kPercentNotAllowed, kBackslashNotAllowed and
+// kProfanityNotAllowed -- ONE CONSOLE'S SOFTWARE-KEYBOARD RULES, CHARACTER BY
+// CHARACTER, in the fleet-wide contract. A Switch, Wii U or PS3 keyboard
+// forbids a different set, and this enum could not express "# is not allowed
+// here".
+//
+// It was the fifth fixed enum in this project derived from one guest's
+// taxonomy, after texture classes, filter lists, cheat memory regions and
+// AcceptedInput above.
+//
+// THE DISCRIMINATOR, which the first four did not state: a fixed enum is
+// correct when the HOST owns the concept and wrong when the GUEST does.
+// UploadResult's decline reasons are ours -- our budget, our rate limit, our
+// class list -- so a fixed enum is right there. A forbidden character belongs
+// to the guest.
+//
+// So the shell keeps only what it can ACT on without guest knowledge, and the
+// guest's own reason travels as a code plus a string the backend supplies.
+// This is the same resolution as azahar's button labels, which this project
+// already took: "Ok", "Cancel" and "I Forgot" come from the guest because no
+// host could predict them. A rejection message is the same kind of text.
 enum class ValidationError : uint8_t {
   kNone,
-  kButtonOutOfRange,
-  kMaxDigitsExceeded,
-  kAtSignNotAllowed,
-  kPercentNotAllowed,
-  kBackslashNotAllowed,
-  kProfanityNotAllowed,
-  kGuestRejected,
-  kFixedLengthRequired,
-  kMaxLengthExceeded,
-  kBlankInputNotAllowed,
-  kEmptyInputNotAllowed,
+  kEmptyInputNotAllowed,   // the shell can require non-empty
+  kBlankInputNotAllowed,   // and non-blank
+  kMaxLengthExceeded,      // it knows max_length
+  kFixedLengthRequired,    // and fixed length
+  kMaxDigitsExceeded,      // and max_digits
+  kButtonOutOfRange,       // it drew the buttons
+  kGuestRejected,          // everything else: see guest_reason below
+};
+
+// The guest's own rejection, for kGuestRejected. The code is opaque to the
+// shell; the message is what it displays. A backend that has neither leaves
+// both empty and the shell shows a generic refusal.
+struct GuestRejection {
+  uint32_t code;
+  std::string_view message;
 };
 
 struct TextEntryResult {
   std::string_view text;
   uint8_t button;   // which of the guest's buttons was pressed
   bool cancelled;
+  ValidationError error;
+  GuestRejection guest_reason;  // meaningful only when error == kGuestRejected
 };
 
 // A guest user the backend knows about. Cemu has Account, azahar has Mii,
