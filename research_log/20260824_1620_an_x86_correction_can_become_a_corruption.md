@@ -169,6 +169,49 @@ use, rather than a silent substitution three headers away.**
 > does it with an `#if` in the same function; a separate file does it by
 > construction; a shim does neither.
 
+## CONFIRMED AND ENLARGED: the fork calls this its most productive heuristic
+
+**Found later the same day by reading rpcsx's `docs/arm64/ledger.md`, which its
+`AGENTS.md` names as the audit ledger — the index I should have opened first.**
+
+> **Auditing x86 *corrections* has high yield where auditing opcodes has low
+> yield** — **every real defect in this codebase was shared code compensating for
+> an x86 quirk, never LLVM picking a bad instruction from a clean description.**
+
+**Six defects, not the one I found:** `CFLTS`, the **`FCTIW` family**,
+**`VPKUHUS`**, **`bswap.i128`**, **`mov_rdata`** and **`VMSUMSHS`.**
+
+**And it has a mechanical tell**, which is much sharper than the conversion-
+intrinsic list I swept with:
+
+> **an XOR against a sign-extended comparison** — the shape a saturation fix-up
+> takes.
+
+**Swept across both translators: three sites, all correct.** Two are `CFLTS`
+inside the `#else` of an `#ifdef ARCH_ARM64`, **the fix working as intended** —
+the correction survives for x86 while AArch64 takes hardware saturation. **Finding
+those in a grep is the expected result, not a regression.**
+
+**The third is the distinction this whole class turns on.**
+`PPUTranslator.cpp:1708`, `VMSUMSHS`: **not an x86 workaround — it implements
+PowerPC's own saturation of the `0x80000000` product.** **The "correction" shape
+is the guest architecture's semantics**, which is why this lens **needs reading
+rather than pattern-matching** — the same conclusion ARMSX2's `iCOP2-arm64.cpp`
+comment reaches from the other side.
+
+**The exhaustion is bounded and stated.** The lens is exhausted **for that
+shape**. A correction spelled as a `select`, a clamp before a conversion, or a
+literal limit would not match — **and the `select` forms were checked by hand in
+the same pass** and turned out to be `FREST`/`FRSQEST` exponent handling,
+**algorithm rather than compensation.**
+
+**Its reason for recording a negative result is this repo's own philosophy,
+written by another fork:**
+
+> the alternative is **re-running the most productive heuristic in this document
+> every time someone looks for work, and concluding from silence that they
+> searched badly.**
+
 ## Limits
 
 - **No fleet instance of the bug was found outside rpcsx.** The search covered

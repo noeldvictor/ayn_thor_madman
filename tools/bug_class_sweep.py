@@ -158,7 +158,15 @@ CLASSES = {
         # everywhere; only the x86 CONVERSION intrinsics identify the shape.
         # Even so this class cannot be settled by a regex -- every hit needs
         # reading, because most are genuine guest semantics.
-        "pattern": r"cvttps|CVTTPS|_mm_cvtt|fptosi|fptoui|CVTTSS|CVTTSD",
+        # rpcsx names the mechanical tell for this class, and it is sharper than
+        # a list of conversion intrinsics: AN XOR AGAINST A SIGN-EXTENDED
+        # COMPARISON, which is the shape a saturation fix-up takes. It swept that
+        # across both its translators and found three sites, all correct -- two
+        # being the fix working as intended, one being the GUEST's own semantics.
+        # The lens is exhausted for that shape and NOT for a correction spelled as
+        # a select, a clamp before a conversion, or a literal limit.
+        "pattern": r"cvttps|CVTTPS|_mm_cvtt|fptosi|fptoui|CVTTSS|CVTTSD|"
+                   r"eor.*sext|sext.*eor|_mm_xor.*cmp|xor.*cmpgt",
     },
     "stale_default": {
         "what": "A persisted setting that can outlive and override a compiled default.",

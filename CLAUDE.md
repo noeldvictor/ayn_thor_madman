@@ -1986,7 +1986,27 @@ in `Fcvtzs`; only NaN lanes need the fixup.**"*
 
 > **Enumerate what the host already does correctly, and fix only the delta.** The
 > ARM64 branch of any guest operation should say which parts the hardware already
-> provides. **ARMSX2's comment does; rpcsx's did not, and that is where the bug
+> provides.
+
+**AND THE FORK THAT FOUND IT CALLS THIS ITS MOST PRODUCTIVE HEURISTIC:**
+
+> **Auditing x86 *corrections* has high yield where auditing opcodes has low
+> yield** — **every real defect in this codebase was shared code compensating for
+> an x86 quirk, never LLVM picking a bad instruction from a clean description.**
+
+**Six defects, not one:** `CFLTS`, the `FCTIW` family, `VPKUHUS`, `bswap.i128`,
+`mov_rdata`, `VMSUMSHS`. **That is the strongest support anywhere in this fleet
+for the "every win was a bug" pattern**, and it is the same fork's own summary of
+its own record.
+
+**It has a mechanical tell: an XOR against a sign-extended comparison**, the shape
+a saturation fix-up takes. **Swept across both its translators: three sites, all
+correct** — two are the fix working as intended, and **one is the guest
+architecture's own semantics**, which is why the lens **needs reading rather than
+pattern-matching.**
+
+**The exhaustion is bounded**: that shape is done; **a correction spelled as a
+`select`, a clamp before a conversion, or a literal limit would not match.** **ARMSX2's comment does; rpcsx's did not, and that is where the bug
 > lived.**
 
 **AND THERE IS A STRUCTURAL REMEDY, which is the design rule for the shared
