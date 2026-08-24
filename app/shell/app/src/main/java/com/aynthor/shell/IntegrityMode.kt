@@ -117,6 +117,29 @@ object IntegrityPolicy {
         bindsTo(intent) == PatchBinding.DUMP_ID
 
     /**
+     * May the app restore the auto-save slot when a game is launched?
+     *
+     * Resume-where-you-left-off is defaulted ON here, which makes this a real
+     * collision rather than a theoretical one: LOAD_STATE is guarded, so a game
+     * launched while results are claimed would silently restore a state and
+     * contaminate the run BEFORE THE FIRST FRAME.
+     *
+     * melonDS already knew the two features meet -- its exit path calls
+     * maybeAutoSaveStateOnExit directly beside discardHardcoreSubmissions().
+     */
+    fun mayAutoLoadOnBoot(mode: IntegrityMode): Boolean =
+        allows(mode, GuardedFeature.LOAD_STATE)
+
+    /**
+     * May the app write the auto-save slot?
+     *
+     * Yes, always. Saving is not the contaminating act -- LOADING is. Blocking
+     * the save would lose the session for no integrity gain, which is the
+     * too-wide gate that produced ARMSX2's bug one.
+     */
+    fun mayAutoSaveOnExit(@Suppress("UNUSED_PARAMETER") mode: IntegrityMode): Boolean = true
+
+    /**
      * Everything a mode change would take away, so the user is told first.
      *
      * Returns empty when nothing is lost.

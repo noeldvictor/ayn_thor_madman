@@ -5501,6 +5501,44 @@ and menu use the same input on every backend, always.
 A backend does not get to define its own hotkey. The app owns the hotkey layer
 and tells the backend what happened.
 
+### Resume where you left off: built twice, off by default twice. Turn it on
+
+**Found 2026-08-25.** The Android-specific product question — what happens to a
+game in progress when the OS takes the process away — had never been asked here.
+
+**ARMSX2 has the complete design:** `autoSaveOnExit`, **`autoSaveIntervalMin`**
+for a periodic save while playing, and **`autoLoadOnBoot`**. melonDS has
+`auto_save_state_on_exit` only. **Both default to `false`.**
+
+**Foundation point 4 says configuration is not the hobby. Save-on-exit plus
+load-on-boot IS that feature, and both forks ship it off. Default it on.**
+
+**Take ARMSX2's slot rule, which is what makes it safe.** Its own UI copy:
+
+> *"It writes the **same auto-save slot** as the option above, **so your numbered
+> slots stay yours.** Saving pauses the game for a moment, so a short interval is
+> felt — **5 minutes is a good starting point**."*
+
+**A dedicated auto-save slot, the cost stated rather than hidden, and a
+recommended default.** That is the standard for every automatic feature here.
+
+**And prefer a periodic auto-save to an `onPause` hook**, which is the obvious
+design and the weaker one. **Read: melonDS's `onPause` and `onStop` write no
+state**, and all three `maybeAutoSaveStateOnExit` call sites are explicit exit
+paths — **so an Android process kill loses everything since the last manual
+save.** A periodic save bounds the loss **however the process ends** — kill,
+crash or flat battery, which ARMSX2's copy names — while a lifecycle hook covers
+one of the three and runs when the OS is already reclaiming the process.
+**Have both; neither fork does.**
+
+**It collides with the integrity mode above.** `LOAD_STATE` is guarded, so
+**`autoLoadOnBoot` must be suppressed while results are claimed**, or a game
+launch silently restores a state and contaminates the run before the first frame.
+**melonDS already knew the two meet**: `maybeAutoSaveStateOnExit` sits directly
+beside `discardHardcoreSubmissions()`.
+
+See [`research_log/20260825_0530_resume_where_you_left_off_is_built_and_off_by_default.md`](research_log/20260825_0530_resume_where_you_left_off_is_built_and_off_by_default.md).
+
 ### Rewind exists, costs 20 MB a state, and collides with an integrity mode
 
 **Found 2026-08-25.** Rewind is on the hotkey list above and had never been

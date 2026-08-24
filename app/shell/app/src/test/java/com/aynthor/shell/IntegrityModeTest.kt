@@ -92,6 +92,21 @@ class IntegrityModeTest {
     }
 
     @Test
+    fun `auto-load on boot is suppressed while results are claimed`() {
+        // Resume-where-you-left-off is defaulted ON, so this is a real
+        // collision: a launch would restore a state before the first frame.
+        assertTrue(IntegrityPolicy.mayAutoLoadOnBoot(IntegrityMode.OFF))
+        assertFalse(IntegrityPolicy.mayAutoLoadOnBoot(IntegrityMode.ENFORCED))
+    }
+
+    @Test
+    fun `auto-save is never blocked - saving is not the contaminating act`() {
+        // Blocking the save would lose the session for no integrity gain. That
+        // is the too-wide gate that produced ARMSX2's bug one.
+        assertTrue(IntegrityPolicy.mayAutoSaveOnExit(IntegrityMode.ENFORCED))
+    }
+
+    @Test
     fun `slow motion is guarded and the time scale agrees`() {
         // TimeScale owns the mechanism; this owns whether it may be used.
         assertTrue(TimeScale.of(50).isSlowMotion)
