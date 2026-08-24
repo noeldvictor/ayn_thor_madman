@@ -88,13 +88,74 @@ disagrees with the flag.**
   list.** `-march=armv8.2-a+...` names what the device has; `-march=armv9-a`
   names an architecture level the device does not fully implement.
 
+## `-mcpu` is the same trap, and a flags re-census corrected two rows
+
+**Tested on this box:**
+
+| Flag | SVE macros |
+| --- | --- |
+| `-march=armv8.2-a+...+rcpc -mtune=cortex-x3` | **none** |
+| **`-mcpu=cortex-x3`** | **`SVE`, `SVE2`, `SVE2_BITPERM`, `SVE_BF16`, `SVE_MATMUL_INT8`** |
+| **`-mcpu=cortex-a710`** | the same |
+
+**Clang models the core**, and these cores implement SVE2 — **Qualcomm did not
+expose it.** So **`-mcpu` is the same trap as `-march=armv9-a`**, and
+`THOR_TARGET.md` naming **`-mtune`** is load-bearing rather than stylistic.
+
+**Re-censused every fork's own build files to see whether the trap is live.**
+`-march`, `-mcpu`, `-mtune` and outline-atomics across `*.txt`, `*.cmake`,
+`*.gradle`, `*.lua`, `*.mk`, vendored trees excluded, CMake variables resolved by
+hand.
+
+**No fork uses `-mcpu=cortex-x3` or `-mcpu=cortex-a710`. The risk is latent; the
+live route is eden's `armv9` preset.**
+
+**But two rows of `CLAUDE.md`'s compile-flags table were wrong:**
+
+- **Vita3K sets `-march=armv8.2-a+lse+fp16+dotprod` and has no `-mcpu` or
+  `-mtune` at all.** The table said `mcpu=cortex-x3`.
+- **Cemu sets `-moutline-atomics` behind a compiler-flag check and no arm64
+  `-march`** in its own build files; the `-march=...+lse` match is **inside a
+  comment**. The table said `armv8-a+lse, mcpu=cortex-a710`.
+
+**A literal grep missed Vita3K entirely**, because its flag is
+`-march=${VITA3K_ARM64_BASELINE}`. **A flags census must resolve variables**, which
+is the same class as the submodule blind spot below.
+
+## And the submodule blind spot bit again, for the third time
+
+**The fleet search above reported Vita3K as having zero SVE-branching files. That
+was wrong.** `external/xxHash` is a **submodule**, it is checked out, and its
+`xxhash.h` contains **five** `__ARM_FEATURE_SVE` branches. **`git grep` in a
+parent repository does not see submodule contents.**
+
+**Third instance in this project** — dynarmic in Vita3K was the first. **Any
+fleet-wide search must state whether it covered submodules**, and this one did
+not.
+
+## Cemu's atomics comment, which inverts here
+
+> `-moutline-atomics` keeps the binary running on pre-ARMv8.1 devices by
+> dispatching at runtime [...] **Building with `-march=...+lse` directly would be
+> faster still but SIGILLs on hardware without LSE.**
+
+**Correct for a portable build, inverted for this project.** The device reports
+`atomics`, so **`+lse` directly is right and `-moutline-atomics` is a dispatch tax
+for devices this project does not have.** **xenia already sets
+`-mno-outline-atomics`.**
+
+**It is also the same shape as the SVE trap, seen from the other side: a feature
+flag that SIGILLs on hardware lacking the feature.** The difference is only which
+side of the flag this device sits on.
+
 ## Limits
 
 - **Not executed.** The chain is verified by compiler test and source reading;
   **no build was made with `armv9-a` and no `SIGILL` was observed.** The
   conclusion follows from the dispatch being compile-time with no fallback.
 - **Other libraries were not audited** for the same pattern beyond the search
-  above.
+  above, **and that search did not cover submodules** — which is how it missed
+  Vita3K's own vendored xxHash.
 - **A build might still work** if the SVE path is never reached at run time, but
   xxHash's `XXH3` is the hot path, so that is not a realistic escape.
 - **The macro test used NDK 30's clang.** The standard row pins NDK 29 and this

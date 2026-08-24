@@ -2206,6 +2206,56 @@ detection problem. **If detection, it is free performance.**
 | melonDS | `armv4`, `armv5`, `haswell` | those are **guest** targets |
 | eden | none found | |
 
+**RE-MEASURED 2026-08-24 AND TWO ROWS ABOVE ARE WRONG.** Method: grep every
+`-march`, `-mcpu`, `-mtune` and outline-atomics flag from each fork's own build
+files — `*.txt`, `*.cmake`, `*.gradle`, `*.lua`, `*.mk` — with vendored trees
+excluded, then resolve the CMake variables by hand.
+
+| Fork | What it actually sets | Correction |
+| --- | --- | --- |
+| xenia | `-march=armv8.2-a+lse+crypto+sha3+crc+dotprod`, `-mno-outline-atomics`, **`-mtune=`**`cortex-a710`/`a715` | confirmed |
+| **Vita3K** | **`-march=armv8.2-a+lse+fp16+dotprod`**, via `VITA3K_ARM64_BASELINE`. **No `-mcpu`, no `-mtune` anywhere.** | **row above is wrong** |
+| **Cemu** | **`-moutline-atomics`** behind a `check_cxx_compiler_flag`. **No arm64 `-march` or `-mcpu` in its own build files**; the `-march=...+lse` match is inside a comment. | **row above is wrong** |
+| melonDS | **`-mtune=cortex-x3`** | confirmed, and **`-mtune` is the safe spelling** |
+| rpcsx | `-march=armv8-a+lse`, and a stray `-mcpu=cortex-a53` | partly confirmed |
+
+**A literal grep missed Vita3K entirely**, because its flag is
+`-march=${VITA3K_ARM64_BASELINE}`. **A flags census must resolve variables.**
+
+### `-mcpu` would enable SVE. `-mtune` does not. That is why the target says `-mtune`.
+
+**Tested on this box, NDK clang, `aarch64-linux-android33`:**
+
+| Flag | SVE macros defined |
+| --- | --- |
+| `-march=armv8.2-a+...+rcpc -mtune=cortex-x3` | **none** |
+| **`-mcpu=cortex-x3`** | **`SVE`, `SVE2`, `SVE2_BITPERM`, `SVE_BF16`, `SVE_MATMUL_INT8`** |
+| **`-mcpu=cortex-a710`** | **the same** |
+
+**Clang models the core, and these cores do implement SVE2 — Qualcomm simply did
+not expose it.** So `-mcpu` is a trap on this device in exactly the way
+`-march=armv9-a` is, and **`THOR_TARGET.md` naming `-mtune` rather than `-mcpu`
+is load-bearing, not stylistic.**
+
+**No fork currently uses `-mcpu=cortex-x3` or `-mcpu=cortex-a710`**, so this risk
+is latent rather than live — **the live route is eden's `armv9` preset.**
+
+### And Cemu's atomics comment inverts for this project
+
+Cemu explains why it uses `-moutline-atomics` rather than `+lse` directly:
+
+> `-moutline-atomics` keeps the binary running on pre-ARMv8.1 devices by
+> dispatching at runtime, so it is safe as the default. **Building with
+> `-march=...+lse` directly would be faster still but SIGILLs on hardware without
+> LSE**; if that is ever wanted it should be an explicit opt-in build.
+
+**That reasoning is correct for a portable build and inverted here.** This device
+reports `atomics` in `/proc/cpuinfo`, so **`+lse` directly is the right call and
+`-moutline-atomics` is a runtime dispatch tax paid for devices this project does
+not have.** **xenia already sets `-mno-outline-atomics`.** A clean DELETE
+instance, and the same shape as the SVE trap seen from the other side: **a
+feature flag that SIGILLs on hardware lacking the feature.**
+
 **xenia is the only fork enabling what the device actually has** — and it is
 the fork that wrote the research. The rest compile for a generic ARMv8-A this
 device stopped being years ago.
