@@ -269,7 +269,7 @@ CLASSES = {
                "GAME and must key on GameKey or DumpId.",
         "exclude": r"Timber|Log\.[dveiw]\(|LOG_|printf|fmt::|spdlog|std::cout|DEBUG_|"
                    r"Exception\(|throw |FileNotFound|Result\.failure",
-        "pattern": r"key\([^)]*\)[^=]*= *[a-zA-Z_.]*\.path(?![A-Za-z0-9_])|"
+        "pattern": r"key\([^)]*\)[^=]*= *[a-zA-Z_.]*\.path\b|"
                    r"\$\{path\}_|\$\{[a-z]+\.path\}|"
                    r"Cache\.(Insert|insert|put|get)\( *[a-zA-Z_.]*path|"
                    r"invalidate[A-Za-z]*ForPath|"
@@ -486,6 +486,25 @@ def self_test():
                 problems.append(
                     "%s.%s: CONTROL CHARACTER %s -- matches nothing"
                     % (name, key, ", ".join(ctrl)))
+                continue
+            # VALIDATE WITH THE ENGINE THAT RUNS IT, not with Python's re.
+            #
+            # This exists because the first version of this self-test compiled
+            # every pattern with `re` and passed a pattern `git grep -E`
+            # rejects: a PCRE lookahead, `(?!...)`. The tool then returned ZERO
+            # for every fork and the self-test said OK. Python's re accepts
+            # lookaheads; POSIX ERE does not.
+            #
+            # That is the "positive control on the wrong channel" trap this
+            # project already records for `adb shell` against the app's uid.
+            probe = subprocess.run(
+                ["git", "grep", "-qE", v, "--", "NO_SUCH_PATH_FOR_PROBE"],
+                cwd=REPO, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+            err = probe.stderr.decode("utf-8", errors="replace")
+            if "Invalid" in err or "fatal: command line" in err:
+                problems.append(
+                    "%s.%s: git grep REJECTS this pattern: %s"
+                    % (name, key, err.strip().splitlines()[0][:70]))
     print("bug_class_sweep --self-test: %d classes" % len(CLASSES))
     print()
     if not problems:

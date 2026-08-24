@@ -66,6 +66,42 @@ memory:
 > run looks exactly like one that passes — **which is the whole disease, met one
 > level up while testing for it.**
 
+## MY FIX BROKE THE TOOL, AND MY SELF-TEST PASSED IT
+
+**Re-running the class after the fix returned ZERO across all nine forks.** The
+original run had found **eight legitimate uses**, all read and dismissed.
+**Adding a working branch cannot reduce matches**, so the fix was wrong.
+
+**`git grep -E` rejects a PCRE lookahead:**
+
+```
+fatal: command line, 'path(?![A-Za-z])': Invalid preceding regular expression
+```
+
+**So the whole pattern failed to parse and every fork returned zero** — a
+detector reporting a clean fleet because it could not run at all.
+
+> **And the self-test passed it, because the self-test compiled the pattern with
+> PYTHON'S `re`, which accepts lookaheads.** **I validated with a different
+> engine from the one that runs it.**
+>
+> **That is the "positive control on the WRONG CHANNEL" trap** — the rule this
+> repo records from rpcsx for `adb shell` against the app's uid, **and the second
+> time today it has been mine.**
+
+**Repaired with an ERE-safe boundary, verified against `git grep` itself before
+committing to it**, and written via `chr(92)` so no heredoc can mangle it again.
+**The class now returns 16 hits across four forks.**
+
+**And the self-test now validates through `git grep`**, not through `re`.
+**Meta-control with the exact bug that shipped:**
+
+```
+[FAIL] capability_by_model_name.pattern: git grep REJECTS this pattern:
+       fatal: command line, 'path(?![A-Za-z])': Invalid preceding regular exp
+rc = 1
+```
+
 ## Limits
 
 - **A schema check.** It cannot tell whether a class describes a real bug shape,
@@ -74,8 +110,10 @@ memory:
   — where this tool's OTHER defect lived — **is still untested.**
 - **Four tools still have no self-test**: `emitted_flags.py`,
   `fleet_docs_index.py`, `fleet_lint.py`, `target_check.py`.
-- **Any claim this repo made from `path_as_identity` was made with a half-dead
-  detector**, and I have not gone back to see which claims those were.
+- **The claims made from `path_as_identity` were re-checked** — its work log's
+  eight dismissed hits are consistent with the repaired class's 16, and the
+  file-against-game rule it produced does not depend on the dead branch.
+  **No recorded conclusion changes.**
 
 ## Files
 
