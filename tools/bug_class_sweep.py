@@ -236,6 +236,34 @@ CLASSES = {
         "pattern": r"never asks for|not enabled by|would be invalid usage|"
                    r"device layer never|is not requested|unsupported by our device",
     },
+    "path_as_identity": {
+        "what": "Durable per-game data keyed on a FILE PATH rather than on the "
+                "game's own identity.",
+        "paid": "Three instances found 2026-08-25, all by reading. azahar and eden "
+                "both key their Coil icon cache on data.path; ARMSX2 keys its cover "
+                "pixmap cache and its invalidation on the path; and eden's Game class "
+                "keys keyAddedToLibraryTime and keyLastPlayedTime on the path while "
+                "keying settings on programId four lines above.",
+        "why": "A path is not identity. Move, rename or re-dump and the data is "
+               "orphaned; worse for a CACHE, where two different dumps at one path "
+               "COLLIDE and the previous game's icon is served. The first two "
+               "instances are caches and recover. The third is play history and does "
+               "not. THE LINE THIS CLASS EXISTS TO DRAW, from reading all 19 hits "
+               "across eight forks: A PATH IS THE CORRECT KEY FOR A PROPERTY OF THE "
+               "FILE and the wrong key for A PROPERTY OF THE GAME. Size, mtime, an "
+               "in-session metadata cache and an is-this-still-the-same-selection "
+               "check are properties of the file -- Vita3K m_size_cache, eden "
+               "m_rom_metadata_cache and eden AddonViewModel are all CORRECT. "
+               "Settings, play history, art, cheats and saves are properties of the "
+               "GAME and must key on GameKey or DumpId.",
+        "exclude": r"Timber|Log\.[dveiw]\(|LOG_|printf|fmt::|spdlog|std::cout|DEBUG_|"
+                   r"Exception\(|throw |FileNotFound|Result\.failure",
+        "pattern": r"key\([^)]*\)[^=]*= *[a-zA-Z_.]*\.path|"
+                   r"\$\{path\}_|\$\{[a-z]+\.path\}|"
+                   r"Cache\.(Insert|insert|put|get)\( *[a-zA-Z_.]*path|"
+                   r"invalidate[A-Za-z]*ForPath|"
+                   r"[Mm]ap<std::string,[^>]*> *[a-z_]*(cache|Cache)",
+    },
     "declared_and_unused": {
         "what": "A type or key declared for a feature that was never built.",
         "paid": "eden: PatchCacheKey has a std::hash specialisation and zero uses, so "
@@ -249,7 +277,7 @@ CLASSES = {
 }
 
 
-def scan(fork, pattern, include_vendored=False, near=None, window=8):
+def scan(fork, pattern, include_vendored=False, near=None, window=8, exclude=None):
     """Lines matching `pattern`, optionally only where `near` is close by.
 
     WHY `near` EXISTS. Broadening wrong_launch_path beyond xenia's own
@@ -301,6 +329,13 @@ def scan(fork, pattern, include_vendored=False, near=None, window=8):
         flush()
         out = kept
 
+    if exclude:
+        # A path INSIDE A LOG MESSAGE is not identity. path_as_identity produced
+        # 16 GameThor hits and every one was `Timber.tag(..).d("... ${file.path}")`.
+        # Interpolating a path into a diagnostic string is correct and common.
+        ex = re.compile(exclude)
+        out = [ln for ln in out if not ex.search(ln)]
+
     if include_vendored:
         return out
     return [ln for ln in out if not VENDORED.search(ln.split(":", 1)[0])]
@@ -332,7 +367,7 @@ def main():
         print("WHY     %s" % c["why"])
         for fork in FORKS:
             hits = scan(fork, c["pattern"], c.get("include_vendored", False),
-                        c.get("near"))
+                        c.get("near"), exclude=c.get("exclude"))
             if hits is None:
                 print("  %-10s [not present beside this repo]" % fork)
                 continue
