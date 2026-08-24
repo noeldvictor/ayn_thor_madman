@@ -98,3 +98,4 @@ turns it into a re-runnable sweep.
 | `tools/hle_coverage.py` | what does each backend implement |
 | `tools/fleet_lint.py` | build-configuration drift |
 | **`tools/emitted_flags.py`** | **what flags actually reached the compiler**, from real build output |
+| **`tools/target_check.py`** | **does the compile target emit what it claims** — 4 probes, proven against 3 real traps |

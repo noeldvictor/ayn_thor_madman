@@ -46,6 +46,13 @@ Every number here is either measured on the device or cited to its source.
 ```
 -march=armv8.2-a+crc+lse+fp16+dotprod+sha3+i8mm+bf16+rcpc
 
+**This line is checked by `tools/target_check.py`, which compiles four probes and
+asserts the emitted instructions.** It is proven against the three traps found the
+day it was written: **the previous version of this line** fails the `ldapr` probe,
+**`-mcpu=cortex-x3`** fails the SVE probe, and **`-mno-outline-atomics` on its
+own** fails the LSE probe. **A flag list is a claim about emitted code; run the
+check rather than reading the line.**
+
 **`+rcpc` added 2026-08-24, and it is the one feature here that is not merely
 permission.** The device reports **`lrcpc` and `ilrcpc`** in `/proc/cpuinfo`, and
 **`-mtune` does not add features** — only `-march` and `-mcpu` do, so the line
