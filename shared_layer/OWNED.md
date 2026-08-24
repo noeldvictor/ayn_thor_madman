@@ -194,6 +194,58 @@ have no savestate, xenia's deadlocks — and **a work-normalised metric is the
 cheaper answer** for a specific lever. Until one of those is in place, **an
 extraction cannot be shown to have helped or harmed.**
 
+### Candidate 0 inherits a DO-NOT-RETRY list, measured on this device
+
+**Added 2026-08-24 from azahar's `AGENTS.md:516-547`.** Four Vulkan changes were
+built and measured on the physical Thor and reverted. **Every one is a change
+somebody writing a shared device layer would propose on sight.**
+
+| Rejected | Its target moved | The complete path |
+| --- | --- | --- |
+| **one `StreamBuffer` reservation** for vertex + fixed attributes | `Map`/`Commit` cycles **-18.64% / -15.27%** | **`SetupVertexArray()` +2.41% REGRESSION** |
+| **one-entry texture-descriptor cache** | Turnip descriptor leaves **-38.53% / -15.74%**, direct cost **-23.16%** | `AccelerateDrawBatch()` **-0.37% raw**, total work **+0.70%**, `SyncTextureUnits()` **+3.79%** |
+| **`VK_EXT_extended_dynamic_state3` blending** | `tu_CmdBindPipeline` **unchanged, noise scale** | azahar's `BindPipeline` share **+9.17% relative** |
+| **bypass the pipeline map lookup** | — | **crashed Turnip in `tu_cmd_render<chip7>`, null dereference** |
+
+> **Three of the four DID what they set out to do, by large margins, and the
+> complete path got slower anyway.** azahar's rule: beat **"the complete
+> recurring path, not just its helper-call count."**
+
+**Two numbers to keep.** The one-entry descriptor cache is worth building at high
+repetition and **only 51.28% of 300,000 live queries repeated the prior static
+state** — cheap to collect, and it decides the design. And the pipeline shortcut
+was unmeasurable in principle: **`ShaderDiskCache::GetPipeline()` was below 1% of
+process work while trace variance exceeded the entire function.**
+
+**LEDGER QUERIED 2026-08-24, and one row is confirmed by a second fork with a
+different instrument.** `exp_ledger.py check` in xenia for `descriptor`,
+`stream buffer`, `dynamic state` and `pipeline`:
+
+- **`gpu_dynamic_blend_state` is `DEAD` in xenia**, independently. Its hypothesis
+  was that EDS3 dynamic blend would collapse its 208 pipeline binds. Result:
+  **"pipeline_binds stayed EXACTLY 208 — blend is not a variant driver, binds are
+  shader/render_pass; render pixel-perfect."** Note: **"EDS3 correct+general,
+  inert."**
+
+> **Two forks, two instruments, one conclusion — and xenia's names the mechanism
+> azahar's could not.** azahar saw `tu_CmdBindPipeline` unchanged; xenia saw
+> **why**: blend is not what drives pipeline variants, so removing it from the key
+> cannot reduce binds. **That is the convergence signal this project already
+> trusts, applied to a negative.**
+
+- **`stream buffer` and `dynamic state` return zero matches**, so the first and
+  third azahar rejections are new information for xenia. **`descriptor` returns 4,
+  none of them a descriptor cache** — the relevant one is `bindless`, `DEAD`,
+  which **regressed 129 ms to 161 ms** while descriptor binds stayed ~1074
+  because they were per-draw constants rather than textures. **A third instance of
+  the same shape: the targeted count did not move, or moved and did not help.**
+
+**These are rejections of specific implementations**, and each entry leaves room
+for a materially different one. **The shared layer inherits them as a starting
+position, not as a proof the idea is unreachable.**
+
+See [`../research_log/20260824_2305_four_vulkan_optimisations_that_worked_and_still_lost.md`](../research_log/20260824_2305_four_vulkan_optimisations_that_worked_and_still_lost.md).
+
 ### Candidate 0 is scoped: take xenia's `ui/vulkan/`
 
 Measured 2026-08-22. See
