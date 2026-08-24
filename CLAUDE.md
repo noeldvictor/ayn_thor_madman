@@ -4615,6 +4615,13 @@ Wi-Fi adb rules:
   a three-input opcode, a HIR pass and two backend fallbacks that would have
   folded nothing.**
 
+**[`shared_layer/MEASUREMENT.md`](shared_layer/MEASUREMENT.md) indexes every
+measurement rule in one screen** — before the run, choosing the instrument,
+making arms comparable, reading the numbers, stacking, and the standing prior.
+**It is an index, not a copy**: each row says where the rule is stated in full.
+**This section grew by more than half in one day**, and the rules were correct
+long before the list was navigable.
+
 **[`DEVICE_QUEUE.md`](DEVICE_QUEUE.md) holds everything waiting on the Thor**,
 with the expected signature for each run and the gates to check first. There is
 one physical device, so device work is a queue and analysis is not. **Add to it
