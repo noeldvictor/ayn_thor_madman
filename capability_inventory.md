@@ -46,8 +46,24 @@ conclusion every time it was tried on one:
 | Settings migrations | "nothing says how" | melonDS `migrations/`, 37 files |
 | Most complete shell | "xenia, 12,313 lines" | **xenia is the SMALLEST Tier 1 frontend** |
 
-**Ten negatives have now been checked and nine were wrong.** Treat a negative in
-this file as the least reliable kind of row it contains.
+**Fourteen negatives have now been checked and thirteen were wrong.** Treat a
+negative in this file as the least reliable kind of row it contains.
+
+**Four more were added 2026-08-23 and 2026-08-24, and their cause is different
+from the rows above.** The listing problem is well known here now. These came
+from **searching for a name instead of a mechanism**:
+
+| Row | Was | After a second vocabulary |
+| --- | --- | --- |
+| Persisted translated code | "no fork does this" | **three do** — rpcs3 `ppu-<sha1>`, ARMSX2 `.vuprog`, xenia AOT |
+| Frame pacing | "no incumbent" | **Cemu has four parts**, including host-driven vsync |
+| Pass merging, input attachments | "nobody" | **xenia merges; three forks use input attachments** |
+| High-value Adreno extensions | "eight unused" | **three**, after searching whole forks |
+
+> **A survey that searches for a named library finds adopters of that library,
+> not implementations of the capability.** `tools/capability_probe.py` exists to
+> stop this: it defines a capability by several independent vocabularies and
+> refuses to report absence unless every probe misses.
 
 Surveyed 2026-08-22. **The first version of this file was wrong.** It covered
 two forks and implied the rest had nothing. Read every "not surveyed" line
@@ -1611,3 +1627,117 @@ Not surveyed in any fork:
 
 Findings dated 2026-08-22 come from
 [`research_log/20260822_1559_shared_paradigm_survey.md`](research_log/20260822_1559_shared_paradigm_survey.md).
+
+
+## Persisting derived artifacts — READ 2026-08-24
+
+**The PERSIST operation. Four forks do it across three artifact classes, and
+nothing connected them.** See
+[`shared_layer/ARTIFACT_STORE.md`](shared_layer/ARTIFACT_STORE.md).
+
+| Fork | Artifact | Key | State |
+| --- | --- | --- | --- |
+| **rpcs3 / rpcsx** | PPU LLVM objects, SPU native objects | **`ppu-<base57(sha1)>-<name>/`** | **production, years of users** |
+| **ARMSX2** | PS2 VU programs, `.vuprog` | content hash + 64-byte options sentinel | built, 3 test files, **default off pending Thor validation** |
+| **xenia** | AOT precompiled code, LLVM object cache | — | **default off**, and was silently off on GUI launches |
+| **melonDS** | **filtered textures**, as a standard HD pack | content hash, `tex1_<W>x<H>_<hash>_...png` | **shipped, and the output is shareable** |
+| **Cemu** | shaders, plus a **merger for another user's cache** | title id | **shipped** |
+| eden | NCE whole-text patches | 32-byte NSO build ID | **built, NOT persisted** — `PatchCacheKey` declared, used nowhere |
+
+**Three independent designs of the cache validity key exist, and two put
+floating-point behaviour in it**: rpcs3's `ppu_settings` bitset carries
+`accurate_dfma`, `fixup_vnan`, `accurate_fpcc` and **`arm64_codegen_v1`**;
+ARMSX2's 64-byte sentinel carries three FPCR masks.
+
+## Frame pacing — READ 2026-08-24
+
+**Cemu has four parts. This file previously recorded no incumbent.**
+
+| Part | Where |
+| --- | --- |
+| four vsync modes with logged fallbacks | `SwapchainInfoVk::ChoosePresentMode` |
+| **`VK_KHR_present_id` + `present_wait` queue-depth limiting**, `maxQueued=1` on FIFO only, 40 ms timeout | `VulkanRenderer.cpp:3120` |
+| **host-driven vsync** — a thread drives the *guest's* vsync from the host display | `LatteTiming.cpp`, `VsyncDriver_startThread` |
+| **dual-screen present serialisation on Android**, per-screen previous-frame markers | `VulkanRenderer.cpp:3098` |
+
+**No fork uses Swappy or `VK_GOOGLE_display_timing`** — searched all nine forks
+for both names across source, Kotlin, Java, Gradle and CMake, twice, and read
+every hit. **The one `VK_GOOGLE_display_timing` match is a logcat dump inside a
+xenia research file**, listing device-supported extensions rather than code —
+which is itself the evidence that **the Thor's Turnip exposes it.**
+
+## Guest activity declaration — READ 2026-08-24
+
+**Every console has an API meaning "do not sleep, the user is watching". Four
+forks receive it; one keeps it.**
+
+| Console | Fork | Call | Kept |
+| --- | --- | --- | --- |
+| Switch | eden | `SetMediaPlaybackState`, `ReportUserIsActive`, four more | **no, five of six** |
+| Vita | Vita3K | `sceKernelPowerTick(type)`, incl. `DISABLE_OLED_OFF` | **no** |
+| 3DS | azahar | `ReplySleepQuery`, a two-way protocol | **no** |
+| Wii U | Cemu | `OSEnableHomeButtonMenu` | **yes**, for its own HOME menu |
+
+**Better than inferring from the video decoder**, because most in-engine
+cutscenes touch no decoder and still disable sleep.
+
+## Render pass merging and input attachments — READ 2026-08-24
+
+| Fork | Input attachments | Multi-subpass merge |
+| --- | --- | --- |
+| **xenia** | yes, `subpassInput` shader variant | **YES**, a 2-subpass merged feedback pass |
+| **ARMSX2** | yes, depth `subpassLoad` in tile ("mobile ROV") | no — **`MAX_SUBPASSES = 1`** |
+| **rpcsx** | yes, a real non-zero array | no — `subpassCount = 1` |
+| Cemu, eden | `inputAttachmentCount = 0` initialisers | no |
+| azahar | **unchecked** | unchecked |
+
+## ADPF and performance hints — READ 2026-08-24
+
+| Fork | `PerformanceHint` files | `getThermalHeadroom` | `reportActualWorkDuration` |
+| --- | --- | --- | --- |
+| **melonDS** | **12** | 0 | **9** |
+| ARMSX2 | 5 | 0 | 1 |
+| Cemu | 4 | 0 | 1 |
+| xenia | 2 | **1** | 1 |
+| rpcsx | 1 | **1** | 1 |
+| **azahar, Vita3K, eden, GameThor** | **0** | 0 | 0 |
+
+**melonDS's is the only complete one**: ten files, a factory choosing NDK at API
+33+, JNI at 31+, a no-op tier, and a **thread-safe hint session**. **Take the
+interface, delete two tiers** — the Thor is API 33.
+
+## Deterministic scenes for measurement — READ 2026-08-24
+
+**Three backends cannot supply one at all**, which Phase 3 assumes they can.
+
+| Fork | Savestate | Input replay |
+| --- | --- | --- |
+| ARMSX2 | **full, versioned** | candidate |
+| melonDS, azahar | yes | azahar has `core/movie.cpp` |
+| Vita3K, rpcsx | yes | no |
+| **xenia** | **exists and deadlocks** in `kernel_state_->Save` | candidate |
+| **Cemu** | **none** — only `SaveStateToConfig()` in a GUI | **none** |
+| **eden** | **none** — `ErrorSavestate` is an enum the core never raises | weak |
+
+## Native guest execution — READ 2026-08-24
+
+**eden runs Switch guest code natively**, `src/core/arm/nce/`, because the guest
+ISA is the host ISA. Whole-text AOT patching keyed by the NSO build ID, with
+relocation and entry trampolines — **Rosetta's shape** — **re-run every launch.**
+**Only instance in the fleet.**
+
+## The fleet's own research corpus — MEASURED 2026-08-24
+
+**1,139 tracked markdown files**, indexed by `tools/fleet_docs_index.py`.
+
+| Fork | Docs | Dated span |
+| --- | --- | --- |
+| **xenia** | **602** | 2026-05-17 .. 2026-08-16 |
+| **rpcsx** | 242 | 2026-05-15 .. 2026-08-21 |
+| Vita3K | 132 | 2026-05-10 .. 2026-08-21 |
+| eden | 72 | — |
+| melonDS, ARMSX2, azahar, Cemu, GameThor | 26, 26, 19, 11, 8 | — |
+
+**xenia's experiment ledger holds 177 entries: 75 `OPEN`, 57 `WIN`, 32 `DEAD`,
+8 `FLAT`, 5 `CONFOUNDED`.** **The 75 `OPEN` entries are analysed levers awaiting
+a run**, and are the most actionable backlog in the fleet.
