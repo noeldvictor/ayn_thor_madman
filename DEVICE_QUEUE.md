@@ -11,6 +11,63 @@ Ordered by what unblocks the most.
 
 ---
 
+## THE FIRST HOUR, when the device is next free
+
+**Added 2026-08-26. The queue has 27 entries and no order.** This is what to run
+first, grouped so one setup serves several entries.
+
+### Block A — no game, no timing, ~20 minutes. Run this first whatever else happens.
+
+**Everything here is a READ or a probe.** None of it needs a title, a warm
+device, or a stable scene, so **none of this queue's measurement traps apply** —
+and several rows in `VERIFICATION_DEBT.md` retire on the spot.
+
+| Entry | What | Retires |
+| --- | --- | --- |
+| **18** | does this device execute AArch32 at EL0 | one property read |
+| **24** | does the driver report `textureCompressionBC` | one boolean |
+| **26** | **Turnip attachment self-read, both forms** | a game-free Vulkan probe, and it **gates the PCSX2 feedback-read technique and XenDroid's 16-commit in-pass resolve series** |
+| — | **`/sys/class/kgsl/kgsl-3d0/gpu_model`** | confirms the part from sysfs; **this repo has never read it** |
+| — | **`CTR_EL0` `IDC`/`DIC`** | recorded from rpcsx's probe, **never re-read here** |
+| — | **`midr_el1` per core** | confirms the 1+4+3 map this repo takes from one header |
+
+> **Block A is the highest ratio of debt retired to device minutes in the whole
+> queue**, and **entry 26 is the single most valuable item in it**, because two
+> substantial pieces of borrowed work are waiting on its answer.
+
+### Block B — pin the driver, because everything after it must name one
+
+**Entry 2.** Every performance number in this project must state its driver
+build, and **azahar has already shown the runtime banner is insufficient** —
+generic and forced-Sysmem R8 expose the same one. **Until the pin is measured,
+every later timing is provisional.**
+
+**And it is now cheaper than written**: azahar has measured three builds on this
+device, and **XenDroid's default contradicts its conclusion for a correctness
+reason.** The remaining question is narrow — **does the pinned build hang on any
+title we care about**, not which is faster.
+
+### Block C — one title, one warm session, only after A and B
+
+**Entries 15 (shipped pipeline cache), 27 (`GCM=1`), 17 (ARMSX2's VU program
+cache).** All three are **cache-warming questions measured on first play**, so
+they share a setup: clear caches, cold run, warm run.
+
+**Run them together or not at all** — each needs the same cold-start discipline,
+and doing them separately pays that cost three times.
+
+### NOT in the first hour
+
+- **12 and 13 (instruction inflation).** **No longer device work** — see entry
+  13. The route is a cross build under qemu-user.
+- **20 (xenia's save-state deadlock).** Listed here because it **gates** device
+  work, not because it needs the device.
+- **Anything with a timing prediction under 5%.** The savestate noise floor is
+  ~5% and the cutscene floor is ~50%. **A 3% prediction needs a gated title
+  screen or a fixed frame range, and that setup is its own session.**
+
+---
+
 ## Before any run
 
 | Gate | Why |
