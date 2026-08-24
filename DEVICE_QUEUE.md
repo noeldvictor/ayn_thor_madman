@@ -107,7 +107,25 @@ It is recorded because the repo stated the wrong version of it for three
 commits. See
 [`research_log/20260822_2147_sve2_on_the_thor.md`](research_log/20260822_2147_sve2_on_the_thor.md).
 
-## 2. Pin the Turnip driver
+## 2. Pin the Turnip driver — **PARTLY ANSWERED 2026-08-24, by azahar, on this device**
+
+> **A live 20-sample bracket at 3x and 615 MHz: generic R8 8.022% mean KGSL busy,
+> forced-Sysmem R8 9.775% (21.86% more GPU time), PurpleVK/T26 8.008% — a 0.18%
+> noise-scale tie. All reproduced the exact accepted frame.**
+>
+> **Sysmem is rejected for that workload.** This repo predicted it would be
+> slower, because it forces system-memory rendering instead of GMEM tiling;
+> **the prediction now has a number.**
+>
+> **PurpleVK ties generic R8**, so on that scene the pin is **not** a performance
+> decision and must be made on other grounds — extension coverage, the
+> attachment-self-read rule, or bug surface.
+>
+> **What remains for this entry:** one 3DS scene at one clock is not the fleet,
+> and **the newer builds this repo lists — Mesa 26.3.0 r7 and MrPurple T30 —
+> were not in that bracket.** azahar's accepted driver is **R8**.
+
+
 
 Three candidates already on the device: `turnip_mrpurple_T30-toasted`,
 `mesa-turnip-v26.3.0-20260803-r7`, `Turnip_v26.0.0_R8`.

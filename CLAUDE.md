@@ -987,6 +987,20 @@ See [`research_log/20260825_1530_five_of_seven_forks_cannot_run_an_fp16_shader.m
 **So the packing argument gains a leg.** One shared device layer enables the
 Thor's real feature set once, and every backend then sits above the same ceiling.
 
+**AND THE COUNTERWEIGHT, from azahar, 2026-08-24: having a feature is not a
+reason to use it.** The physical Thor **confirmed all four required
+`VK_EXT_extended_dynamic_state3` blending features and rendered the target loop
+correctly** — and a profiling-off bracket left Turnip's `tu_CmdBindPipeline` self
+share **unchanged at 1.25297% against 1.25021%** while azahar's own
+`BindPipeline` share **rose 9.17% relative**. **Fully reverted**, with the rule
+written down: *"Do not enable the blending subset of
+`VK_EXT_extended_dynamic_state3` merely because Turnip R8 advertises it."*
+
+> **The ceiling argument says a capability should be AVAILABLE. It does not say
+> it should be TAKEN.** Five backends cannot run an fp16 shader because nobody
+> asks; **that is a defect. Enabling a feature because the driver advertises it
+> is a different mistake in the other direction.**
+
 **Two limits, stated.** Packing does not make a backend *use* a feature; that is
 per-backend renderer work. And **deleting the negotiation code is not the win** —
 availability tests are only 1% to 9% of each device layer, about 500 lines
@@ -3390,7 +3404,28 @@ Candidates, all already on the device:
 | `Turnip_v26.0.0_R8_Sysmem` | 2026-05-10 | K11MCH1 | **Sysmem variant.** Forces system memory rendering instead of GMEM tiling. Expect it to be slower; it exists to work around bugs. See [Vulkan is the substrate](#vulkan-is-the-substrate-and-the-adreno-is-a-tiler). |
 
 **Do not pin from reading a changelog. Measure.** Three candidates and a
-measurement harness already exist. Run an A/B across T30, v26.3.0-r7 and
+measurement harness already exist.
+
+**PARTLY MEASURED, 2026-08-24, by azahar, on this device.** A live 20-sample
+bracket at 3x and 615 MHz, all three arms reproducing the exact accepted frame:
+
+| build | mean KGSL busy | |
+| --- | --- | --- |
+| **generic R8** | **8.022%** | accepted |
+| **forced-Sysmem R8** | **9.775%** | **21.86% more GPU time — rejected** |
+| PurpleVK / T26 | 8.008% | **a 0.18% noise-scale tie** |
+
+**The Sysmem prediction in the table below is confirmed with a number.** And
+**PurpleVK ties generic R8**, so **on that scene the pin is not a performance
+decision** and must be made on other grounds — extension coverage, the
+attachment-self-read rule, or bug surface. **One 3DS scene at one clock, and
+neither Mesa 26.3.0 r7 nor MrPurple T30 was in the bracket.**
+
+**And take azahar's identification rule with it:** *"Do not substitute Mesa's
+runtime banner: **generic and forced-Sysmem R8 expose the same banner despite
+measurably different work.**"* **This file requires every performance number to
+state the driver build; the banner is the obvious way to do that and it is
+insufficient.** Log the driver metadata. Run an A/B across T30, v26.3.0-r7 and
 v26.0.0_R8 on the same scene, and pin the winner. State watts and temperature,
 not only frames. See
 [AI-driven development, QA and experiments](#ai-driven-development-qa-and-experiments).

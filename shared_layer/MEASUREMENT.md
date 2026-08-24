@@ -67,6 +67,13 @@ correct and the list had become unnavigable.
 | **A USB-attached power reading is a FLOOR, not fiction** | `CLAUDE.md` |
 | **USE A CUMULATIVE COUNTER WHEREVER ONE EXISTS.** An instantaneous `current_now * voltage_now` on an IDLE device measured **0.300, 0.588, 1.447, 1.914, 1.961 W** — a 1.66 W spread. Differencing the cumulative `charge_counter` over the window gave **0.627, 0.629, 0.629, 0.628 W**, a 0.002 W spread. **~800x tighter**, and it costs **two adb round trips for any window length** | rpcsx `docs/arm64/instruments.md` |
 | **There is no measured USB input current on this device.** `usb/current_now` is frozen at the negotiated input limit and `ucsi` reports 0, so `usb_in - battery_charge` returns **negative watts**. Nothing to subtract | same |
+| **IDENTIFY THE DRIVER BY LOGGED METADATA, NOT ITS BANNER.** *"Generic and forced-Sysmem R8 expose the same banner despite measurably different work"* | azahar `AGENTS.md` |
+| **BRIGHTNESS IS PART OF A POWER MEASUREMENT.** Require manual brightness mode, record it before warmup, after warmup and after sampling, and reject drift. *"Full-scale brightness is not a sensible hidden constant near a 6 W total-device ceiling"* — and this device has **two panels** | same |
+| **`panel0-backlight` / `panel1-backlight` return `actual_brightness=0` while visibly ON.** Do not treat those nodes as luminance evidence; the display service is the source | same |
+| **AUDIO IS A FAILURE CONDITION, not a separate concern.** *"A power/FPS win with audio breakup or a restarted track is a failure."* Gate on the same track before and after, and **zero underruns** | same |
+| **Gate the ROUTE on a screenshot hash**, not on having navigated there | same |
+| **Reject the simulated battery state AND every charger-online flag** — `dumpsys` external-power, USB, wireless and **UCSI** — before, during and after the run | same |
+| **One vendor toggle can move another.** Changing performance mode on this firmware **also reset fan mode**; read and restore both explicitly | same |
 | **THE HARNESS IS NOT THERMALLY FREE.** Same build and game: a direct boot holds `44-57 C`; the same run through an input-macro harness climbs to **70.7 C in ten seconds and trips its own early stop**, because each sample spawns an `adb shell` walking ~50 `thermal_zone*` entries and each readiness poll takes a **1080p `screencap`**. **Treat harness temperatures as an upper bound that includes the observer** | same |
 | **Sample thermals at 2 s or finer.** A 4 s sweep reported a 57.8 C peak and missed a **60.2 C spike that collapsed to 46.2 C two seconds later** | same |
 | **Total system power is exact; CPU-attributed power is not available** | same |
