@@ -99,6 +99,38 @@ kind of patch, distinct from content patches, code patches and file mods.
 one are the same mechanism seen twice. Decide whether they are one screen before
 building either.
 
+### A contract gap: a setting the GUEST may ignore
+
+**Found 2026-08-25.** XenDroid exposed `internal_display_resolution` described as
+*"supported titles render at it"*, and had to rewrite it to **"Not a scaler: it
+only tells the game what the TV is. Most titles render at a fixed size and ignore
+it, so the picture usually will not change."** — while the control that does work
+was not exposed at all.
+
+> **Nothing was broken. The host applied the setting, the guest received it, and
+> the guest declined.** That is
+> [`DID_IT_APPLY.md`](../shared_layer/DID_IT_APPLY.md) mechanism 15, and **no
+> host-side instrument can see it.**
+
+**`SettingSpec` has `liveChangeable` and `scope`. It has nothing for "the guest
+may ignore this"**, so a screen cannot warn about what it cannot see. **Every
+backend here passes settings to a guest that may disregard them**, so this is not
+one backend's problem.
+
+**[Foundation](../CLAUDE.md) point 4 makes it worse than untidy.** A screen full
+of options qualified as *"supported titles honour this"* costs the person a trial
+per option, **and the trial is inconclusive, because a null result is
+indistinguishable from an unsupported title.** That is the RetroArch failure this
+project exists to avoid.
+
+**Recorded, not designed.** The right shape is unclear — a flag on the spec, or
+per-title knowledge the backend only has once a game is loaded. **Three editorial
+mitigations work today and cost nothing**: say what the setting is NOT, name the
+setting that DOES work in the description of the one that does not, and state
+constraints in the copy rather than letting a widget clamp silently.
+
+See [`../research_log/20260825_1020_a_setting_that_works_perfectly_and_does_nothing.md`](../research_log/20260825_1020_a_setting_that_works_perfectly_and_does_nothing.md).
+
 ### A screen this list is still missing: multi-disc swap
 
 **Found 2026-08-25 in XenDroid**, which shipped it in two commits: *"Ask which
