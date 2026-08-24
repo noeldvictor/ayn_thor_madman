@@ -194,6 +194,35 @@ object TimeScalePolicy {
         achievedPercent <= AUDIO_STRETCH_AT_OR_BELOW_PERCENT
 
     /**
+     * Cap HOST presentation while the guest runs fast. azahar calls it Eco Turbo.
+     *
+     * Fast-forward at 400% does not mean presenting 240 frames a second. On a
+     * 120 Hz panel that is GPU work and power spent on frames nobody sees, and
+     * this project's cheap-UI rule forbids exactly that kind of waste.
+     *
+     *   Above 100% speed, and when unthrottled, cap host presentation and
+     *   composition at 60 FPS WITHOUT changing guest timing or the selected
+     *   speed.
+     *
+     * THE REJECTED ALTERNATIVE IS THE INSTRUCTIVE PART. azahar's own rule: "Do
+     * not replace this with a divisor derived from the requested speed: a scene
+     * that cannot reach that speed would be undersampled." Ask for 400%, get
+     * 200% because the scene is heavy, and presenting every fourth frame shows
+     * half of what the device actually produced.
+     *
+     * So the cap is a WALL-CLOCK budget, not a ratio of the requested scale.
+     * Returns the presentation interval in nanoseconds, or null for "present
+     * every frame".
+     */
+    fun hostPresentIntervalNs(scale: TimeScale, panelHz: Int): Long? =
+        if (scale.isFastForward && panelHz > HOST_PRESENT_CAP_HZ)
+            1_000_000_000L / HOST_PRESENT_CAP_HZ
+        else null
+
+    /** The cap azahar chose, and the rate both Thor panels are currently voted to. */
+    const val HOST_PRESENT_CAP_HZ = 60
+
+    /**
      * A guest the user is watching must not be fast-forwarded blindly.
      *
      * GuestActivity already refuses to act on a frame during a cutscene,

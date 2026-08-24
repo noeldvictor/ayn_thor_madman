@@ -6061,7 +6061,29 @@ time-stretches when emulation speed drops to 95 or below.**
 > keeping audio intact while the emulator cannot keep up is a
 > quality-of-life feature a fast-forward design would never have found.
 
-**The contract consequence, implemented in `app/shell/TimeScale.kt` with 12
+**And a mechanism this design did not have, from azahar, 2026-08-24: cap the
+HOST presentation rate while the guest runs fast.** azahar calls it **Eco Turbo**
+and defaults it **on**. Above 100% speed, and when unthrottled, it caps host
+presentation and composition at **60 FPS without changing guest timing or the
+selected speed.**
+
+**Fast-forward at 400% does not mean presenting 240 frames a second.** On a
+120 Hz panel that is GPU work and power spent on frames nobody sees, which is
+what [the cheap-UI rule](#the-ui-must-be-cheap-this-is-a-constraint-not-a-style-note)
+forbids.
+
+> **And the rejected alternative is the instructive part:** *"Do not replace this
+> with a divisor derived from the requested speed: **a scene that cannot reach
+> that speed would be undersampled.**"* Ask for 400%, get 200% because the scene
+> is heavy, and presenting every fourth frame shows **half** of what the device
+> actually produced. **The cap is a wall-clock budget, not a ratio of the
+> request.**
+
+**A measurement gate travels with it:** verify the launch log says
+`Renderer_FrameLimit: 100`; **a zero means truly uncapped guest rendering and can
+saturate the Adreno even when host presentation is capped.**
+
+**The contract consequence, implemented in `app/shell/TimeScale.kt` with 15
 tests:** a **scale**, not a toggle — pause is the same mechanism at zero, which
 is what the paused agent loop already relies on — and a backend **declares which
 clock domains it scales**. A backend that HLEs guest time from the host clock and

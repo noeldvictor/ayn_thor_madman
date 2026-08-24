@@ -2,6 +2,7 @@ package com.aynthor.shell
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -155,6 +156,32 @@ class TimeScaleTest {
                 TimeScale.PAUSED, GuestActivity.NON_INTERACTIVE,
             )
         )
+    }
+
+    @Test
+    fun `fast forward caps host presentation without touching guest timing`() {
+        // azahar's Eco Turbo. 400% guest speed does not mean 240 presents a
+        // second; on a 120 Hz panel that is GPU work nobody sees.
+        val ns = TimeScalePolicy.hostPresentIntervalNs(TimeScale.of(400), panelHz = 120)
+        assertEquals(1_000_000_000L / 60, ns)
+        // And the guest scale is untouched -- the cap is a host-side budget.
+        assertTrue(TimeScale.of(400).isFastForward)
+    }
+
+    @Test
+    fun `the cap is wall-clock, not a divisor of the requested speed`() {
+        // The rejected design divides presentation by the REQUESTED scale, so a
+        // scene that only reaches 200% of a requested 400% is undersampled by
+        // half. A wall-clock interval does not care what was requested.
+        val at200 = TimeScalePolicy.hostPresentIntervalNs(TimeScale.of(200), 120)
+        val at800 = TimeScalePolicy.hostPresentIntervalNs(TimeScale.of(800), 120)
+        assertEquals(at200, at800)
+    }
+
+    @Test
+    fun `real time and a 60 Hz panel present every frame`() {
+        assertNull(TimeScalePolicy.hostPresentIntervalNs(TimeScale.REAL_TIME, 120))
+        assertNull(TimeScalePolicy.hostPresentIntervalNs(TimeScale.of(400), 60))
     }
 
     @Test
