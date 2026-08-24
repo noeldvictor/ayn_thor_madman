@@ -45,6 +45,23 @@ with pairwise operations on `V`, then reduce once, as narrow as possible** — w
 the numbers, and with the note that **ARMSX2's three ARM64 reductions already do
 it.**
 
+## Both stores, for all four levers
+
+**None of the four is proposed for a re-run, and all four are already settled in
+one store or the other:**
+
+| Lever | Status |
+| --- | --- |
+| `TBL2` for `TBX2` | **null**, in `REJECTED.md` and the ledger |
+| `MLA` -> `MADD` | **rejected by azahar**, in `REJECTED.md` |
+| xenia's prolog | **an ACCEPTED win**, +2.04% — the count misled, the lever worked |
+| `scan16_rdata` | rpcsx's, **accepted**, and the reason was restated not reversed |
+
+> **Two rejections and two acceptances**, which is why the entry is about how to
+> ARGUE a lever rather than about any of these four. **`exp_ledger.py check`
+> `bcax` was run earlier today** and returned the `EOR3` `DEAD` row; nothing here
+> revisits it.
+
 ## Limits
 
 - **An editorial change.** No new evidence; four existing findings placed
