@@ -848,9 +848,20 @@ changed. **Do not add `-mno-outline-atomics` on its own** — without `+lse` it
 removes the upgrade path and leaves the `ldxr`/`stxr` loop unconditionally, which
 `tools/target_check.py` probe 3 fails on.
 
-**Prediction, and it is deliberately unexciting: FLAT on frame time.** The atomic
-count is small relative to the instruction stream, and this fleet's record is
-thirteen manual-derived predictions refuted. **What could produce a real result is
+**Prediction, REVISED the same day: FLAT on frame time, held with less
+confidence.** The original reason was that the atomic count is small relative to
+the instruction stream. **Vita3K then supplied a count and it is not small:
+25,276 outline call sites in its shipped library, of which `swp1_acq_rel` is
+12,074 and `ldadd8_acq_rel` 10,518** — refcount traffic, not cold paths. **The
+prediction stays FLAT because this fleet's record is thirteen manual-derived
+predictions refuted**, but it is now a weaker prior, and **the arm to run is
+Vita3K**, which has the fix and the before-and-after counts already.
+
+**A caveat that decides which fork to test.** Vita3K's residual 682 call sites
+are all inside **prebuilt vcpkg static libraries, which never see the fork's
+`-march`**. **Cemu compiles none of its dependencies**, so a `-march` change
+reaches almost none of its atomics — **testing Cemu would measure the flag not
+applying, not the flag not helping.** **What could produce a real result is
 contention, not throughput** — Cemu's own `CMakeLists.txt` argues `ldxr`/`stxr`
 "livelocks harder under contention, which is exactly the multi-core guest case",
 so the arm most likely to move is a **multi-core guest under load**, not a menu.

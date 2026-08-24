@@ -2550,7 +2550,42 @@ question turns out to have one measurable consequence rather than only
 | melonDS | 6 | 10 | not counted |
 
 **All six carry `__aarch64_have_lse_atomics`. Only xenia — the one fork that sets
-`+lse` — emits LSE at scale.** An outline atomic is a `bl` to a stub that loads a
+`+lse` — emits LSE at scale.**
+
+**CORRECTED WITHIN THE HOUR, and the correction is the bigger finding.**
+**Vita3K's binary here is from 2026-05-18 and it fixed this on 2026-08-21**, so
+its row describes a three-month-old artefact. **Record a build date beside every
+binary measurement**; the other five were built within the last week.
+
+| question | instrument | answer |
+| --- | --- | --- |
+| which shipped binaries dispatch | six binaries, five current | **four of five** |
+| **which forks set `+lse` in current source** | build files, **all eight forks** | **two: xenia and Vita3K** |
+
+**Vita3K's own numbers are much larger than the ARMSX2 figures above**, because
+it counted the whole shipped library: **25,276 outline call sites to 682, and 30
+inline LSE instructions to 24,552**, with `__aarch64_swp1_acq_rel` alone at
+**12,074** — refcount traffic rather than cold paths.
+
+**And its residual 682 is a consequence nobody in this repo had recorded:** they
+are all inside **prebuilt vcpkg static libraries**, which vcpkg builds under its
+own `arm64-android` triplet and which **never see the fork's `-march`**.
+
+> **A prebuilt dependency does not inherit your compile baseline.**
+
+**That interacts with a decision already made here.** `Cemu` is the fastest fork
+to build precisely because **it compiles none of its dependencies** — so a
+`-march` change reaches almost none of Cemu's atomics, and **testing Cemu would
+measure the flag not applying rather than the flag not helping.** Reaching them
+needs a custom vcpkg triplet, which is the same unit-of-work argument as the
+shared device layer: **fix it once for the fleet or once per fork.**
+
+**Vita3K rejected `-mcpu=cortex-x3` too, for a different reason than the SVE one
+above:** *"that would also pick an X3-specific scheduling model, and the same
+code runs on A510 little cores."* **Two forks, two independent reasons, neither
+citing the other** — and it matches
+[`CORE_COMPARISON.md`](hardware_ref/thor/cpu/CORE_COMPARISON.md), where the four
+cores give directly conflicting layout advice. An outline atomic is a `bl` to a stub that loads a
 global feature byte and branches, **to decide something constant for the life of
 the device**: `/proc/cpuinfo` reports `atomics`, which is `FEAT_LSE`.
 

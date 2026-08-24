@@ -31,6 +31,13 @@ LIMITS:
     "not built here", never "no flags".
   * A stale `compile_commands.json` describes the last build, not the current
     source. Check the config name against what the shipping variant uses.
+    THIS LIMIT WAS READ AND THEN IGNORED, 2026-08-24. Six binaries were
+    disassembled to census their atomics; five were days old and Vita3K's was
+    THREE MONTHS old, predating the very fix it was reported as lacking.
+    RECORD A BUILD DATE BESIDE EVERY BINARY MEASUREMENT. `--dates` prints them.
+  * A `-march` in a build file may be a VARIABLE. Vita3K spells it
+    `-march=${VITA3K_ARM64_BASELINE}`, so a grep for `-march=armv` reports it as
+    unset. Searching for the literal rather than the mechanism, again.
   * Flags reaching the compiler are not flags reaching the LINKER. `-flto` at
     compile time still needs the link step to cooperate.
 """
@@ -119,6 +126,10 @@ def main():
     ap.add_argument("--fork")
     ap.add_argument("--show-tus", action="store_true",
                     help="print how many translation units carry each flag")
+    ap.add_argument("--dates", action="store_true",
+                    help="print each database's mtime. A flag census over a stale "
+                         "build describes an artefact, not the source: Vita3K's "
+                         "measured binary predated its own fix by three months.")
     args = ap.parse_args()
 
     forks = [args.fork] if args.fork else list(FORKS)
@@ -135,7 +146,16 @@ def main():
             if not got:
                 continue
             n, tally = got
-            print("  config=%-14s abi=%-12s %d translation units" % (cfg, abi, n))
+            stamp = ""
+            if args.dates:
+                try:
+                    import datetime
+                    stamp = "  built %s" % datetime.datetime.fromtimestamp(
+                        os.path.getmtime(path)).strftime("%Y-%m-%d %H:%M")
+                except OSError:
+                    stamp = "  built ?"
+            print("  config=%-14s abi=%-12s %d translation units%s"
+                  % (cfg, abi, n, stamp))
             for _prefix, name in INTERESTING:
                 counter = tally.get(name)
                 if not counter:

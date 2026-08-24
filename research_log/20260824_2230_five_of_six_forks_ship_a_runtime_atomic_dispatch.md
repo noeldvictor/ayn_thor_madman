@@ -1,5 +1,48 @@
 # Five of six shipped binaries route every atomic through a runtime dispatch, and one fork wrote down why
 
+> ## CORRECTED THE SAME DAY, AND THE CORRECTION IS THE BIGGER FINDING
+>
+> **Vita3K is not a victim. It fixed this on 2026-08-21 and measured it**, and
+> **the binary measured below is from 2026-05-18 — three months older than the
+> fix.** I read `emitted_flags.py`'s own limit, *"a stale `compile_commands.json`
+> describes the last build, not the current source"*, and then did not apply it.
+> **Every binary needs its build date recorded beside it.** The other five were
+> all built within the last week and their rows stand.
+>
+> **Corrected counts:**
+>
+> | question | instrument | answer |
+> | --- | --- | --- |
+> | which shipped binaries dispatch | six binaries, five current | **four of five**; xenia does not |
+> | **which forks set `+lse` in current source** | **build files, all eight forks** | **two: xenia and Vita3K** |
+>
+> **And Vita3K's numbers are far larger than mine**, because it counted call
+> sites across the whole shipped library rather than one emulator target:
+> **25,276 outline call sites to 682, and 30 inline LSE instructions to 24,552.**
+> `__aarch64_swp1_acq_rel` alone was **12,074** and `__aarch64_ldadd8_acq_rel`
+> **10,518** — refcount traffic, not cold paths. **That weakens my FLAT
+> prediction in `DEVICE_QUEUE.md` entry 25**, which is recorded there.
+>
+> **The residual 682 is the finding nobody had:** they are all inside **prebuilt
+> vcpkg static libraries** — libc++ locale, `boost::filesystem`, OpenSSL —
+> *"which vcpkg builds under its own `arm64-android` triplet and so never see our
+> `-march`."*
+>
+> > **A prebuilt dependency does not inherit your compile baseline.**
+>
+> **That interacts with a decision this project already made.** Cemu is the
+> fastest fork to build precisely because **it compiles none of its
+> dependencies** — vcpkg supplies them prebuilt. **So a `-march` change cannot
+> reach Cemu's dependency atomics at all**, and its 406 outline call sites are
+> mostly out of reach of the one-line fix. **Reaching them needs a custom vcpkg
+> triplet**, which is the same unit-of-work argument as the shared device layer.
+>
+> **Vita3K also rejected `-mcpu=cortex-x3`, for a different reason than this
+> repo's.** Not SVE: *"that would also pick an X3-specific scheduling model, and
+> the same code runs on A510 little cores."* **Two independent reasons to reject
+> it, from two forks, neither citing the other.**
+
+
 **Goal: run the applicability count before proposing a compile-baseline change,
 which is the rule this repo adopted from rpcsx's 0.04% audit.**
 
