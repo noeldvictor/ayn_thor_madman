@@ -121,6 +121,20 @@ by decision, so none of these is an edge case here.
 - **No early return in an input branch.** One shortcut in the hat path disabled
   sticks and triggers for as long as the D-pad was held.
 
+- **Consume every unmapped gamepad key event — except `BACK`.** XenDroid's
+  comment: *"unhandled gamepad input is what **OEM overlays latch onto**."* A key
+  event the app does not consume goes up the stack, and **vendor software bound
+  to gamepad combos pops UI over the running game.**
+
+  > **This is a VENDOR handheld.** AYN ships its own on-device software — this
+  > repo already reads the AYN FanBase thermal readout — **so the Thor very
+  > likely has gamepad-bound OEM overlays**, and a gamepad-first app generates
+  > nothing but gamepad events. **The failure would look like a bug in ours.**
+
+  **Two details.** Never consume `BACK`, or the person is trapped in the game.
+  And test **`SOURCE_GAMEPAD` OR `SOURCE_JOYSTICK`** — a pad reports one or both,
+  and checking only one misses devices.
+
 > **The first two, third and fifth are ONE root cause seen four ways**: a control
 > emitting continuously at rest. Its symptoms were JNI traffic, global-lock
 > contention, and a guest protocol that cannot terminate. **The third would have
