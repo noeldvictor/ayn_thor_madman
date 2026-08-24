@@ -148,3 +148,44 @@ refutations live.**
 - rpcsx `docs/arm64/adreno-tiler.md`, `tools/thor_gpu_busy_ab.sh`
 - rpcsx `app/src/main/cpp/rpcsx/rpcs3/Emu/RSX/VK/VKRenderPass.cpp`
 - the day's other logs, `research_log/20260824_*.md`
+
+## Operationalised: `tools/bug_class_sweep.py`
+
+**Every row in the win column is a class, so the useful move is a sweep, not
+another hand-found instance.** The tool carries six classes, each with what the
+shape is, **what it already cost and in which fork**, and why it is wrong here.
+
+**Its first run demonstrated both failure modes this project keeps meeting.**
+
+**All-zeros.** The timing class initially matched `busy_wait(N)`, an rpcs3 idiom,
+and returned **zero for eight forks** — the signature this repo's own rule says to
+suspect. **Broadened, and a companion class added**: `cntfrq_aware`, which finds
+the *cure* rather than the disease, because the real diagnostic is **"spins on a
+literal count AND does not derive a budget from `CNTFRQ_EL0`."**
+
+**The cross-reference is what makes it informative:**
+
+| Fork | spin shapes | reads `CNTFRQ`/`CNTVCT` |
+| --- | --- | --- |
+| **rpcsx** | **169** | **8** |
+| xenia | 57 | 34 |
+| ARMSX2 | 21 | 18 |
+| eden | 3 | **56** |
+| Vita3K | 3 | 10 |
+| melonDS | 3 | 4 |
+| Cemu | 0 | 26 |
+| azahar, GameThor | 0 | 0 |
+
+**Counting a hit.** GameThor first showed 6 spin shapes and 0 timer reads — the
+same profile as rpcsx in miniature. **Read, all six were false positives**: four
+syscall-number table entries in vendored `proot`, a `virgl` function declaration,
+and a `nanosleep` in a vendored C11 threads shim. **The vendored filter did not
+know about `proot`, `virglrenderer` or `gallium`.** Fixed, and GameThor is clean.
+
+> **The honest result of the sweep: no new instance of the timing class was
+> found. rpcsx remains the only one, and its 169-to-8 ratio is the outlier.**
+
+**That is a legitimate outcome and it is recorded as one.** A sweep that finds
+nothing, run with a pattern whose blind spot has been checked, is evidence. A
+sweep that finds nothing with an unchecked pattern is not — which is the same
+distinction the whole document turns on.
