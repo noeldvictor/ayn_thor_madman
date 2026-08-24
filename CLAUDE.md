@@ -322,6 +322,33 @@ fixed mapping would be nearly the identity function.
 > carry a design that was correct for a 16-register machine with folded memory
 > operands onto a 31-register load/store machine.**
 
+**TWO CONCRETE INSTANCES, FOUND 2026-08-24 IN XENIA'S LEDGER.** This rule had a
+register-model argument and no opcode-level example. It now has two, both `OPEN`
+and both unbuilt:
+
+- **`rlwinm` lowers to three instructions because x86 has no rotate-and-mask.**
+  The HIR models PPC rotate-and-mask as **rotate + AND**, so the general
+  non-wrapping case emits `ROR` + `AND` + `UXTW`. **ARM64's `UBFM` *is*
+  rotate-and-mask**, and the shift and mask are compile-time constants. **Three
+  instructions to one**, on one of the most common PowerPC instructions.
+- **Every condition-register update emits three compares where ARM64 needs one.**
+  `PPCHIRBuilder::UpdateCR` models a CR update as **three independent HIR compares
+  of the same operand pair**, each lowering to `cmp`+`cset`. **One ARM64 `CMP`
+  sets N/Z/C/V and `CSET` reads flags without disturbing them**, so the correct
+  form is one `cmp` and three `cset`. **Two redundant compares per update, and
+  updates fire on every `cmpw`, every `cmpwi` and every `Rc=1` instruction.**
+  Common-subexpression elimination cannot fix it, because the three operations
+  have different opcodes.
+
+**The ACM TACO work put compare-and-branch at roughly 18% of inflation. The
+second instance is that finding's mechanism, inside a real emulator, unfixed.**
+
+**A structural rule travels with both: this kind of fusion cannot be a sequence
+peephole.** By the time the outer operation is emitted, the inner one is already
+emitted and register-allocated. **It has to be a HIR opcode.**
+
+See [`research_log/20260824_0520_the_x86_detour_with_receipts.md`](research_log/20260824_0520_the_x86_detour_with_receipts.md).
+
 **The GPU half is the same rule and this repo already had it** — translate the
 guest graphics API rather than model the guest GPU, proven by RE2 Remake running
 on this Thor through GameNative and DXVK. **Two pipelines, one instruction:
@@ -2201,6 +2228,23 @@ A specific, checkable opportunity in the fork this project cares most about.
 **The A715 and A710 have three 128-bit load ports but only two 128-bit
 arithmetic ports.** So materialising a constant with a load can be **cheaper
 than computing it**, which is the opposite of the usual advice.
+
+**QUANTIFIED 2026-08-24.** Aim for about **0.67 arithmetic instructions per
+load**. Whatcookie reached that ratio in RPCS3's comparison loop for **+38% on
+the mid cores and +21% on the big core** — **RPCS3's numbers on RPCS3's loop, not
+ours.** What transfers is the model: **the two axes worth optimising are
+arithmetic-port pressure and dependency depth.**
+
+**And instruction count is not one of them.** xenia measured this on its own
+code: packing two u32s with `ORR` and storing through one `STP` cut a prolog
+**from 18 instructions to 13 and measured slower**, because it serialised two
+loads through an arithmetic operation into one gated store. **Fewer
+instructions, deeper dependency chain, more pressure on the scarce port.**
+
+> **Use inflation to choose which subsystem to attack. Do not use it to judge a
+> peephole.** Both are true at different scales, and
+> [`shared_layer/TRANSLATION.md`](shared_layer/TRANSLATION.md) carries the
+> aggregate half.
 
 Reported as a novel finding, and expected to apply across the A7xx line, so to
 Android SoCs broadly. It bites at constant materialisation in a recompiler and
@@ -4090,7 +4134,16 @@ Wi-Fi adb rules:
 - **Temperature proves the run happened.** No heating means an idle or menu
   scene, so the run is invalid whatever the counter said.
 - **Query the experiment ledger before running anything.** See
-  [The experiment ledger](#the-experiment-ledger).
+  [The experiment ledger](#the-experiment-ledger). **Counted 2026-08-24 it holds
+  177 entries: 75 `OPEN`, 57 `WIN`, 32 `DEAD`, 8 `FLAT`, 5 `CONFOUNDED`.** The
+  **75 `OPEN` entries are analysed levers awaiting a run**, and are a resource
+  this repo had never named.
+- **MEASURE APPLICABILITY BEFORE BUILDING A TRANSFORM.** xenia's `EOR3`/`BCAX`
+  fusion was right on both hardware axes and died because **the pattern does not
+  exist**: a compile-time counter reported **"0 of 1 V128 XORs are fusable
+  chains"** over a 70-second run. **One cvar and one device run replaced building
+  a three-input opcode, a HIR pass and two backend fallbacks that would have
+  folded nothing.**
 
 **[`DEVICE_QUEUE.md`](DEVICE_QUEUE.md) holds everything waiting on the Thor**,
 with the expected signature for each run and the gates to check first. There is

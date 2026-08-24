@@ -10,6 +10,22 @@ pipelines.
 
 ---
 
+> ## SCALE CAVEAT, added 2026-08-24
+>
+> **This document's spine is that speed is instruction inflation. That holds
+> across systems and fails within one.**
+>
+> xenia measured it on its own code: packing two u32s with `ORR` and storing
+> through one `STP` cut a prolog **from 18 instructions to 13 and measured
+> slower**, because it serialised two loads through an arithmetic operation into
+> one gated store. **The A715 and A710 have three 128-bit load ports and two
+> arithmetic ports, so arithmetic is the scarce resource and dependency depth is
+> the second axis.**
+>
+> **Use inflation to choose which subsystem to attack. Do not use it to judge a
+> peephole.** See
+> [`../research_log/20260824_0520_the_x86_detour_with_receipts.md`](../research_log/20260824_0520_the_x86_detour_with_receipts.md).
+
 ## The rule, in one line
 
 > **Translate the console's CPU and GPU straight to ARM64. Never inherit the
