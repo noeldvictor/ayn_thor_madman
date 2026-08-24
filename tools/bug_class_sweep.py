@@ -494,6 +494,17 @@ def main():
     print("\nA HIT IS A SHAPE, NOT A DIAGNOSIS. Every one must be read.")
     print("Two instances of the affinity class were confirmed by reading; counting")
     print("them would have produced at least one false positive.")
+    print("")
+    print("AND A ZERO MAY BE THE WRONG QUESTION, NOT AN ABSENCE.")
+    print("Every class here searches a SHAPE. A zero means that shape is absent,")
+    print("which equals the CAPABILITY being absent only if the shape is the only")
+    print("way to express it. Three times in one session a zero was a vocabulary")
+    print("failure, not a finding:")
+    print("  melonDS saves no D8/Q8 -- it calls ABI_PushRegisters(BitSet32(...))")
+    print("  no Oboe latency in AGENTS.md -- that file is 92 lines on project shape")
+    print("  four forks have no gamefix -- they compare a title id inline instead")
+    print("Before reporting a zero: name a SECOND spelling, and run a positive")
+    print("control proving the search space is non-empty.")
     return 0
 
 
