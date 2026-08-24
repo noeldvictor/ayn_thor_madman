@@ -3725,7 +3725,24 @@ Keep a capability inventory. Record which fork has which capability, and at
 what quality. Read it before you build anything.
 
 **And read the fork's own research directory. It is the richest unmined seam in
-the fleet.** Surveyed 2026-08-23:
+the fleet.**
+
+> **START AT THE FORK'S `AGENTS.md`, NOT AT WHICHEVER DOCUMENT YOU FOUND FIRST.**
+>
+> **Cost of not doing so, 2026-08-25: a day.** rpcsx's `docs/arm64/ledger.md` was
+> treated as its routing table. **It is the audit ledger.** Its entry on a
+> thermal A/B was written up here as "a correct measurement supporting the wrong
+> decision" — and the same fork's `docs/arm64/thermal.md` says **the measurement
+> was of the wrong quantity entirely**, because the guard compared a
+> package-shaped 72 C limit against a per-core **junction** maximum, which is a
+> load detector rather than a thermal bound.
+>
+> **`AGENTS.md` indexes that document twice**, once with the line that would have
+> saved the day: *"Junction versus package sensors, and the guard that compared a
+> limit against the wrong one."*
+>
+> **This repo's federation rule already said this** — *those files are the source
+> of truth for their fork* — and **a ledger is not an index.** Surveyed 2026-08-23:
 
 | Fork | `docs/research` | skills | tools |
 | --- | --- | --- | --- |

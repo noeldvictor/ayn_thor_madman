@@ -55,7 +55,9 @@ correct and the list had become unnavigable.
 | **Never quote n=1.** Report `[min..max]`, not the mean | `CLAUDE.md` |
 | **Energy per frame, not watts** — watts alone rewards a slower core | `CLAUDE.md` |
 | **Say which thermal sensor. Never `max` over all zones** | `CLAUDE.md`; `research_log/20260824_1050_*` |
-| **Junction reads ~30 C above package**, and this device has no `skin` zone | same |
+| **Junction reads above package, and the gap varies with load** — measured 71.9 C junction against 64.6 C silicon at moderate load, and 90.7 C junction under compile against 55.0 C idle on the SAME zone. This device has **no `skin` zone at all** | same; rpcsx `docs/arm64/thermal.md` |
+| **NEVER compare a package-shaped limit against a junction maximum.** 72 C against junction is **a load detector, not a thermal bound** — junction is unremarkable to ~95-105 C. A whole scheduling default in one fork was adopted to satisfy that mistake | rpcsx `docs/arm64/thermal.md` |
+| **Classify the zone before you read it.** `cpu-<cluster>-<core>` is junction; `cpuss-*` and `gpuss-*` are subsystem. A classifier matching `cpu` catches both and its `max` is always the junction | same |
 | **A USB-attached power reading is a FLOOR, not fiction** | `CLAUDE.md` |
 | **Total system power is exact; CPU-attributed power is not available** | same |
 | **`unknown[+X]` is the JIT arena, not a symbol** | `CLAUDE.md` |

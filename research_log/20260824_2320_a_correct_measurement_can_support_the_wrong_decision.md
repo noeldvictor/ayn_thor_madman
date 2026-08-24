@@ -1,5 +1,41 @@
 # A correct measurement can support the wrong decision, and two throttles in series look like one
 
+> ## SHARPENED 2026-08-25, AND THE HEADLINE UNDERSTATED IT
+>
+> **The 71.1 C number was not "real but insufficient". It was measuring the wrong
+> quantity.** The same fork's `docs/arm64/thermal.md` — which its `ledger.md`
+> does not link, and which I found a day later — says the guard classified
+> **per-core JUNCTION sensors** as `silicon`, took their **maximum**, and
+> compared it against a **72 C package-shaped limit**.
+>
+> > **A 72 C limit on a junction maximum is not a thermal bound, it is a load
+> > detector.** Junction routinely passes 72 C on this SoC under any sustained
+> > work and is unremarkable until roughly 95-105 C.
+>
+> **So the A/B was faithfully recording which arm ran on the faster cores**, since
+> little cores have lower junction temperatures. **The A510 pinning default was
+> adopted to satisfy a limit that was measuring the wrong quantity.**
+>
+> Measured after the fix, at moderate load: `silicon 64.6 C from cpuss-2 (limit
+> 72)` against `junction 71.9 C from cpu-1-8 (limit 95)`. **Under the old
+> classifier that is 71.9 against 72 — one tenth of a degree from stopping a
+> run, at an unremarkable temperature.**
+>
+> **The section below still stands as a rule.** An A/B that answers "which arm is
+> cooler" still does not answer "which default is better". **But this case is a
+> stronger and different lesson: the instrument was wrong, not merely narrow.**
+>
+> **And I found it late for a reason worth recording.** I read `ledger.md`,
+> treating it as the fork's routing table. **It is the audit ledger. The routing
+> table is `AGENTS.md`**, which indexes `thermal.md` twice, once with the exact
+> line that would have saved a day: *"Junction versus package sensors, and the
+> guard that compared a limit against the wrong one."*
+>
+> > **Start at the fork's `AGENTS.md`. This repo's own federation rule already
+> > said so — "those files are the source of truth for their fork" — and a
+> > ledger is not an index.**
+
+
 **Goal: read the rest of rpcsx's `docs/arm64/ledger.md`, its own index of
 unfinished work, having just established the rule that a fork's routing table
 comes before its topic files.**
