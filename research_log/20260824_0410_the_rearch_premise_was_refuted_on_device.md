@@ -1,5 +1,18 @@
 # xenia built this project's render rearchitecture, measured it, and refuted its premise
 
+> ## SUPERSEDED IN PART, 2026-08-24
+>
+> **The frame anatomy quoted below is one of two that disagree**, and the other is
+> **five days later** and says explicitly that it corrects this one:
+> **71% between-pass EDRAM tile store, 29% in-pass**, against this document's
+> ~90% fragment execution.
+>
+> **The brick results below stand** — they are direct A/Bs. **The premise
+> refutation does not**, as written.
+>
+> See [`20260824_1830_two_instruments_disagreed_about_the_frame.md`](20260824_1830_two_instruments_disagreed_about_the_frame.md).
+
+
 **Goal: mine the fleet's own research corpus, starting with the documents that
 record negative verdicts.**
 

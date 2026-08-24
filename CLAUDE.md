@@ -4735,13 +4735,30 @@ Wi-Fi adb rules:
   [`research_log/20260823_1848_fleet_skills_mined.md`](research_log/20260823_1848_fleet_skills_mined.md).
 - **`CONFOUNDED` is a verdict.** A number that cannot be trusted gets labelled,
   not discarded and not promoted to a win.
-- **MEASURE THE FRAME ANATOMY BEFORE DESIGNING A RENDER PATH.** The split between
-  **emulation structure** and **intrinsic rendering work** decides whether
-  structural work can win at all. xenia's driver `u_trace` gave it for one title:
-  **~90% fragment and draw execution, ~6 ms EDRAM structure, ~1 ms tile I/O** —
-  about **7 ms of structure to reclaim**, and the brick that attacked the biggest
-  slice **regressed**. **This list named fps, frame time, watts and temperature
-  and never named the stage split.**
+- **MEASURE THE FRAME ANATOMY BEFORE DESIGNING A RENDER PATH — AND NAME THE
+  INSTRUMENT.** The split between **emulation structure** and **intrinsic
+  rendering work** decides whether structural work can win at all. **This list
+  named fps, frame time, watts and temperature and never named the stage split.**
+
+  **And this fleet has an instance of two instruments disagreeing by a factor of
+  three about the same frame**, five days apart, same title:
+
+  | Instrument | Verdict |
+  | --- | --- |
+  | driver `u_trace`, 2026-07-04 | **~90% fragment execution**, ~6 ms EDRAM structure |
+  | per-pass GPU timestamps, 2026-07-09 | **71% between-pass EDRAM tile store**, 29% in-pass |
+
+  **The later entry states that it corrects the earlier one.** **A render-path
+  decision resting on one of them rests on the choice of instrument.** What is
+  *not* disputed is measured directly: **bindless regressed 129 ms to 161 ms**,
+  native GMEM render targets `DEAD`, fragment levers capped low — **and the
+  tile-store lever did not pay either**, `CONFOUNDED` once and **`FLAT` twice.**
+- **CHECK THE LEDGER FOR A LATER MEASUREMENT OF THE SAME THING.** This file
+  carried the 2026-07-04 anatomy as settled for most of a day because **one
+  document was read and the ledger was not queried.** `exp_ledger.py check` is one
+  command. **The rule "a newest failure outranks an older success" applies to
+  measurements, not only to results.** See
+  [`research_log/20260824_1830_two_instruments_disagreed_about_the_frame.md`](research_log/20260824_1830_two_instruments_disagreed_about_the_frame.md).
 - **The per-stage GPU split is obtainable headlessly on this device**, with no
   root and no desktop GUI, through Turnip's freedreno perfetto counter producer,
   gfxreconstruct capture and replay, or in-engine per-pass Vulkan timestamps. See
