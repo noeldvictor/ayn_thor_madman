@@ -57,6 +57,22 @@ separately pays that cost three times.**
   floor is ~50%. **A 3% prediction needs a gated title screen or a fixed frame
   range, and that setup is its own session**, not something to squeeze in.
 
+## Both stores checked before ordering anything
+
+**This orders existing entries rather than proposing new levers**, and each entry
+already carries its own ledger query. **Checked both stores again for the three
+blocks:**
+
+- **`exp_ledger.py check`** for `attachment`, `pipeline` and `driver`: the
+  relevant `DEAD` rows are **`gpu_dynamic_blend_state`** and **`bindless`**,
+  neither of which any block re-runs.
+- **`shared_layer/REJECTED.md`**: the forced-Sysmem row is the one that touches
+  Block B, and **it is the row I qualified today** — rejected on performance,
+  adopted elsewhere for stability. **Block B is written around that, not
+  against it.**
+
+**Nothing in the three blocks is a lever either store records as dead.**
+
 ## Limits
 
 - **The ordering is mine and is argued, not measured.** Nobody has run these, so
