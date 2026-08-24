@@ -3297,6 +3297,30 @@ instructions, deeper dependency chain, more pressure on the scarce port.**
 > [`shared_layer/TRANSLATION.md`](shared_layer/TRANSLATION.md) carries the
 > aggregate half.
 
+**FOUR INSTANCES NOW, AND THEY SHARE ONE MECHANISM — 2026-08-26.**
+
+| Lever | The count said | What actually decided it |
+| --- | --- | --- |
+| xenia's prolog | **18 -> 13 instructions** | deeper dependency chain, scarce port |
+| `TBL2` for `TBX2` | `TBX2` is **2x** `TBL2` | **the SEQUENCE is a wash**: `TBL`+`ORR` = 4 = `TBX` |
+| `MLA` -> `MADD` | fewer instructions | **`MLA` is throughput 1 on `V0` alone** |
+| `scan16_rdata` | **65 -> 42 instructions** | **work moved off `V13`** |
+
+> **Three of the four are the PIPE COLUMN**, the third number in Arm's tables —
+> `V` is four FP/ASIMD pipes, `V01` and `V13` are two, `V0` is one. **This
+> project's own extracted notes do not carry it**, and rpcsx's ledger names
+> *"the `V0`/`V1` traps that sank most manual-derived ideas."*
+>
+> **So the rule sharpens: instruction count is not the metric, and the metric it
+> is usually hiding is WHICH PIPES.** A lever that cannot name the pipes of the
+> instructions it removes and adds has not been analysed.
+
+**And a positive form, because the rule should not only reject.** *"Narrow the
+data with pairwise operations on `V`, then reduce once, as narrow as possible."*
+A 16-byte reduction is **twice the latency and half the throughput** of a 4-lane
+one and is pinned to `V13`; `UMAXP` is latency 2, throughput 4, **all four
+pipes.** **ARMSX2's three ARM64 reductions all already use the 4-lane form.**
+
 Reported as a novel finding, and expected to apply across the A7xx line, so to
 Android SoCs broadly. It bites at constant materialisation in a recompiler and
 at any guest vector sequence that synthesises a mask arithmetically. **Guest
