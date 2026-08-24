@@ -180,6 +180,28 @@ which is the half its measurement does not cover.
 not name a core.** `-mtune=cortex-x3` remains correct because `-mtune` adds no
 features.
 
+### Every core identifies itself: `midr_el1` through sysfs
+
+**World-readable, per core, no root:**
+
+```
+/sys/devices/system/cpu/cpuN/regs/identification/midr_el1
+cpu0  0x411fd461  part 0xd46  Cortex-A510
+cpu5  0x412fd470  part 0xd47  Cortex-A710
+cpu7  0x411fd4e0  part 0xd4e  Cortex-X3
+```
+
+**Part numbers: `0xd46` A510, `0xd47` A710, `0xd4d` A715, `0xd4e` X3.**
+
+**This is the primary source for the core topology** this file records from one
+fork's header — **and it answers the open SKU question.** ARMSX2 states the Thor
+line has an 865 variant; **`midr_el1` identifies the CPU part on any Thor**, so a
+second device settles it without guessing.
+
+> **Read it with `run-as <package>`, not from an `adb shell`.** The shell is uid
+> 2000 in a different SELinux context, and a capability confirmed there says
+> nothing about the app — a trap one fork recorded hitting three times.
+
 ### `CTR_EL0`: this chip REQUIRES instruction-cache invalidation
 
 **AArch64 makes cache coherency between the I and D caches OPTIONAL, and

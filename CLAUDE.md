@@ -3181,6 +3181,25 @@ phrase, from `AGENTS.md:614`: *"shorter dirty batches keep that same route
 > rejected candidates rather than in code-cache size, affinity control and a
 > multiplied test matrix.
 
+**AND A THIRD ANSWER, from rpcsx: pick the target PER THREAD CLASS.** *"A single
+`-mcpu` is wrong for a big.LITTLE target no matter which one is chosen"* — its
+SPU threads are pinned to A710/A715 while RSX runs on the X3, **so a JIT could
+reasonably pick its LLVM CPU per thread class.**
+
+| Answer | Cost |
+| --- | --- |
+| tune for the X3 and place hot code there | needs affinity control **two forks do not have** |
+| **the all-core gate** (azahar) | paid in **rejected candidates** |
+| **per-thread-class `-mcpu`** (rpcsx) | needs **MIDR detection and per-class code caches** |
+
+**They are not exclusive.** The gate decides which lowerings are acceptable at
+all; a per-class target decides scheduling for threads already pinned by class.
+
+**And the detection it needs is free**: `midr_el1` is world-readable per core
+through sysfs — `0xd46` A510, `0xd47` A710, `0xd4d` A715, `0xd4e` X3 — recorded
+in [`THOR_TARGET.md`](hardware_ref/thor/THOR_TARGET.md). See
+[`research_log/20260825_0800_a_positive_control_on_the_wrong_channel.md`](research_log/20260825_0800_a_positive_control_on_the_wrong_channel.md).
+
 **And the A510 rejects things the big cores like, measured:**
 
 | Candidate | Result |
