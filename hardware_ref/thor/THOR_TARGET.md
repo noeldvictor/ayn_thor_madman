@@ -180,6 +180,39 @@ which is the half its measurement does not cover.
 not name a core.** `-mtune=cortex-x3` remains correct because `-mtune` adds no
 features.
 
+### `CTR_EL0`: this chip REQUIRES instruction-cache invalidation
+
+**AArch64 makes cache coherency between the I and D caches OPTIONAL, and
+advertises what a part provides in `CTR_EL0`.** Read on this SoC:
+
+> **`IDC = 1`** — data cache clean to PoU **not** required.
+> **`DIC = 0`** — **instruction cache invalidation IS required.**
+> **64-byte I and D minimum lines.**
+
+**Anything that writes instructions must invalidate**: every recompiler, a
+persisted code cache loading `.vuprog`-style payloads, an NCE-style text patcher,
+and a cheat engine writing guest code.
+
+**`__builtin___clear_cache` is the portable right answer** — it consults
+`CTR_EL0` itself and emits only the maintenance the implementation needs.
+
+> **THE TRAP: Apple Silicon reports `DIC = 1`.** Code that omits the maintenance
+> is **harmless on an arm64 Mac and wrong here**, which is how one upstream
+> carried the defect for years. **arm64 code harvested from an Apple-tested
+> project must be checked for it.**
+>
+> **And it is the second Apple-versus-Android divergence found in this fleet**:
+> the architected event stream fires about every **1 µs on Apple** against about
+> **100 µs here**. **Both invisible until measured.**
+
+**The failure mode is a stale instruction fetch — an unreproducible crash or a
+wrong branch, never a slow frame.** It will not appear in any measurement this
+project takes.
+
+**Swept the fleet 2026-08-25: clean.** Every code-writing fork has maintenance,
+and the reversed-barrier shape — an `ISB` before its `DSB` — appears in none.
+See [`research_log/20260825_0610_the_thor_requires_icache_invalidation_and_apple_does_not.md`](../../research_log/20260825_0610_the_thor_requires_icache_invalidation_and_apple_does_not.md).
+
 ### The Armv8.4 / LSE2 question, asked and CLOSED the same day
 
 `-march=armv8.4-a` is clean of every SVE macro, and rpcsx raised its own AOT
