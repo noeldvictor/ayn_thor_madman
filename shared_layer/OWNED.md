@@ -155,6 +155,42 @@ duplication before it moves.**
 | 7 | Texture upload and per-class routing | **algorithm sets read** | The flagship feature. Needs **two axes**, algorithm and cost tier. Safe only after the test harness |
 | 8 | **Code cache only** | **read** | There is no shared recompiler. The code cache under it is ~2% of a backend and **folds into candidate 0** |
 
+### REVISED 2026-08-24, after a day of reading the fleet's own measurements
+
+**The ordering principle changes.** The queue is ordered by risk, and risk was
+being judged by how likely a read was to shrink the candidate. **That is still
+right, and it is no longer the binding constraint.**
+
+**What the day established:**
+
+> **Every win in this fleet was a bug, not an optimisation.** Every reasoned
+> optimisation was refuted — the native render rearch, bindless, `EOR3` fusion,
+> `LOAD_OP_CLEAR`, the A510 shared VPU, `ISB`-for-`yield`. See
+> [`../research_log/20260824_0855_every_win_was_a_bug.md`](../research_log/20260824_0855_every_win_was_a_bug.md).
+
+**So a candidate's value is now judged by a second question:** *which class of
+bug would a shared owner have caught in eight places?* Not only *how much
+duplicated code does it remove?*
+
+**Three candidates move.**
+
+| Candidate | Move | Why |
+| --- | --- | --- |
+| **The artifact store (PERSIST)** | **new, near the top** | The one operation that **did not shrink on reading.** Already built in four forks — rpcs3's `ppu-<sha1>` cache, ARMSX2's `.vuprog`, melonDS's self-populating pack, Cemu's cache merger — and **nothing connected them.** `ARTIFACT_STORE.md` |
+| **0. Vulkan device layer** | **stronger, same place** | It now has the **capability-ceiling** argument and a named instance: **ARMSX2's frame generation runs fp32 because its device layer never requests `VK_KHR_shader_float16_int8`.** Plus **no fork of the four built here ships LSE atomics** |
+| **1. Touch overlay** | **down** | The Thor has physical buttons. Recorded before; restated because the queue still shows it at 1 |
+
+**And one candidate is now understood differently.** **Frame pacing was never in
+this queue** and was described in `CLAUDE.md` as having no incumbent. **Cemu has
+four parts of one**, including host-driven vsync and dual-screen present
+serialisation. **It is a PROPAGATE, not a build.**
+
+**The gate above all of them is measurement, and it is not in this queue
+either.** **Three backends cannot supply a deterministic scene** — Cemu and eden
+have no savestate, xenia's deadlocks — and **a work-normalised metric is the
+cheaper answer** for a specific lever. Until one of those is in place, **an
+extraction cannot be shown to have helped or harmed.**
+
 ### Candidate 0 is scoped: take xenia's `ui/vulkan/`
 
 Measured 2026-08-22. See
