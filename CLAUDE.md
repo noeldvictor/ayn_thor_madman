@@ -6147,6 +6147,43 @@ ledger also lets you evaluate one improvement against every other fork.
 Write the intent in each entry. A diff without its intent cannot be
 re-derived. It can only be replayed until it fails to apply.
 
+### A harvest needs a denylist and a scan, not only a ledger
+
+**Found 2026-08-24 in GameThor's `AGENTS.md`, which has the only complete harvest
+policy in the fleet.** This section records what to take and why. **It never said
+what must never be taken, nor that anyone should check afterwards.**
+
+**Three parts, and the third is the one that makes the other two hold:**
+
+- **Never merge or rebase an upstream wholesale.** *"Prefer manual transplants or
+  narrow cherry-picks so the fork keeps its identity."*
+- **An allowlist of what is worth taking:** renderer fixes, driver and component
+  manifests, Turnip/VKD3D/FEX updates, download correctness, frame-limiter
+  fixes, input stability, device-specific flicker fixes.
+- **A denylist, and a SCAN after every transplant.** *"Hard skip analytics, ads,
+  recommendation, and support-prompt code ... After every upstream transplant,
+  run a focused forbidden-code scan for `PostHog`, `analytics`,
+  `recommendation`, `supporter`, `ko-fi`, `ads`, and related API names before
+  committing."*
+
+> **A denylist without a scan is a wish.** A transplant is exactly where
+> unwanted code arrives, because it arrives attached to something wanted.
+
+**This matters for a sideloaded GPL-3.0 handheld emulator specifically.**
+Analytics, ad surfaces, recommendation feeds and supporter prompts are what a
+personal offline app acquires **by accident** while harvesting, and every one of
+them is a network call on a device whose owner did not ask for it.
+
+**GameThor's audit entries are the model for the ledger this section asks for:**
+it names the upstream commit fetched, **each commit taken by hash**, and **each
+commit skipped with the reason** — a recommendations API, Denuvo support, README
+churn. **Recording the skips is what stops the same commit being re-evaluated
+every refresh.**
+
+**One build rule from the same file, and it is this repo's own verify-the-artefact
+rule in one line:** *"If `local.properties` is missing, **do not claim the APK
+was built**."*
+
 ## Federation, not duplication
 
 Each fork has its own `AGENTS.md`. Several forks also have a `CLAUDE.md` with a

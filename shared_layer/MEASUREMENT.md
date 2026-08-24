@@ -18,6 +18,9 @@ correct and the list had become unnavigable.
 | **An undated `backfill` entry defeats recency ordering.** Register residency holds a `WIN` dated `backfill` and a `CONFOUNDED` dated 2026-07-24, and the `WIN` prints first | same |
 | **State the expected signature before the run.** A run with no prediction cannot fail | `CLAUDE.md`; every `DEVICE_QUEUE.md` entry |
 | **THE PROOF PACKET.** A behavioural claim carries **screenshot or video, logcat, the build or APK hash, the cvars and settings, and a reproducible path** — the result is written INTO the packet, never separated from its evidence | xenia `AGENTS.md` |
+| **The fuller field list**, from the fork with the strictest reporting convention: **timestamp AND timezone; branch and UPSTREAM COMMIT; the build command; host OS and toolchain versions; APK path and checksum; device model, Android version and firmware build number; the GPU DRIVER SETTING; and the settings CHANGED FROM DEFAULTS** | eden `AGENTS.md` |
+| **Record settings as a DELTA, not a dump.** "Changed from defaults" is readable; a full settings dump is not — and this project's `SettingResolver` already produces exactly that sparse set | same |
+| **Name the upstream commit, so a result survives a rebase.** A number attached only to a local branch stops being reproducible the next time the fork moves | same |
 | **Capture BEFORE force-stopping or clearing the log.** A classifier over an uncleared log can classify a previous run | same; `research_log/20260825_1810_*` |
 | **Do not claim a game is fixed until the failing screen or route is shown working** | xenia `AGENTS.md` |
 | **Name the confound that would fake a win** | `research_log/20260824_0810_*` |
