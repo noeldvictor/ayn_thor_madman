@@ -17,12 +17,28 @@ strip and `stripped_native_libs` after.
 
 ## The result: it is working, and the magnitude is the finding
 
+**All four EMULATOR libraries, not just the shared C++ runtime:**
+
 | Fork | Library | merged | stripped | reduction |
 | --- | --- | --- | --- | --- |
-| **azahar** | **`libcitra-android.so`** | **438.2 MB** | **37.6 MB** | **-91.4%** |
-| ARMSX2 | `libc++_shared.so` | 8.8 MB | 1.2 MB | -86.4% |
-| Cemu | `libc++_shared.so` | 8.9 MB | 1.3 MB | -85.2% |
-| melonDS | `libc++_shared.so` | 8.8 MB | 1.2 MB | -86.4% |
+| **ARMSX2** | **`libemucore_4k.so`** | **464.0 MB** | **27.7 MB** | **-94.0%** |
+| **azahar** | `libcitra-android.so` | **438.2 MB** | 37.6 MB | -91.4% |
+| **Cemu** | `libCemuAndroid.so` | **260.3 MB** | 44.9 MB | -82.8% |
+| **melonDS** | `libmelonDS-android-frontend.so` | 75.7 MB | 9.6 MB | -87.3% |
+| — | `libc++_shared.so` (three forks) | ~8.8 MB | ~1.2 MB | ~-86% |
+
+**And two rows that do NOT follow the pattern**, which is why a blanket "the strip
+saves 90%" would be wrong:
+
+| Library | merged | stripped | reduction |
+| --- | --- | --- | --- |
+| `liblibrashader_capi.so` (ARMSX2) | 13.4 MB | 9.6 MB | **-28.4%** |
+| `liblibrashader.so` (melonDS) | 10.6 MB | 8.2 MB | **-22.3%** |
+| `libGLESv2_angle.so` (ARMSX2) | 6.0 MB | 6.0 MB | **-0.0%** |
+
+**The Rust libraries strip far less**, and **ANGLE arrives already stripped** —
+a prebuilt, not a failure. **The reduction is a property of how a library was
+built, not a constant.**
 
 **All four forks built on this machine strip correctly.** XenDroid's failure mode
 has not occurred here.
@@ -30,6 +46,19 @@ has not occurred here.
 > **But look at what it would cost.** A missing `ndkVersion` pin in the packaging
 > module would put a **438 MB** library into azahar's APK instead of 37.6 MB —
 > **and the build would succeed with no error.**
+
+## And the sum lands on the packed-binary decision
+
+**`CLAUDE.md` packs every backend into one binary.** These four emulator
+libraries, unstripped, total **1,238 MB**. Stripped, **120 MB**.
+
+> **A packing decision made without the strip working would produce a
+> 1.2 GB artefact from four backends alone**, and the model calls for more.
+
+**State it as an upper bound, not a prediction.** A real packed binary shares
+code, deduplicates the C++ runtime and links once — **these are four separate
+libraries summed, which no packed binary would be.** What the sum establishes is
+the SCALE of the exposure, not a forecast.
 
 ## It dwarfs the ABI number this repo already treats as significant
 
@@ -58,10 +87,11 @@ otherwise correct.**
 
 ## Limits
 
-- **Four forks, one library each**, chosen as the largest `.so` over 2 MB in each
-  tree. **Other libraries in the same builds were not compared.**
-- **`libc++_shared.so` is a prebuilt NDK library**, so three of the four rows
-  measure the same file. **azahar's row is the only one measuring an emulator.**
+- **Four forks, and now the emulator library in each** plus three smaller ones.
+  **Not every `.so` in every build was compared.**
+- **The 1,238 MB sum is four separate libraries added together.** No packed
+  binary would look like that; it bounds the exposure rather than predicting a
+  size.
 - **These are intermediates from builds made earlier in this project**, not
   freshly built, and **not extracted from an installed APK.**
 - **It does not verify XenDroid's causal claim** that an absent NDK skips the
