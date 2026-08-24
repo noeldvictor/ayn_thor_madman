@@ -3323,6 +3323,49 @@ something no fork does today.
   target family from a package name, including Qualcomm "Gen N" marketing.
   It also states honestly that this is a heuristic, because AdrenoTools
   metadata carries no target-GPU field. **Take it, do not rewrite it.**
+
+  **AND ARMSX2 HAS THE OTHER HALF, found 2026-08-25.**
+  `pcsx2/GS/Renderers/Common/GSGPUProfile.h` is a **mobile GPU driver profile
+  database**: **29 named `DriverBug` values and 15 named `DriverWorkaround`
+  values**, matched on driver and version with a **confidence rank** so a broad
+  rule never overrides a precise one, and an explicit **`conservative_fallback`**
+  flag for "nothing matched, safe defaults are in force".
+
+  **The two compose rather than compete.** rpcsx's advisor answers *"is this
+  driver package suitable for this GPU"* **before install**; ARMSX2's profile
+  answers *"what is broken in the driver that is running"* **after**. **Neither
+  fork cites the other.**
+
+  **Four decisions to take wholesale:**
+
+  - **Bugs and workarounds are separate bitfields**, because one mitigation
+    answers several defects **and because a workaround can be forced on for
+    testing without claiming the device has the bug.** That second reason is what
+    this project's measurement discipline needs.
+  - **Name the DEFECT, not the fix.**
+  - **Rank the match confidence:** `Vendor < Model < Driver < DriverVersion`.
+  - **State the fallback**, rather than letting unknown hardware be an accident.
+
+  > **Gate on driverID, not vendorID.** ARMSX2's header records why, learned
+  > expensively: the same Mali part behaves differently under Arm's driver than
+  > under Mesa PanVK, and both the r44p1 `DEVICE_LOST` fix and the 8 Elite
+  > push-descriptor disable had to be gated on the driver.
+
+  **And there is a live instance of that distinction for this device:**
+  `m_broken_colormask_with_depth = IsDeviceAdreno() && !is_turnip`. **The Adreno
+  proprietary driver has a broken colour mask with depth test and Turnip does
+  not.** So **pinning Turnip removes at least one correctness workaround, not
+  only a performance gap.**
+
+  **Consequence for the per-game driver override, which was not stated:**
+  switching driver **switches the whole bug and workaround set with it**, not
+  just the binary. And **`conservative_fallback` is what the "off baseline"
+  warning should be built on** — a profile that did not match, rather than a
+  string comparison against the pinned build name.
+
+  **Seven of eight forks carry Turnip-specific code** — ARMSX2 21 files,
+  xenia 17, eden 11, rpcsx 8, Vita3K 5, Cemu 4, azahar 3, melonDS 0. See
+  [`research_log/20260825_1620_armsx2_has_a_mobile_driver_bug_database.md`](research_log/20260825_1620_armsx2_has_a_mobile_driver_bug_database.md).
 - **Every performance number states the driver build.** xenia's scripts
   already do this. It becomes a fleet rule.
 
