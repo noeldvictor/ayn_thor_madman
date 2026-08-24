@@ -5238,7 +5238,7 @@ Finding 5.
 | `minSdk` | 33 | The device reports API 33. **Measured 2026-08-23: the fleet spans 24 to 30 and no fork meets it.** eden's 24 carries compatibility paths for Android 7. |
 | `targetSdk` | 37 | Android 17, released 2026-06-16. **Only ARMSX2 is on it.** The rest span 28 to 36. |
 | `compileSdk` | 37 | Matches `targetSdk`. |
-| Gradle | 9.6.1 or newer | **Measured 2026-08-23: seven distinct versions across eight forks, spanning 7.3.3 to 9.5.0.** Nothing in the fleet is on 9.6.1. |
+| Gradle | 9.6.1 or newer | **Measured 2026-08-23: seven distinct versions across eight forks, spanning 7.3.3 to 9.5.0.** Nothing in the fleet is on 9.6.1. **And the CONFIGURATION CACHE is unavailable to half the fleet as written** — see below. |
 | C++ standard | C++20 | Verify each fork builds. melonDS declares C++17. |
 | Audio | **Oboe `1.10.0`** | Three forks already use it. Replaces five vendored copies of cubeb. **Version read 2026-08-23 from eden's CPM cache — a real working Android arm64 pin, not a guess.** |
 | Symbol visibility | **`-fvisibility=hidden`** | **MEASURED FROM THE BINARIES 2026-08-23.** Exported symbols span **43x**: xenia **2,285**, ARMSX2 4,380, melonDS 12,255, azahar 62,507, Cemu 68,740, **Vita3K 98,550**. Colliding symbols per backend run **2,092 to 19,696**. The earlier header-scan percentages ranked the forks **wrongly** and are withdrawn. |
@@ -7508,6 +7508,39 @@ share native code.
 | ARMSX2 | 9.4.1 | **17** |
 | melonDS | 9.5.0 | 21 |
 | **standard row** | **9.6.1+** | — |
+
+### The configuration cache is blocked in four forks, for one identical reason
+
+**Swept 2026-08-25.** azahar records: *"Do not pass Gradle
+`--configuration-cache` for Android packaging. `app/build.gradle.kts` runs
+command-line Git during configuration, and Gradle 8.13 rejects that while storing
+the cache **even after native and APK tasks succeed**."*
+
+**Method: `git grep` for `exec {`, `providers.exec`, `ProcessBuilder` and a
+literal `git` across every fork's `*.gradle` and `*.gradle.kts`, vendored trees
+excluded, every hit read.**
+
+| Fork | Configuration-time process |
+| --- | --- |
+| **Cemu, melonDS, azahar, eden** | **raw `ProcessBuilder`, running `git`** |
+| ARMSX2, xenia, Vita3K, GameThor | none found |
+
+**None of the four uses `providers.exec` or a `ValueSource`**, the
+cache-compatible APIs. azahar's is the plainest — **`versionName =
+ProcessBuilder("git", "describe", ...)` inside `defaultConfig`.**
+
+> **Half the fleet cannot use the configuration cache, for one cause: stamping a
+> version from `git` at configuration time. One fix serves all four, and the
+> standard row's Gradle has the API for it.**
+
+**The failure shape is the expensive one — it arrives AFTER the APK is
+produced.** Use `--no-configuration-cache` until the four are converted; the
+ordinary build cache and the native CMake/Ninja cache are unaffected.
+
+**Not verified: whether Gradle 9.x still rejects it.** The pattern is
+incompatible by design rather than by version, but no 9.x build was run.
+
+See [`research_log/20260825_0110_mean_fps_flat_across_a_53_percent_clock_range.md`](research_log/20260825_0110_mean_fps_flat_across_a_53_percent_clock_range.md).
 
 **Seven distinct Gradle versions, and no fork is on the row's value.** The
 spread is 7.3.3 to 9.5.0 — **two major versions** — and at least two JDKs are

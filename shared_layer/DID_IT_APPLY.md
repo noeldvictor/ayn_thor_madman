@@ -28,7 +28,7 @@ becomes a research bug.
 
 ---
 
-## The twelve mechanisms
+## The thirteen mechanisms
 
 ### Configuration layer
 
@@ -51,6 +51,7 @@ becomes a research bug.
 | 10 | **The default is set on a launch path the real launch does not take** | xenia | the AOT object cache was enabled only when no cvar bundle was supplied, and the launcher always supplies one. **111 MB of cache sat unused while every real launch recompiled ~10,000 functions** |
 | 11 | **The dispatcher never reaches the handler.** The lever is configured, allowlisted and installed, and the call goes past it | xenia | desktop HLE intercepts returned `count=0` for weeks — **"ALL desktop diag intercepts were FALSE NEGATIVES"**, and the fix **corrected an earlier research conclusion built on that zero** |
 
+| **13** | **A COUPLED SETTING. The setting applies, and it silently changes a DIFFERENT one** | azahar | on this firmware, **changing the Thor's power mode from High Performance to Standard also reset fan mode from 4 to 1.** The change took effect; so did one nobody asked for |
 | **12** | **A feature probe that CANNOT FIRE.** A guard on a macro nothing defines: syntactically valid, compiles cleanly, never true | rpcsx | **every LSE2 fast path for `atomic_t<u128>` was dead code**, so SPU mailboxes, reservation stamps and the global thread bitmask all ran an `ldaxp`/`stlxp` loop — and **`try_read`, a pure peek, took the cache line EXCLUSIVE** |
 
 > **A feature probe that cannot fire is indistinguishable from a feature the
@@ -100,6 +101,7 @@ paid.
 | 9 | `bug_class_sweep.py --class stale_default`; and **read the persisted config, not the compiled default**. **Query the experiment ledger too** — `python <xenia>/tools/exp_ledger.py check "<lever>"` — because a lever recorded `DEAD` while silently disabled was never really tested |
 | 10 | `bug_class_sweep.py --class wrong_launch_path`; and **verify a hit, never infer one from a non-empty cache** |
 | 11 | **A positive control.** `capability_probe.py --self-test` |
+| **13** | **Read back EVERY setting you did not touch**, before and after. azahar's rule: *"always read and restore both settings explicitly."* **There is no tool for this** — the coupling is a property of the firmware, not of the code |
 | 12 | **`tools/dead_guard.py`** — guards on macros nothing defines, with definitions taken from `compile_commands.json` rather than build files. Swept 2026-08-25: **one hit across seven forks, and it is a deliberate debug opt-in.** Also `clang -dM -E` for a single macro |
 | build flags | `tools/emitted_flags.py` — the flags that reached the compiler, from `compile_commands.json`, **with `--dates`**, because a stale build describes an artefact rather than the source |
 | target claims | `tools/target_check.py` — 4 probes, proven against 4 real traps |
