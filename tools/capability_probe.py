@@ -61,7 +61,15 @@ FORKS = {
 VENDORED = re.compile(
     r"third_party|3rdparty|externals?/|dependencies|/vendor/|vulkan_core|volk|"
     r"vk_mem_alloc|/imgui/|/glslang/|/boost/|/ffmpeg/|/SDL|toml11|/toml/|"
-    r"xbyak|oaknut|vixl|/fmt/|catch2|gtest", re.I)
+    r"xbyak|oaknut|vixl|/fmt/|catch2|gtest|"
+    # FOUND 2026-08-25: melonDS vendors into melonDS-android-lib/src/stb/
+    # and .../src/xxhash/, so a PATH-based filter misses them entirely and
+    # every hit reads as the fork's own work. Match the LIBRARY, not the
+    # directory convention.
+    r"/stb/|stb_image|stb_vorbis|/xxhash/|xxhash\.h|/zlib/|zlib\.h|"
+    r"/libpng/|/lodepng|/zstd/|/lz4/|/miniz|/tinyxml|/rapidjson/|"
+    r"/nlohmann/|/json\.hpp|/cubeb/|/oboe/|/openssl/|/tracy/|/dynarmic/|"
+    r"/teakra/|/discord|/cpp-httplib|/inih/|/spdlog/|/cryptopp/", re.I)
 
 
 # SUBMODULES. `git grep` in a parent repository DOES NOT SEE SUBMODULE CONTENTS.

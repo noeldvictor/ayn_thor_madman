@@ -57,7 +57,7 @@ VENDORED = re.compile(
     r"third_party|3rdparty|externals?/|dependencies|/vendor/|node_modules|"
     r"vulkan_core|volk|vk_mem_alloc|/imgui/|/glslang/|/boost/|/ffmpeg/|/SDL|"
     r"toml11|xbyak|oaknut|vixl|catch2|gtest|/proot/|virglrenderer|"
-    r"/gallium/|sysnums-|/wine/|/box64/|/fex/", re.I)
+    r"/gallium/|sysnums-|/wine/|/box64/|/fex/|/stb/|stb_image|stb_vorbis|/xxhash/|xxhash\.h|/zlib/|zlib\.h|/libpng/|/lodepng|/zstd/|/lz4/|/miniz|/tinyxml|/rapidjson/|/nlohmann/|/json\.hpp|/cubeb/|/oboe/|/openssl/|/tracy/|/dynarmic/|/teakra/|/discord|/cpp-httplib|/inih/|/fmt/|/spdlog/|/cryptopp/", re.I)
 
 
 # SUBMODULES. `git grep` in a parent repository DOES NOT SEE SUBMODULE CONTENTS.
@@ -205,8 +205,26 @@ CLASSES = {
                 "filled a 111 MB cache while every real launch recompiled ~10,000 functions.",
         "why": "The cache directory being full made it look like it worked. Verify a "
                "hit; never infer one from a non-empty cache.",
+        # A launch-shape guard ALONE is the correct Android idiom, so it is
+        # paired with a config-write shape that must appear within 8 lines.
+        # Without the pairing this class found 14 correct fragment-creation
+        # guards and nothing else. See scan()'s docstring.
+        "near": r"setDefault|putBoolean|putString|putInt|Default\(|"
+                r"cvar|Cvar|CVar|setSetting|SetSetting|config\.|Config\.|"
+                r"enable[A-Z]|Enable[A-Z]|\.path *=|Path *=",
+        # BROADENED 2026-08-25. The first version matched xenia's own vocabulary
+        # and therefore only ever found xenia's own bug -- which is a detector
+        # that cannot catch a new instance. The SHAPE is: a default or an
+        # initialisation applied inside a guard on HOW the process was started.
+        # On Android that guard is usually a null intent extra, a first-creation
+        # check, or a launch-source test.
         "pattern": r"getBundleExtra|getExtras\(\) *== *null|EXTRA_[A-Z_]+ *\) *== *null|"
-                   r"intent\.[a-zA-Z]+ *== *null",
+                   r"intent\.[a-zA-Z]+ *== *null|"
+                   r"savedInstanceState *== *null|"
+                   r"getStringExtra\([^)]*\) *[?=!]= *null|"
+                   r"hasExtra\(|"
+                   r"getAction\(\) *[!=]= *null|"
+                   r"callingActivity *== *null|isTaskRoot",
     },
     "unrequested_capability": {
         "what": "Code that wants a device feature its own device layer never requests.",
@@ -231,17 +249,58 @@ CLASSES = {
 }
 
 
-def scan(fork, pattern, include_vendored=False):
+def scan(fork, pattern, include_vendored=False, near=None, window=8):
+    """Lines matching `pattern`, optionally only where `near` is close by.
+
+    WHY `near` EXISTS. Broadening wrong_launch_path beyond xenia's own
+    vocabulary produced 14 new hits across four forks and ZERO new instances:
+    every one was `savedInstanceState == null` guarding fragment creation, or
+    `hasExtra` reading an optional command parameter. Both are the CORRECT
+    Android idiom.
+
+    A shape that is usually correct is not a detector. What made xenia's case a
+    bug was not the guard -- it was that the guard WRAPPED A DEFAULT. So the
+    class needs two patterns and a distance, not one broader pattern.
+
+        > If the shape you are matching is also how correct code looks,
+        > you are counting the idiom, not the defect.
+    """
     root = os.path.join(FLEET, FORKS[fork])
     if not os.path.isdir(root):
         return None
     cmd = ["git", "-C", root, "grep", "--recurse-submodules",
            "-nIE", pattern, "--"] + SOURCE
+    if near:
+        # -A gives the following lines; the co-occurrence has to be found in a
+        # second pass so the line numbers stay honest.
+        cmd = ["git", "-C", root, "grep", "--recurse-submodules",
+               "-nIE", "-A", str(window), pattern, "--"] + SOURCE
     try:
         r = subprocess.run(cmd, capture_output=True, timeout=240)
     except (OSError, subprocess.SubprocessError):
         return []
     out = r.stdout.decode("utf-8", errors="replace").splitlines()
+
+    if near:
+        rx = re.compile(near)
+        kept, block, head = [], [], None
+        def flush():
+            if head and any(rx.search(b) for b in block):
+                kept.append(head)
+        for ln in out:
+            if ln == "--":
+                flush()
+                block, head = [], None
+                continue
+            # A match line uses ':' after the line number; context uses '-'.
+            if head is None:
+                head = ln
+                block = []
+            else:
+                block.append(ln)
+        flush()
+        out = kept
+
     if include_vendored:
         return out
     return [ln for ln in out if not VENDORED.search(ln.split(":", 1)[0])]
@@ -272,7 +331,8 @@ def main():
         print("PAID    %s" % c["paid"])
         print("WHY     %s" % c["why"])
         for fork in FORKS:
-            hits = scan(fork, c["pattern"], c.get("include_vendored", False))
+            hits = scan(fork, c["pattern"], c.get("include_vendored", False),
+                        c.get("near"))
             if hits is None:
                 print("  %-10s [not present beside this repo]" % fork)
                 continue

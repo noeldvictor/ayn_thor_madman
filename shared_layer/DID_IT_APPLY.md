@@ -117,7 +117,13 @@ paid.
   that they are clean.
 - **Every instance here was found by reading, not by a tool.** The tools were
   written afterwards, from the instance. **None of them has yet caught a new
-  one.**
+  one**, and that was tested rather than assumed on 2026-08-25: four classes run
+  to exhaustion across nine forks, every non-zero hit outside the known cases
+  read and dismissed. **The attempt found two instrument defects instead** — a
+  class whose pattern matched only the vocabulary of the case it came from, and
+  a vendored filter that missed a fork vendoring outside the usual directory
+  names. **Both would have made a future sweep lie.** See
+  `work_log/20260825_0705_ran_the_sweep_to_exhaustion.md`.
 - **Nothing is measured.** The two percentages quoted (−2.88%, and the object
   cache) are xenia's device measurements, not reproduced here.
 
