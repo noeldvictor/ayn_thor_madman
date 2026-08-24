@@ -62,6 +62,29 @@ recompiler.
 device: compile the interpreter both ways and compare the differential suite's
 results.
 
+## The other three built forks are clean
+
+**Scanned every `compile_commands.json` available for `-Ofast`, `-ffast-math`,
+`-ffp-contract=*`, `-funsafe-math-optimizations`, `-fno-math-errno` and
+`-freciprocal-math`:**
+
+| Fork | Config | FP-semantics flags found |
+| --- | --- | --- |
+| **ARMSX2** | Release | **`-ffp-contract=fast` on 320 TUs, 44 guest-FP** — and `-Ofast` on 69, all vendored oboe |
+| **azahar** | RelWithDebInfo | **`-ffast-math` on 14 TUs, all `externals/soundtouch`**; `-fno-math-errno` on 103 |
+| Cemu | Debug | **none** |
+| melonDS | Debug | **none** |
+
+**azahar's is closed for the same reason ARMSX2's `-Ofast` was**: it is confined
+to a **vendored audio DSP library**, where relaxed FP is a deliberate and
+appropriate choice, and it touches no guest state.
+
+**Cemu's and melonDS's databases are `Debug`**, so their release flags are
+unknown — **absence there is weak evidence.**
+
+> **ARMSX2's `-ffp-contract=fast` on its own guest-FP sources is the only live
+> instance found.**
+
 ## What is not established
 
 - **Whether PS2 FP emulation is actually sensitive to double rounding here.** The
