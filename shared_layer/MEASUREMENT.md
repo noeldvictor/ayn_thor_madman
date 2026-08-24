@@ -17,6 +17,9 @@ correct and the list had become unnavigable.
 | **An instrument that can return zero must be proved able to return non-zero.** xenia's desktop HLE intercepts read `count=0` for weeks from a dispatch bug, and the fix **corrected an earlier research finding built on that zero** | same |
 | **An undated `backfill` entry defeats recency ordering.** Register residency holds a `WIN` dated `backfill` and a `CONFOUNDED` dated 2026-07-24, and the `WIN` prints first | same |
 | **State the expected signature before the run.** A run with no prediction cannot fail | `CLAUDE.md`; every `DEVICE_QUEUE.md` entry |
+| **THE PROOF PACKET.** A behavioural claim carries **screenshot or video, logcat, the build or APK hash, the cvars and settings, and a reproducible path** — the result is written INTO the packet, never separated from its evidence | xenia `AGENTS.md` |
+| **Capture BEFORE force-stopping or clearing the log.** A classifier over an uncleared log can classify a previous run | same; `research_log/20260825_1810_*` |
+| **Do not claim a game is fixed until the failing screen or route is shown working** | xenia `AGENTS.md` |
 | **Name the confound that would fake a win** | `research_log/20260824_0810_*` |
 | **Measure applicability before building a transform.** `EOR3` died on 0 of 1 candidates | `CLAUDE.md`; `research_log/20260824_0520_*` |
 | **Ask whether the code is executed** before asking for a better instruction | `research_log/20260824_0730_*` |

@@ -147,3 +147,40 @@ which is exactly what a compatibility ledger is.
   is counted as stubbed. **It overstates.**
 - **eden and Cemu were counted by marker frequency**, not by the per-function
   parse used for Vita3K.
+
+
+## The other half: a classifier for what happened AFTER the run
+
+**Added 2026-08-25.** This document predicts from the dump. **xenia has the
+confirmation half**, `tools/thor/thor_android_game_status_report.ps1`: a logcat
+in, key/value out, **seven classes**.
+
+| Class | What failed |
+| --- | --- |
+| `android_or_native_process_crash` | the app |
+| `xenia_guest_crash` | the emulator |
+| `guest_heap_rtlraiseexception` | a named compatibility class |
+| `launched_no_crash_marker` | the game — started, no fatal marker |
+| **`no_xenia_runtime_evidence`** | **the HARNESS. The emulator never ran** |
+
+> **The last two are the whole value. Without that split, a broken launcher reads
+> as a broken game — for every title in the sweep.**
+
+**That is "prove the instrument can return non-zero" applied to a sweep**, and it
+is the same failure as an HLE intercept reading `count=0` for weeks. **A sweep is
+an instrument, and its likeliest failure is that it measured nothing.**
+
+**The taxonomy refines rather than flattens**: a per-title class sits under a
+general one, so a sweep reports "12 titles in the guest-heap class" while one
+title keeps its specific entry.
+
+**Two things this project can add that xenia cannot:**
+
+- **`GuestActivity` splits `launched_no_crash_marker`**, the vaguest class,
+  into stalled, loading, and sitting in a movie — which a log alone cannot do.
+- **Triage predicts, the classifier confirms.** A title whose import table
+  demands hundreds of stubbed functions and then fails **confirms cheaply**; one
+  that fails where triage said it was safe **is how the triage gets
+  calibrated.**
+
+See [`../research_log/20260825_1810_the_compatibility_sweep_needs_a_classifier.md`](../research_log/20260825_1810_the_compatibility_sweep_needs_a_classifier.md).
