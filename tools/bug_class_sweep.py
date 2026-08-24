@@ -275,6 +275,29 @@ CLASSES = {
                    r"invalidate[A-Za-z]*ForPath|"
                    r"[Mm]ap<std::string,[^>]*> *[a-z_]*(cache|Cache)",
     },
+    "capability_by_model_name": {
+        "what": "A host-capability flag decided by comparing a CPU MODEL NAME string, "
+                "rather than by the architecture or a runtime probe.",
+        "paid": "rpcsx, two instances. m_use_fma was gated on "
+                "`cpu == \"cyclone\" || cpu.contains(\"cortex\")` -- and FMA is MANDATORY "
+                "on AArch64, so the allowlist could only ever fail to enable it. "
+                "m_use_ssse3 was gated on an allowlist of old x86 parts including "
+                "\"generic\", and it gates the x86_pshufb lowering whose fallback is a "
+                "16-ITERATION SCALAR LOOP of extractelement/insertelement -- backing "
+                "VPERM, LVLX, LVRX, STVLX, STVRX, ROTQBY and SHUFB. One unlucky CPU "
+                "string degrades every byte permute in both recompilers at once.",
+        "why": "A model-name allowlist written before an ARM port cannot know an ARM "
+               "name, so it silently selects the fallback. THE RULE: a host-capability "
+               "flag should be answered by the architecture or a runtime probe, never "
+               "by a model name, and any allowlist predating the port is x86-only until "
+               "proven otherwise. Read the hits: matching a model name to pick a "
+               "SCHEDULING model or a workaround is legitimate; matching one to decide "
+               "whether an instruction EXISTS is not.",
+        "near": r"m_use|has_|support|enable|feature|capab|fast|avx|sse|fma|neon|use_",
+        "window": 3,
+        "pattern": r"cpu *== *\"|cpu\.contains\(|cpu_name *== *\"|"
+                   r"strstr\( *cpu|model_name.*==|brand.*contains\(",
+    },
     "publish_then_flag": {
         "what": "Two adjacent relaxed stores to different atomics -- the flag "
                 "published before, or without ordering against, the data it guards.",

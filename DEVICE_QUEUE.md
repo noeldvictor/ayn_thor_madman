@@ -1084,3 +1084,58 @@ These need a decision or a build first, not device time.
 - **ADPF tuning.** Measure without it first, or the hint is tuned against an
   unknown baseline. ADPF is currently disabled on this device by persisted
   config.
+
+## 27. `GCM=1`: an upstream Turnip shader optimisation that ships default-off
+
+**Found 2026-08-24 while assessing the Aurora driver, and it is separable from
+it.** Upstream Mesa's `src/freedreno/ir3/ir3_nir.c` runs NIR global code motion
+behind an environment variable:
+
+```c
+gcm = debug_get_num_option("GCM", 0);
+if (gcm == 1)      progress |= OPT(s, nir_opt_gcm, true,  true);
+else if (gcm == 2) progress |= OPT(s, nir_opt_gcm, false, true);
+```
+
+**Default 0, so it is off in every Turnip build anyone ships.** Verified present
+in the binary of **both** the 2026-08-20 Aurora build **and** the May 2026
+`Turnip_v26.0.0_R8` build, so **it needs no particular driver** — `ir3_nir.c` has
+not changed upstream since 2026-07-20.
+
+**Why it is worth device time.** It is a shader compiler pass, so it changes
+**what the GPU executes**, not how the driver is configured. This project's own
+frame anatomy work says a title can be ALU-bound on this device, which is exactly
+the case a code-motion pass targets. **And it costs one environment variable on
+the pinned build.**
+
+**The run.** Three arms on one pinned driver, one scene, one session:
+`GCM` unset (control), `GCM=1`, `GCM=2`. **The two modes differ in the second
+argument to `nir_opt_gcm`, so they are genuinely different passes, not a
+strength dial.** Report GPU busy from `/sys/class/kgsl/kgsl-3d0/gpubusy`, frame
+time, and **shader compile time**, because a code-motion pass costs compile time
+to save execution time.
+
+**Prediction: FLAT on frame time, and a measurable INCREASE in shader compile
+time.** Stated so it can fail. The reasoning for the pessimistic arm: **the knob
+is upstream, old and default-off**, which usually means it was not a clear win —
+and `nir_opt_gcm` is a general NIR pass rather than an a7xx lowering.
+
+**The confound that would fake a win.** A pass that changes shader code changes
+**pipeline cache keys**, so arm 2 and arm 3 each start with a cold shader cache
+while the control may be warm. **Clear the shader cache before every arm**, or
+the control wins on cache state rather than on code quality. This is the same
+trap as the persisted-config rule.
+
+**Gates.** Confirm the variable reached the process — read it back from the
+app's own environment, not from the shell that launched it, because
+`adb shell` and the app are different processes. **Prove the instrument first:**
+if arm 2 and arm 3 produce byte-identical shader binaries, the variable did not
+apply, and the run measures nothing.
+
+**Cheap, game-free alternative if device time is short.** Compile a fixed shader
+corpus under each arm and **disassemble the output**. If the instruction counts
+are identical, the pass is doing nothing on these shaders and no frame
+measurement is needed. That is the applicability-before-optimality rule, and it
+needs no scene.
+
+See [`research_log/20260824_2030_the_aurora_driver_verified_from_the_artefact.md`](research_log/20260824_2030_the_aurora_driver_verified_from_the_artefact.md).

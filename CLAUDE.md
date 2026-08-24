@@ -3602,7 +3602,49 @@ Candidates, all already on the device:
 | `mesa-turnip-v26.3.0-20260803-r7` | 2026-08-03 | Mesa build | What xenia-thor runs today. |
 | `Turnip_v26.0.0_R8` | 2026-05-10 | K11MCH1 | Widely used and community tested. |
 | `turnip_mrpurple_T29-toasted` | earlier | MrPurple666 | Superseded by T30. |
+| **Balemuni Aurora "Apex"** | **2026-08-20** | Balemuni | **Assessed 2026-08-24 and it is upstream Mesa main.** See below. |
 | `Turnip_v26.0.0_R8_Sysmem` | 2026-05-10 | K11MCH1 | **Sysmem variant.** Forces system memory rendering instead of GMEM tiling. Expect it to be slower; it exists to work around bugs. See [Vulkan is the substrate](#vulkan-is-the-substrate-and-the-adreno-is-a-tiler). |
+
+### The Aurora build, assessed 2026-08-24 from the artefact, no device
+
+**A candidate was offered as the best new driver for this device. Reading the
+published files rather than the README changed every claim.**
+
+- **Its two downloads are ONE FILE.** `Apex_Ultimate_SD8Gen2.zip` and
+  `Apex_Universal_AllAdreno.zip` are **byte-identical** — same SHA-256, same
+  14,925,167 bytes. **There is no SD8Gen2-specific build.** It ships the generic
+  `vulkan.freedreno.so`; the R8 build in the table above ships an a7xx-specific
+  `vulkan.ad07xx.so`.
+- **It is upstream Mesa main.** Its banner is `26.3.0-devel (git-6dd2f2919e)`,
+  and that hash **resolves to upstream Mesa**, merged two hours before the
+  release. **Mesa builds its version string from `git describe`, so a committed
+  patch would produce a hash that does not resolve.** The repository holds **no
+  source** — a README and a Google verification page.
+- **Its headline feature is an upstream environment variable, default off.**
+  `ir3_nir.c` reads `debug_get_num_option("GCM", 0)` **at that exact commit**.
+  **A driver package cannot set its own environment**, so installing it does not
+  enable GCM. **`DID_IT_APPLY.md` from outside the fleet.**
+- **And the knob is three months older than the driver.** Checked directly:
+  the **May 2026 `Turnip_v26.0.0_R8`** build in the table above **contains
+  `GCM` too**. `ir3_nir.c` has not changed upstream since 2026-07-20.
+
+> **So GCM is testable on whatever build is pinned, with an environment
+> variable and no new driver.** `DEVICE_QUEUE.md` entry 27.
+
+- **It cannot be bundled.** No licence is declared and the binary carries **no
+  MIT permission notice**, which MIT requires of a redistribution. Rule 2 above
+  already says to confirm the licence of the specific build. **Installing and
+  measuring it is unaffected** — that is a user's own copy, not redistribution.
+
+**What is genuinely different: it is seventeen days newer than the pin, in the
+same Mesa series.** That is the only verified difference, and it is modest.
+
+> **The general rule, and it is the driver half of "verify from the emitted
+> artefact": hash the downloads, read the binary's own banner, and resolve the
+> commit.** All three are free, need no device, and here all three disagreed with
+> the description.
+
+See [`research_log/20260824_2030_the_aurora_driver_verified_from_the_artefact.md`](research_log/20260824_2030_the_aurora_driver_verified_from_the_artefact.md).
 
 **Do not pin from reading a changelog. Measure.** Three candidates and a
 measurement harness already exist.
