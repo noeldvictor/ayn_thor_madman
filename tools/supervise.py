@@ -438,14 +438,115 @@ CHECKS = [
 ]
 
 
+# --------------------------------------------------------------- self-test
+#
+# FIVE GUARDS IN THIS PROJECT WERE FOUND BROKEN IN ONE SESSION, and two of them
+# were checks in THIS FILE: queue-stale carried a literal backspace byte and
+# reported OK on every input, and dead-levers once crashed on a bad pattern.
+# Both were caught by a positive control run by hand.
+#
+# A guard without a control is not a guard. This makes the control automatic:
+# every check gets an input it MUST flag and one it MUST pass, and a check that
+# cannot tell them apart is itself the failure it exists to catch.
+
+SELF_TESTS = {
+    "negatives": (
+        "No fork has a shared render graph.",
+        "No fork has a shared render graph. Searched for it with grep across "
+        "every fork, naming the method.",
+    ),
+    "instrument": (
+        "Across the fleet nothing implements this.",
+        "Across the fleet nothing implements this. Searched for the mechanism "
+        "with grep in every fork.",
+    ),
+    # work_log, NOT research_log: check_dead_levers deliberately excludes
+    # research_log/, so a fixture there could never fire. Found by this
+    # self-test on its first run.
+    "dead-levers": (
+        "Try enabling this lever and measure on the device.",
+        "Try enabling this lever and measure on the device. This proposes no "
+        "lever.",
+        "work_log",
+    ),
+    "queue-stale": (
+        "This bears on DEVICE_QUEUE entry 26.",
+        "This bears on DEVICE_QUEUE entry 26. The answer: it still holds.",
+    ),
+}
+
+# Checks that read git or a fixed file rather than the paths they are given.
+# A synthetic path cannot exercise them, and pretending otherwise would be a
+# self-test that always passes -- the disease again.
+SELF_TEST_SKIP = {
+    "fork-writes": "reads git status in each fork, not the given paths",
+    "device-queue": "reads DEVICE_QUEUE.md itself, not the given paths",
+    "session-log": "depends on the MIX of changed paths, not their content",
+}
+
+
+def run_self_test():
+    """Prove every check can both fire and stay quiet. Returns an exit code."""
+    import tempfile
+    checks = dict(CHECKS)
+    worst = 0
+    print("supervise --self-test: proving each check discriminates")
+    print()
+    for name, fn in CHECKS:
+        if name in SELF_TEST_SKIP:
+            print("  [SKIP] %-13s %s" % (name, SELF_TEST_SKIP[name]))
+            continue
+        if name not in SELF_TESTS:
+            print("  [FAIL] %-13s no self-test fixture -- add one" % name)
+            worst = 1
+            continue
+        fixture = SELF_TESTS[name]
+        should_fire, should_pass = fixture[0], fixture[1]
+        subdir = fixture[2] if len(fixture) > 2 else "research_log"
+        results = []
+        with tempfile.TemporaryDirectory() as d:
+            for label, text, want_flag in (
+                ("fires", should_fire, True),
+                ("quiet", should_pass, False),
+            ):
+                # FORWARD SLASH, deliberately: two checks filter on
+                # "research_log/", and git always emits forward slashes.
+                # os.path.join gives a backslash on Windows, and the first
+                # version of this self-test silently skipped those checks.
+                rel = "%s/selftest_%s.md" % (subdir, label)
+                full = os.path.join(REPO, rel)
+                os.makedirs(os.path.dirname(full), exist_ok=True)
+                with open(full, "w", encoding="utf-8") as fh:
+                    fh.write(text)
+                try:
+                    status, _summary, _detail = fn([rel])
+                finally:
+                    os.remove(full)
+                flagged = status != OK
+                results.append((label, flagged == want_flag))
+        ok = all(r for _, r in results)
+        if ok:
+            print("  [ OK ] %-13s fires on a bad input, quiet on a good one" % name)
+        else:
+            bad = ", ".join(l for l, r in results if not r)
+            print("  [FAIL] %-13s did not discriminate: %s" % (name, bad))
+            worst = 1
+    print()
+    return worst
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--strict", action="store_true", help="exit 1 on any FAIL")
     ap.add_argument("--check", help="run one check by name")
+    ap.add_argument("--self-test", action="store_true",
+                    help="prove every check can fire and can stay quiet")
     ap.add_argument("--paths", nargs="*", help="files to inspect instead of git status")
     args = ap.parse_args()
 
+    if args.self_test:
+        return run_self_test()
     paths = _tracked_markdown(args.paths)
     worst = OK
     print("supervise: %d changed markdown file(s)\n" % len(paths))
