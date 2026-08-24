@@ -132,6 +132,14 @@ written to catch this very failure.**
 **Three of the five failed SILENTLY**, which is the whole point: **a crashing
 guard is a good day.**
 
+> **AND EVERY ONE WAS IN A CONSTANT, NOT IN LOGIC.** A backspace byte in a regex
+> literal; PCRE syntax where the engine wants POSIX; a path separator; a phrase
+> split by word wrap. **The logic was correct in all four cases.**
+>
+> **Review catches logic. Only execution catches constants.** That is why a
+> control is not optional for a guard — **reading it will not find these, and
+> reading it is what everybody does.**
+
 ### The habit that caught all five
 
 **Every one was found by a positive control run FROM HABIT, not from
