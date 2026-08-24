@@ -13,6 +13,9 @@ correct and the list had become unnavigable.
 | Rule | Stated in |
 | --- | --- |
 | Query the experiment ledger first. **177 entries: 75 `OPEN`, 57 `WIN`, 32 `DEAD`** | `CLAUDE.md`, device rules |
+| **A `WIN` means "decisive result", NOT "got faster".** All 57 classified: **26 are `rearch` milestones of a build-out whose premise was later refuted**, 6 are measurements, 8 are on-device bring-up. **Two are speed levers on working code, and one of those is later `CONFOUNDED`** | `research_log/20260825_0030_*` |
+| **An instrument that can return zero must be proved able to return non-zero.** xenia's desktop HLE intercepts read `count=0` for weeks from a dispatch bug, and the fix **corrected an earlier research finding built on that zero** | same |
+| **An undated `backfill` entry defeats recency ordering.** Register residency holds a `WIN` dated `backfill` and a `CONFOUNDED` dated 2026-07-24, and the `WIN` prints first | same |
 | **State the expected signature before the run.** A run with no prediction cannot fail | `CLAUDE.md`; every `DEVICE_QUEUE.md` entry |
 | **Name the confound that would fake a win** | `research_log/20260824_0810_*` |
 | **Measure applicability before building a transform.** `EOR3` died on 0 of 1 candidates | `CLAUDE.md`; `research_log/20260824_0520_*` |

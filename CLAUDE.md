@@ -5918,6 +5918,44 @@ the ledger already exists. Adopt it rather than writing one.
 
 **Tested against everything read that day, the split is total.**
 
+**TESTED AGAINST THE COMPLETE `WIN` LIST 2026-08-25, and the claim gets wider
+rather than weaker.** All 57 classified: **26 are `rearch` milestones of a
+build-out whose own premise was later refuted**, 8 are on-device bring-up, 6 are
+measurements, 6 are GPU-path confirmations, 2 are `fill` isolations of which one
+is explicitly lossy. **Nine `cpu` entries carry per-lever speed numbers, and six
+of the nine are bugs.**
+
+**One entry is a genuine reasoned optimisation of working code**, and reading it
+settles the question rather than opening it. `a64_stackpoint_prolog_fastpath`
+took a guest prolog from 18 emitted instructions to 14 for **+2.04%, 11 of 11
+intervals**. What it replaced: **`MOV`+`CMP` with a compare against an encoded
+immediate; `MOV`+`UMULL`+`ADD` with a shifted-register `ADD` for a 16-byte struct
+index; and a re-load of a value already live in `w9`.** **x86 folds
+`[base + index*16]` into an addressing mode, so an explicit multiply is free
+there and is not free here.**
+
+> **So the statement should be wider: the wins have come from code that was WRONG
+> FOR THIS MACHINE — either broken outright, or shaped for a machine this is
+> not.** That covers the counter-example instead of being embarrassed by it, and
+> it is the same lens rpcsx calls its most productive heuristic.
+
+**And a `WIN` in that ledger means "decisive result", not "got faster".** One WIN
+is a route being unblocked; another is a **profile whose content is a negative** —
+that the busy-wait fastpath this file calls the highest-value CPU work available
+**does not apply to Gears at all**, because its load is distributed with no
+dominant function. **Quoting "57 wins" as 57 speedups is wrong by an order of
+magnitude.**
+
+**Two ways to misread the ledger, both now recorded.** A lever that silently never
+fires **turns every measurement taken through it into a false negative** —
+xenia's desktop HLE intercepts read `count=0` for weeks from a `kExtern` dispatch
+bug, and the fix **corrected an earlier research conclusion built on that zero**.
+And **an undated `backfill` entry defeats recency ordering**: register residency
+holds a `WIN` dated `backfill` and a `CONFOUNDED` dated 2026-07-24, and the `WIN`
+prints first.
+
+See [`research_log/20260825_0030_fifty_seven_wins_classified.md`](research_log/20260825_0030_fifty_seven_wins_classified.md).
+
 | What paid | What it was |
 | --- | --- |
 | 74% of cycles in a nop-spin | a **timing constant** correct on x86, wrong by ~1300x here |
