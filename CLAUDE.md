@@ -1633,6 +1633,31 @@ See [`research_log/20260823_2205_translate_once_ship_it.md`](research_log/202608
 **The last row is the one this repo kept skipping.** Every candidate that shrank
 belonged in it.
 
+**A THIRD independent arrival at PERSIST, found 2026-08-24.** Cemu's `AGENTS.md`
+rejects an RPCS3-style LLVM backend, and one of its five reasons is that **Cemu
+recompiles per function on demand and has no persistent recompiler cache**, so
+LLVM would mean *"multi-minute loads or heavy in-game stutter"*. Its conclusion:
+
+> **"Building that cache is the MORE VALUABLE PROJECT and would be the
+> prerequisite anyway."**
+
+**ARMSX2 built one, with tests. eden declared the key type and never used it.
+Cemu names building it as more valuable than the feature it would enable.**
+**Three forks, three postures, one conclusion, none citing the others.**
+
+**And the same rejection carries the strongest number in the fleet for this
+project's own shape:**
+
+> **"~40% of emulator CPU in host-side overhead — clock reads, `OSGetTime`,
+> mutexes, atomics — against 40.7% in the JIT'd guest code. A 20% codegen win
+> would buy ~8% overall while that 40% sits untouched."**
+
+**Host-side overhead is the same size as guest execution.** That is the argument
+for a shared layer that takes the host side, stated as a measurement rather than
+a principle — and it is the number to quote when somebody proposes a recompiler
+project. See
+[`research_log/20260824_2100_measure_the_loading_phase_not_gameplay.md`](research_log/20260824_2100_measure_the_loading_phase_not_gameplay.md).
+
 ### Propagation has a precondition this fleet does not meet
 
 **PROPAGATE is the operation this project was founded to do**, and recent work

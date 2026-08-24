@@ -74,6 +74,10 @@ correct and the list had become unnavigable.
 | **Measure the thread, not the process** | `CLAUDE.md` |
 | **Temperature proves the run happened** — but see the sensor rule | `CLAUDE.md` |
 | **A negative result needs a workload that could have produced a positive one** | `CLAUDE.md` |
+| **MEASURE THE LOADING PHASE, NOT GAMEPLAY, for any CPU change.** *"Every scene reachable without playing is vsync capped at 60fps with the GPU around 15% busy and 2 of 8 CPU cores in use, so nothing is saturated and per-instruction work is invisible."* Loading is genuinely CPU bound | Cemu `AGENTS.md` |
+| **The false negative it caused, named:** a real 3-instructions-to-2 recompiler win measured **7922 against 7897 ticks — nothing** — because whole-process CPU during gameplay is dominated by threads spinning | same |
+| **A 0.2% noise floor on a workload that cannot move is precision without sensitivity.** Check saturation before trusting a tight floor | same |
+| **`simpleperf` cannot attach to a build without `<profileable android:shell="true"/>` AT ALL.** Use `/proc/<pid>/stat` fields 14+15 for any A/B spanning an older build — it works everywhere. **An instrument that cannot attach reports nothing, which reads exactly like a change that did nothing** | same |
 | **When a probe returns a physically impossible number, THE PROBE is broken.** Negative watts, a 10 ns `WFE`, an `ESR` decode that is always zero — three instances. It is not a surprising result to be explained | rpcsx `docs/arm64/instruments.md` |
 | **A run at any guest time scale but 100% is NOT a measurement.** Fast forward, slow motion and pause all invalidate frame time, noise floors and energy per frame | `research_log/20260825_0245_*`; `app/shell/TimeScale.kt` |
 
