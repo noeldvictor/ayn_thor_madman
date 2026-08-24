@@ -1149,15 +1149,36 @@ separate RT copy rendered correctly.
 > changelog claims it **fixed a7xx support**. **The rule carries no version
 > bound because it was written from one A/B, not because it was re-tested.**
 
-**The run.** On the pinned Turnip build, a Vulkan probe that (a) creates a
-subpass with an input attachment reading the colour attachment, and (b) creates a
-pipeline with `VK_PIPELINE_CREATE_COLOR_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT`, and
-renders a known pattern through each. **Compare against the reference the CPU
-computes.** No game, no emulator.
+**The run.** On the pinned Turnip build, a Vulkan probe with **three arms**:
+**(a)** a subpass with an input attachment reading the colour attachment;
+**(b)** a pipeline with `VK_PIPELINE_CREATE_COLOR_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT`;
+**(c)** `VK_KHR_dynamic_rendering_local_read`. **Render a known pattern through
+each and compare against the reference the CPU computes.** No game, no emulator.
 
-**Prediction: both still fail.** Stated so it can fail — and **if either now
-works, the PCSX2 feedback-read technique becomes available and the render-graph
-work gains its in-pass read.**
+**A THIRD FORM, added 2026-08-26, and it is the one that matters most.**
+ARMSX2's rule covers two mechanisms — subpass feedback and the feedback-loop
+layout. **`VK_KHR_dynamic_rendering_local_read` is a third**, it is newer than
+ARMSX2's Adreno 650 measurement, and **it is the one XenDroid's 16-commit in-pass
+EDRAM resolve series actually uses.**
+
+**xenia has already device-verified it as AVAILABLE on this Adreno 740 under
+Turnip 26.3.0** — `dynamic_rendering_local_read=true`, probed with a title
+running. **Availability is not correctness**, which is the whole point of this
+entry.
+
+> **So the probe has three arms, not two, and they are not equally valuable.**
+> Arm (c) is the one with a 16-commit body of work waiting on it. **If (a) and
+> (b) fail and (c) works, that is the most useful possible outcome** — it means
+> the old rule holds, the modern path does not inherit it, and the port is
+> unblocked.
+
+**Prediction: (a) and (b) still fail; (c) works.** Stated so it can fail. The
+reasoning for splitting the prediction: **ARMSX2's rule was measured on a
+different GPU generation and an older Mesa**, and **`local_read` is a different
+code path in the driver rather than a rename of the old ones.**
+
+**If (a) or (b) works, the PCSX2 feedback-read technique becomes available and
+the render-graph work gains its in-pass read.**
 
 **Gates.** Verify the driver actually loaded and report its `driverID` and
 version string with the result; a probe that silently ran on the stock driver
