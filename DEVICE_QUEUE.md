@@ -1085,6 +1085,26 @@ These need a decision or a build first, not device time.
   unknown baseline. ADPF is currently disabled on this device by persisted
   config.
 
+**ONE FACT ADDED 2026-08-25, and it does NOT answer the entry.** xenia enabled
+**`VK_KHR_dynamic_rendering_local_read`** on this device and probed it with a
+title running: **Burnout on verified Turnip 26.3.0 reports
+`dynamic_rendering_local_read=true`.** So the modern in-pass attachment-read
+extension is **exposed and enabled on an Adreno 740 with Mesa 26.3.0**, where the
+ARMSX2 rule was written from an **Adreno 650 on Mesa 26.1.2**.
+
+> **That is availability, not correctness.** azahar confirmed all four
+> `extended_dynamic_state3` blending features on this same device, rendered the
+> loop correctly, and measured nothing — **"extension availability is not
+> optimization evidence."** The probe above raises the value of running this
+> entry; **it does not substitute for it.**
+
+**And it raises the stakes.** XenDroid has a **16-commit series** building in-pass
+EDRAM resolves on that extension, and xenia's tree has **neither the extension
+nor any in-pass path**. **If this probe finds in-pass reads correct on the 740,
+that series becomes portable work against a wall this project has already
+measured — 45 EDRAM transfers per frame, 27 of them pass breaks.** See
+[`research_log/20260825_0415_the_fix_for_the_measured_pass_wall_exists_in_a_sibling_fork.md`](research_log/20260825_0415_the_fix_for_the_measured_pass_wall_exists_in_a_sibling_fork.md).
+
 ## 27. `GCM=1`: an upstream Turnip shader optimisation that ships default-off
 
 **Found 2026-08-24 while assessing the Aurora driver, and it is separable from

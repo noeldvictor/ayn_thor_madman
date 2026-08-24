@@ -99,6 +99,38 @@ kind of patch, distinct from content patches, code patches and file mods.
 one are the same mechanism seen twice. Decide whether they are one screen before
 building either.
 
+### A requirement no screen carries, and the gamepad-first decision GUARANTEES the bug
+
+**Added 2026-08-25. Three lines, and without them a session presents as a hang.**
+
+**`FLAG_KEEP_SCREEN_ON` must be set while a game runs.** The reasoning, taken
+from XenDroid `4b416cd83` via xenia's sweep:
+
+> **Gamepad play generates NO touch events, so the display timeout still fires.**
+> A sleeping panel stops the activity, **the `SurfaceView` loses its surface, and
+> the presenter silently DROPS every guest frame while the emulator keeps
+> running** — *"which reads as a hang and already cost a full session."*
+
+**`CLAUDE.md` requires that every screen be drivable without touching the
+glass.** That decision means a person playing with the Thor's physical buttons
+**generates no touch events for an entire session**, so the timeout is not an
+edge case here — **it is the normal path.**
+
+**The failure mode is the dangerous kind.** Not a crash and not a stall: the
+emulator keeps running, the frames keep being produced, **and every one is
+discarded.** It is a [`DID_IT_APPLY.md`](../shared_layer/DID_IT_APPLY.md)
+sibling — **the work happened and the output went nowhere.**
+
+**Scope it to gameplay.** Holding the screen on across the library and settings
+would burn battery for nothing, which the cheap-UI rule forbids. **Set it when a
+backend starts and clear it when the game stops or pauses.**
+
+**Not verified here.** `app/shell/` has no backend behind it yet, so whether this
+shell has the same exposure is untested. **The requirement is recorded before the
+code exists, which is the cheap end.**
+
+See [`../research_log/20260825_0415_the_fix_for_the_measured_pass_wall_exists_in_a_sibling_fork.md`](../research_log/20260825_0415_the_fix_for_the_measured_pass_wall_exists_in_a_sibling_fork.md).
+
 ---
 
 ## 1. Library
