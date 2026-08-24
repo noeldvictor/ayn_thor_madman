@@ -250,9 +250,15 @@ def check_dead_levers(paths):
     # subject was the ledger query and its zero result. Same class as the
     # DEVICE_QUEUE false positive: the document was right and the tool was wrong.
     # This is not a magic word -- it demands the query be named, which is an act.
+    # REJECTED.md is the fleet-wide half of the same job. The ledger holds
+    # xenia's experiments; azahar's rejections -- the densest set found, and the
+    # only ones covering audio, the Android build and the guest scheduler --
+    # are in a fork's AGENTS.md and in no queryable store. Consulting either
+    # store satisfies this check, and naming it is the act being demanded.
     satisfied = re.compile(
-        r"exp_ledger|ledger was queried|"
-        r"(?:query|queried|querying) the (?:experiment )?ledger", re.I)
+        r"exp_ledger|ledger was queried|REJECTED\.md|"
+        r"(?:query|queried|querying) the (?:experiment )?ledger|"
+        r"(?:checked|searched|consulted) (?:the )?rejection(?:s| index)", re.I)
     hits = [p for p in paths if proposing.search(chr(10).join(_lines(p)))
             and not satisfied.search(chr(10).join(_lines(p)))
             and not p.startswith("research_log/")]
@@ -260,7 +266,8 @@ def check_dead_levers(paths):
         return OK, "no new experiment proposed, or the ledger query is recorded", []
     return (
         WARN,
-        "%d file(s) propose an experiment. Query the ledger before running one."
+        "%d file(s) propose an experiment. Query the ledger AND "
+        "shared_layer/REJECTED.md before running one."
         % len(hits),
         hits[:6] + [
             "  python <xenia>/tools/exp_ledger.py check \"<keyword>\"",

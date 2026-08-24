@@ -7080,6 +7080,18 @@ Verdicts: `DEAD`, `FLAT`, `WIN`, `GFX-LOSS`, `CONFOUNDED`, `OPEN`.
 rebuilt. The ledger stops a dead lever being re-run. The fleet needs both, and
 the ledger already exists. Adopt it rather than writing one.
 
+**BUT THE LEDGER IS XENIA-ONLY, and most of the fleet's rejections are not in
+it.** [`shared_layer/REJECTED.md`](shared_layer/REJECTED.md) is the fleet-wide
+half, added 2026-08-25: **about thirty measured rejections** from azahar, xenia,
+rpcsx and Cemu, each naming the fork, the number and the document that states it
+in full — **plus the five recurring shapes they fall into**, and a sixth that is
+not a performance shape at all.
+
+**Query BOTH before proposing an optimisation.** The ledger is queryable and
+current for one fork; the index is diffable, carries the reasoning, and covers
+four. **Neither is exhaustive** — xenia alone has 553 research documents and 75
+`OPEN` entries that are in neither.
+
 ### THE PATTERN, 2026-08-24: every win in this fleet was a bug, not an optimisation
 
 **rpcsx's GPU review ends with the most useful sentence found in the fleet:**
