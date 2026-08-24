@@ -3028,6 +3028,40 @@ penalise 64 and 32.
 alternative is per-cluster codegen variants, which multiplies the code cache
 and the testing.
 
+### SUPERSEDED 2026-08-24: use azahar's ALL-CORE GATE instead
+
+**"Place hot code there" depends on being able to place it**, and this repo's own
+affinity survey found **two forks set no host affinity at all**, while melonDS
+tunes its compiler for the X3 and never asks for it.
+
+**azahar's answer needs no affinity and no per-cluster variants.** Its own
+phrase, from `AGENTS.md:614`: *"shorter dirty batches keep that same route
+**because copy setup did not clear the all-core gate**."*
+
+> **A lowering is accepted only if it wins on EVERY core. One that loses on the
+> A510 is rejected, however well it does on the X3.** The cost is paid in
+> rejected candidates rather than in code-cache size, affinity control and a
+> multiplied test matrix.
+
+**And the A510 rejects things the big cores like, measured:**
+
+| Candidate | Result |
+| --- | --- |
+| **packed-float24 `TBL`** | *"despite **exact random equality**, it ran at about **0.52x–0.54x on A510**"* |
+| grouped-float24 batching | *"its **small-batch A510 timing was unstable or regressive**"* |
+
+**`TBL` at half speed on the little cores**, and this file already held two
+adjacent results without the third: xenia measured `TBX2` at about **2x**
+`TBL2`, and rpcsx measured BCAX at **2.02x on A510** against **0.94x on the X3**.
+**Three forks, three wide-instruction results, and the A510 is the discriminator
+in all three.**
+
+**Add instability to the gate, not just slowness.** The second row's problem is
+that A510 small-batch timing **does not reproduce** — so the gate is about
+repeatability there, not only about the mean.
+
+See [`research_log/20260824_2350_the_all_core_gate.md`](research_log/20260824_2350_the_all_core_gate.md).
+
 ### The Thor's core indices, and they decide every affinity question
 
 | Host CPU | Core | Clock |

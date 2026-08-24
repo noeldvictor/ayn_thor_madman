@@ -59,6 +59,8 @@ correct and the list had become unnavigable.
 | --- | --- |
 | **Noise floors: 0.2% gated title screen, 5% savestate, ~50% cutscenes** | `CLAUDE.md` |
 | **Never quote n=1.** Report `[min..max]`, not the mean | `CLAUDE.md` |
+| **LABEL A MICROBENCHMARK RATIO AS A KERNEL RATIO AT THE POINT OF MEASUREMENT**, not when somebody quotes it. azahar does this three times in three consecutive entries — *"treat the 1.15x-14.84x measurements as **uploader-kernel ratios, not whole-game FPS or watts**"*. **Even a 14.84x** | azahar `AGENTS.md` |
+| **A candidate must clear the ALL-CORE gate**, and on the A510 it must be **reproducible**, not merely acceptable once — its small-batch timing is *"unstable or regressive"* | same |
 | **Energy per frame, not watts** — watts alone rewards a slower core | `CLAUDE.md` |
 | **Say which thermal sensor. Never `max` over all zones** | `CLAUDE.md`; `research_log/20260824_1050_*` |
 | **Junction reads above package, and the gap varies with load** — measured 71.9 C junction against 64.6 C silicon at moderate load, and 90.7 C junction under compile against 55.0 C idle on the SAME zone. This device has **no `skin` zone at all** | same; rpcsx `docs/arm64/thermal.md` |
