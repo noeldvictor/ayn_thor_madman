@@ -1946,6 +1946,38 @@ What it settles:
 - **Texture classes are a declared list, not an enum.** ARMSX2 has two,
   melonDS three, Cemu none. A fixed enum would impose one emulator's taxonomy
   on the rest.
+
+  > ### THE TEST, added 2026-08-25 after this argument was re-derived SIX times
+  >
+  > **A fixed enum is correct when the HOST owns the concept, and wrong when the
+  > GUEST does.**
+  >
+  > **Six instances, each argued from scratch, none producing a test until the
+  > sixth:** texture classes (above), filter algorithms — where ARMSX2's
+  > `Anime4K` is a **neural network** and melonDS's is a **nine-texel kernel**,
+  > same name, unrelated techniques — cheat memory regions, `AcceptedInput`,
+  > `ValidationError`, and `ContentResolver.Kind`'s file extension.
+  >
+  > **Two of the last three were in THIS PROJECT'S OWN CONTRACTS**, written
+  > after the rule had already been stated three times. **A rule that has to be
+  > re-derived is not yet a rule.**
+  >
+  > **The test accepts as well as rejects, which is why it is usable.** Audited
+  > across 26 shell enums and 7 native ones: **`UploadResult`'s decline
+  > reasons are ours** — our budget, our limiter, our class list — **so a fixed
+  > enum is right there.** So are `SettingScope`, `LifecycleOp`, `Counter`,
+  > `MetaField` (what the SHELL displays) and `ScreenLayout` (the app owns
+  > routing; the backend only declares its screens). **Thirty-two of
+  > thirty-three passed.**
+  >
+  > **And when a concept is guest-owned but the shell must still act on it,
+  > carry BOTH**: the small set the shell can use without guest knowledge, plus
+  > the guest's own value uninterpreted. **That is the resolution already
+  > reached for cheat regions, and it is the same one azahar reached for button
+  > labels — `"Ok"`, `"Cancel"`, `"I Forgot"` come from the guest because no
+  > host could predict them.**
+  >
+  > See [`research_log/20260825_1410_the_fifth_fixed_enum_and_the_discriminator_nobody_stated.md`](research_log/20260825_1410_the_fifth_fixed_enum_and_the_discriminator_nobody_stated.md).
 - **Every decline reason is separate.** ARMSX2 learned that "nothing got
   upscaled" has half a dozen causes needing different fixes.
 - **The upscaler stays outside the cache.** Following ARMSX2 over melonDS,
