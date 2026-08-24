@@ -3434,6 +3434,25 @@ direction.** It runs Q-form 128-bit NEON at **throughput 1**, so it punishes
 added operations hardest **and rewards removed ones hardest.** Both directions
 are the same fact.
 
+**AND DO NOT OVER-GENERALISE IT, corrected 2026-08-26.** `LD1`/`ST1` with N
+registers is **not** the same instruction class as `LD2`/`LD4`. rpcsx's tables
+put **`LD1` 2-reg Q-form and `LDP` Q in exactly the same place** — same latency,
+same throughput, same pipes, both directions. **`LD1 {v0,v1}` loads two
+registers; `LD4` deinterleaves lanes.** Same mnemonic family, two orders of
+magnitude apart.
+
+> **And the variable that mattered in rpcsx's own case was the ADDRESSING MODE,
+> not the mnemonic**: `vld1q_u8_x2` compiled to the **writeback** form, which
+> **adds the `I` pipe** because the base-register update is integer work folded
+> into the load. **"Read the addressing mode, not the instruction name."**
+>
+> **That interacts with the load-over-arithmetic rule above**: a writeback load
+> is a load that also does arithmetic, **so it partially spends the port
+> imbalance that rule exists to exploit.** Non-writeback at a fixed offset keeps
+> the load on the load pipes.
+
+See [`research_log/20260826_0905_read_the_addressing_mode_not_the_instruction_name.md`](research_log/20260826_0905_read_the_addressing_mode_not_the_instruction_name.md).
+
 **A second azahar rejection belongs beside the swizzle candidate.** It refuses
 `LD2`/`LD4`/`ST4` twice, citing the manual: **"Cortex-A510 documents Q-form
 32-bit `ST4` throughput as `1/50`."** Its replacement is **not a better
