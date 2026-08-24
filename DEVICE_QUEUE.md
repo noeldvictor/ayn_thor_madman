@@ -994,7 +994,7 @@ guest-thread function with `llvm-objdump`. **If the hot path holds no atomics, t
 lever is dead before it is built** — the applicability rule that already closed
 the Armv8.4 question above.
 
-## 26. Does the pinned Turnip still break attachment self-read
+## 26. Two Turnip behaviours, one game-free probe session
 
 **ARMSX2's driver profile records Turnip on Adreno as breaking BOTH forms of
 attachment self-read** — `BrokenSubpassFeedback` and
@@ -1040,6 +1040,40 @@ confirming that makes it an Adreno property rather than a Mesa regression.
 **The device-free step is DONE**: all 30 rules listed, no superseding Turnip
 rule, and the provenance comment read. **Nothing further can be learned without
 the device.**
+
+### Second test in the same session: does `vkGetFenceStatus` still block?
+
+**Added here rather than as entry 27, because this queue's own rule says to
+resolve an entry before opening one beside it** — and both questions are *"does
+the pinned Turnip still do X"*, answerable in one game-free probe.
+
+**The behaviour:** xenia records that **on Turnip-over-KGSL a fence status query
+on an IN-FLIGHT fence blocks until that submission retires**, because Mesa's
+`tu_knl_kgsl.cc` passes ioctl `timeout=0` and **KGSL documents `timeout==0` as
+"wait forever"**. Cost when a pre-poll hits it: **a full GPU frame of CPU-GPU
+serialisation per frame open, 46.9 ms on one title.**
+
+**The test.** Submit work with a known long duration, then **time
+`vkGetFenceStatus` on the fence for that submission.** Vulkan requires it to
+return `VK_NOT_READY` immediately.
+
+| result | meaning |
+| --- | --- |
+| returns in microseconds | **the behaviour is gone on this build** |
+| **returns after the submission completes** | **still present** |
+
+**Prediction: still present.** It is a KGSL kernel behaviour reached through
+Mesa's ioctl, **not a Turnip bug that a Turnip release would fix** — so a newer
+Mesa is unlikely to change it. **Stated so it can fail.**
+
+**Why it matters more than entry 26's first test.** Attachment self-read affects
+a technique this project *might* adopt. **This one affects every resource pool
+that asks whether a fence is done** — the texture path, the memory budget owner,
+the pipeline cache — **all of which the shared layer is meant to own for seven
+backends at once.**
+
+**Gate: report `driverID` and the driver version string with both results**, and
+run both tests in the same session so the driver identification covers them.
 
 ## Not ready to run
 
