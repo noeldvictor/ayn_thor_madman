@@ -51,8 +51,12 @@ because it was wrong, but because **two findings landed after it** — XenDroid'
 resolve series and xenia's availability probe — **and neither updated the entry
 that they bear on.**
 
-> **A queue entry is a hypothesis with a date.** The queue has 27 of them and
-> **nothing re-reads an entry when a related finding lands.** That is the same
+> **A queue entry is a hypothesis with a date.** The queue has 27 of them, and
+> **no mechanism re-reads one when a related finding lands** — checked by reading
+> `supervise.py`'s six checks, none of which touches staleness, and by listing
+> `tools/`, where no tool cross-references the queue against the logs. **A narrow
+> search of one directory, so treat it as "none was found" rather than "none
+> exists".** That is the same
 > shape as the capability inventory going two days stale, and as entries 12 and
 > 13 not citing each other.
 
