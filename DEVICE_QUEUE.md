@@ -27,6 +27,7 @@ Ordered by what unblocks the most.
 | **cumulative counters, never a spot reading** | an instantaneous `current_now * voltage_now` on an idle device spread **1.66 W**; differencing `charge_counter` over the window spread **0.002 W** |
 | **the harness is not thermally free** | the same run through an input-macro harness reached **70.7 C in ten seconds** and tripped its own guard, while a direct boot never left the fifties |
 | **`simpleperf` needs `<profileable android:shell="true"/>`** | without it, it **cannot attach at all**. Use `/proc/<pid>/stat` fields 14+15 for any A/B spanning an older build |
+| **VERIFY THE STOP.** `am force-stop` on a package that is not installed **exits zero and prints nothing** — check with `pidof` against the real `applicationId`, not the APK or build-variant name. A ~1.78 W result was withdrawn because both arms were the same configuration | rpcsx `instruments.md` |
 
 ### Resolving an entry matters as much as adding one
 
@@ -925,6 +926,13 @@ dispatch decides something constant for the life of the device.
 changed. **Do not add `-mno-outline-atomics` on its own** — without `+lse` it
 removes the upgrade path and leaves the `ldxr`/`stxr` loop unconditionally, which
 `tools/target_check.py` probe 3 fails on.
+
+**Prediction, FLAT — and it now has a REASON rather than only a prior.** rpcsx
+struck through a per-reservation LSE redesign with the correction: **"LSE was
+never the missing piece, because the cost is WHICH LINE an atomic touches rather
+than HOW IT IS SPELLED."** **`+lse` changes the spelling.** So if it moves
+anything it will be in **atomic-dense UNCONTENDED** code — not in the contended
+guest-synchronisation paths that look most tempting. **Pick the arm accordingly.**
 
 **Prediction, REVISED the same day: FLAT on frame time, held with less
 confidence.** The original reason was that the atomic count is small relative to
