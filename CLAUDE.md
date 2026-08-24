@@ -1219,8 +1219,11 @@ Rules:
    **This audits the tools here.** `bug_class_sweep.py` and `dead_guard.py`
    search by pattern over globs and are safe. **`capability_probe.py`,
    `hle_coverage.py` and `vk_capability_census.py` are path-scoped**, and a wrong
-   fork path returns zero silently — **which is why `capability_probe.py
-   --self-test` exists, and why the other two still need one.**
+   fork path returns zero silently. **All three now carry a `--self-test` with
+   positive controls** — the census sees 42 / 35 / 35 / 27 / 13 / 13 / 9
+   extensions per fork, and the HLE collectors see **Vita3K 7,377, eden 4,986 and
+   Cemu 470** functions. **A path-scoped tool without such a control is not
+   usable for an absence claim.**
 2. **A capability recorded from a listing is a hypothesis.** Mark it unread
    until somebody opens the file.
 3. **Reading is cheap.** Each correction above took under fifteen minutes and

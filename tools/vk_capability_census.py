@@ -146,13 +146,64 @@ def whole_fork(fork, extension):
     return any(not VENDORED_LINE.search(ln) for ln in out)
 
 
+# POSITIVE CONTROLS. This tool is PATH-SCOPED: it reads one named device-layer
+# file per fork. A renamed or moved file returns zero extensions, which looks
+# exactly like a fork that requests none.
+#
+#     A path-scoped search that covers nothing looks identical to one that
+#     found nothing.
+#
+# The counts below are the 2026-08-23 census. They are a floor, not an exact
+# expectation: a fork adding an extension should not fail the control.
+CONTROLS = {
+    "eden": 30, "ARMSX2": 25, "Vita3K": 25, "Cemu": 18,
+    "xenia": 8, "azahar": 8, "melonDS": 5,
+}
+
+
+def self_test():
+    """Prove the census can see a device layer at all."""
+    failures = 0
+    print("positive controls -- a miss means the FILE moved, not that the fork")
+    print("stopped requesting extensions.")
+    print("")
+    for fork, floor in CONTROLS.items():
+        try:
+            got = read(fork)
+        except Exception as e:                     # noqa: BLE001
+            print("  %-9s FAIL  read() raised %s" % (fork, e))
+            failures += 1
+            continue
+        if got is None:
+            print("  %-9s SKIP  not present beside this repo" % fork)
+            continue
+        n = len(got)
+        if n < floor:
+            print("  %-9s FAIL  %d extensions, expected at least %d" % (fork, n, floor))
+            failures += 1
+        else:
+            print("  %-9s ok    %d extensions" % (fork, n))
+    print("")
+    print("%d failure(s)." % failures)
+    if failures:
+        print("DO NOT REPORT AN EXTENSION AS UNREQUESTED until these pass.")
+    return failures
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--min-forks", type=int, help="only list extensions this many forks request")
     ap.add_argument("--orphans", action="store_true", help="only one fork requests it")
+    ap.add_argument("--self-test", action="store_true",
+                    help="prove the census can see each fork's device layer. This "
+                         "tool is PATH-scoped, so a moved file reads as a fork that "
+                         "requests nothing.")
     ap.add_argument("--check", nargs="*", help="report who requests these (default: the probed set)")
     args = ap.parse_args()
+    
+    if args.self_test:
+        return 1 if self_test() else 0
 
     sets = {}
     for fork in DEVICE_LAYERS:

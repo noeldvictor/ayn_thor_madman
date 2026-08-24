@@ -129,13 +129,68 @@ BACKENDS = [
 ]
 
 
+# POSITIVE CONTROLS. This tool is PATH-SCOPED -- each collector walks a named
+# directory in one fork. A moved or renamed tree returns zero functions, which
+# looks exactly like a backend with no HLE layer.
+#
+#     A path-scoped search that covers nothing looks identical to one that
+#     found nothing.
+#
+# Floors from the 2026-08-23 census, deliberately below the measured values so
+# that a fork implementing more does not fail the control.
+CONTROLS = {"Vita3K": 5000, "eden": 200, "Cemu": 200}
+
+
+def self_test():
+    """Prove each collector can see its fork's HLE layer at all."""
+    failures = 0
+    print("positive controls -- a miss means the TREE moved, not that the")
+    print("backend stopped implementing HLE functions.")
+    print("")
+    for name, rel, collector in BACKENDS:
+        floor = CONTROLS.get(name)
+        if floor is None:
+            print("  %-8s [no control defined -- absence here is unproven]" % name)
+            failures += 1
+            continue
+        fork = name
+        root = os.path.join(FLEET, rel)
+        if not os.path.isdir(root):
+            print("  %-8s SKIP  not present beside this repo" % fork)
+            continue
+        try:
+            rows = collector(root)
+        except Exception as e:                     # noqa: BLE001
+            print("  %-8s FAIL  collector raised %s" % (fork, e))
+            failures += 1
+            continue
+        n = sum(len(v) for v in rows.values()) if isinstance(rows, dict) else len(rows)
+        if n < floor:
+            print("  %-8s FAIL  %d functions, expected at least %d" % (fork, n, floor))
+            failures += 1
+        else:
+            print("  %-8s ok    %d functions" % (fork, n))
+    print("")
+    print("%d failure(s)." % failures)
+    if failures:
+        print("DO NOT REPORT A FUNCTION AS UNIMPLEMENTED until these pass.")
+    return failures
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--self-test", action="store_true",
+                    help="prove each collector can see its fork's HLE tree. This tool "
+                         "is PATH-scoped, so a moved tree reads as a backend with no "
+                         "HLE layer at all.")
     ap.add_argument("--json", help="write the full table here")
     ap.add_argument("--fork", help="only this backend")
     ap.add_argument("--modules", type=int, default=10, help="modules to list per backend")
     args = ap.parse_args()
+    
+    if args.self_test:
+        return 1 if self_test() else 0
 
     table = {}
     for name, rel, fn in BACKENDS:

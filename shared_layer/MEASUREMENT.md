@@ -200,9 +200,9 @@ turns it into a re-runnable sweep.
 | `tools/supervise.py` | is this session repeating a known failure |
 | `tools/capability_probe.py` | which fork has this capability, asked several ways. **`--self-test` proves the search can return non-zero for all nine forks, and zero for a nonsense pattern. Run it before reporting any absence** |
 | `tools/bug_class_sweep.py` | where else does a bug class that already paid appear |
-| `tools/vk_capability_census.py` | what does each fork ask the GPU for |
+| `tools/vk_capability_census.py` | what does each fork ask the GPU for. **`--self-test` proves it can see each device layer** — it is PATH-scoped, so a moved file reads as a fork requesting nothing |
 | `tools/fleet_docs_index.py` | what has the fleet already written, and what failed |
-| `tools/hle_coverage.py` | what does each backend implement |
+| `tools/hle_coverage.py` | what does each backend implement — **Vita3K 7,377, eden 4,986, Cemu 470 functions**. **`--self-test` proves each collector can see its tree**; PATH-scoped, same hazard |
 | `tools/fleet_lint.py` | build-configuration drift |
 | **`tools/emitted_flags.py`** | **what flags actually reached the compiler**, from real build output |
 | **`tools/target_check.py`** | **does the compile target emit what it claims** — 4 probes, proven against 4 real traps |
