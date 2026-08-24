@@ -71,6 +71,24 @@ nothing.
 lookbehind for the one place it mattered. **The pattern is slightly looser and
 verifiably correct**, which is the better trade.
 
+## It fired on this log, and the answer is recorded
+
+**On the commit that added it, `queue-stale` warned on four lines of this very
+log**, which cites entries 26 and 13. **The answer: both were updated earlier
+today** — 26 gained a third probe arm, 13 had its device blocker corrected. **The
+citations are context, not staleness.**
+
+> **A log ABOUT queue staleness will always cite entries, so this file would be a
+> permanent WARN — and a permanent WARN is ignored.**
+
+**So the check gained an exemption, the same shape as `dead-levers` accepting a
+recorded ledger query**: a log that RECORDS the answer satisfies it. **Not a
+magic word — a statement that somebody looked.** Controls re-run: an unanswered
+citation still WARNs, an answered one is OK.
+
+> **The check asks, a person answers, and the answer lives beside the
+> citation.** That is the workflow, and now the tool recognises it.
+
 ## Limits
 
 - **A WARN, not a failure.** It cannot block anything and will produce false

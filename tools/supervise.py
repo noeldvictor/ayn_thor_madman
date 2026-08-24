@@ -392,12 +392,21 @@ def check_queue_staleness(paths):
     cites = re.compile(
         r"(?:DEVICE_QUEUE(?:\.md)?\s*)?(?:queue\s+)?entr(?:y|ies)\s+([0-9]+)"
         r"|(?<![A-Za-z])queue\s+([0-9]+)", re.I)
+    # A log that RECORDS the answer has done what this check asks. Same shape
+    # as dead-levers accepting a recorded ledger query: not a magic word, but a
+    # statement that somebody looked. Without this, a log ABOUT queue staleness
+    # is a permanent WARN, and a permanent WARN is ignored.
+    answered = re.compile(
+        r"still holds|was updated (?:earlier )?today|entry (?:was )?re-read"
+        r"|answer(?:ed)?[: ]|not staleness", re.I)
     queue_touched = any(p.endswith("DEVICE_QUEUE.md") for p in paths)
     if queue_touched:
         return OK, "a log cites a queue entry and the queue was updated too", []
     hits = []
     for path in paths:
         if not path.startswith(("research_log/", "work_log/")):
+            continue
+        if answered.search(chr(10).join(_lines(path))):
             continue
         for lineno, line in _added_lines(path):
             for m in cites.finditer(line):
