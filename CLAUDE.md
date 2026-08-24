@@ -3245,6 +3245,42 @@ adjacent results without the third: xenia measured `TBX2` at about **2x**
 **Three forks, three wide-instruction results, and the A510 is the discriminator
 in all three.**
 
+**SEVEN, NOT THREE, AND THE FRAMING ABOVE IS WRONG — corrected 2026-08-24.**
+azahar's `AGENTS.md:1402-1425` is a rejection ledger for **four more ARM64
+fusions**, each built, measured and reverted:
+
+| Rejected fold | Measured |
+| --- | --- |
+| shifted operand into **`BIC`** (A32 `AndNot32`) | A510 **0.9857x**, **0.9926x** |
+| **`SABA`/`UABA`** for `SABD`+`ADD` (`VABA`) | A510 **0.6595x-0.6890x** |
+| **`MADD`/`MSUB`** for A32 `MLA`/`MLS` | **A510 dependent, BOTH A715 patterns, and A710 and X3 independent — all regressed** |
+| **`SMULL`/`SMSUBL`** for `SMUSD` | A510 **2.599973 -> 2.702699 ns/op**, 0.961991x; `SMUSDX` a 0.999915x tie |
+
+> **The `MADD` row breaks the story this section tells.** The gate is framed here
+> as "the big cores like a wide instruction, the A510 does not". **`MLA` to
+> `MADD` is the textbook ARM64 fusion and the X3 regressed too.** So the all-core
+> gate is a gate, not an A510 tax — the A510 is only where it fails most often.
+
+**And the deciding variable is DEPENDENCY SHAPE, which is a third axis beside
+core class and width.** Every one of the four says the **independent** shape can
+win and the **dependent** shape regresses, and each asks for a
+*dependency-aware* gate. **A fusion shortens the instruction stream and lengthens
+the dependency chain**, because the fused instruction cannot start until both
+inputs are ready where the split pair could overlap. **That is rpcsx's `BCAX`
+result from the other direction** — 2x on a serial chain, 0.94x on four
+independent ones.
+
+**azahar's acceptance rule names instruction count explicitly:** *"Instruction
+count and the manuals' logical timing rows are **candidate guidance, not
+sufficient acceptance evidence**."* — and in the `SABA` case **the manual was
+RIGHT and still not what settled it.**
+
+**These are dynarmic lowerings, so they apply to azahar, Vita3K and eden.** Three
+backends in the packed binary, and **the rejections live in one fork's
+`AGENTS.md`** — the unit-of-work argument applied to negative results.
+
+See [`research_log/20260824_2220_four_textbook_arm64_fusions_measured_and_rejected.md`](research_log/20260824_2220_four_textbook_arm64_fusions_measured_and_rejected.md).
+
 **Add instability to the gate, not just slowness.** The second row's problem is
 that A510 small-batch timing **does not reproduce** — so the gate is about
 repeatability there, not only about the mean.

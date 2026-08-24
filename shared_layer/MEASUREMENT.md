@@ -55,6 +55,8 @@ correct and the list had become unnavigable.
 | **Each arm needs a fresh process** — device properties cache per process | `CLAUDE.md` |
 | Run a harness from a frozen copy | `CLAUDE.md` |
 | **Three backends have no deterministic scene** — Cemu, eden, and xenia's deadlocks | `research_log/20260824_0255_*` |
+| **Control CODE ALIGNMENT before believing a few-percent microbenchmark.** azahar states its `SMUSD` figures "after 64-byte loop alignment"; a hot loop moved across a fetch-block boundary shifts results by more than the effect | `research_log/20260824_2220_*` |
+| **A fusion changes DEPENDENCY DEPTH as well as instruction count**, so an arm must state the dependency shape and the core class, not only the win | `research_log/20260824_2220_*` |
 
 ## Reading the numbers
 
