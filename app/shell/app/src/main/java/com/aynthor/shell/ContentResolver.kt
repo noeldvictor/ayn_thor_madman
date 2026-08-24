@@ -54,6 +54,26 @@ data class ContentRoot(val label: String, val path: File)
 
 data class Located(val file: File, val root: ContentRoot)
 
+/**
+ * WHERE THE ROOTS COME FROM IS NOT SOLVED HERE, and this object is only one
+ * third of the problem. Recorded 2026-08-25.
+ *
+ * Three complementary mechanisms, one per fork:
+ *
+ *  - ENUMERATE what is mounted -- XenDroid, via `StorageManager.storageVolumes`
+ *    and `volume.directory`, with `?: continue` because a volume can be listed
+ *    and have no directory.
+ *  - CONVERT what the person picked -- eden's `PathUtil`, turning a SAF
+ *    `content://` URI into a real path, removable volumes included.
+ *  - SEARCH known conventions inside a root -- Vita3K, nine locations for one
+ *    title. THAT IS THIS FILE.
+ *
+ * They are not alternatives. Enumerate, offer, convert what is chosen, then
+ * search within it. [candidates] promises a diagnostic -- "looked in these six
+ * places" -- which is only true once something supplies the places.
+ *
+ * [ContentRoot.label] exists for exactly the volume name an enumeration gives.
+ */
 object ContentResolver {
 
     /**
