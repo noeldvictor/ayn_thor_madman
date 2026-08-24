@@ -2254,6 +2254,46 @@ detection problem. **If detection, it is free performance.**
 | melonDS | `armv4`, `armv5`, `haswell` | those are **guest** targets |
 | eden | none found | |
 
+**AND MEASURED FROM THE BUILD OUTPUT, 2026-08-24.** `tools/emitted_flags.py`
+reads every `compile_commands.json` — **the command line each translation unit
+was actually compiled with.** Four forks have been built on this machine.
+
+| Fork | `-march` that reached the compiler | `-flto` | LSE |
+| --- | --- | --- | --- |
+| **ARMSX2** | **Release: `armv8-a+crc`**; Debug/tools: `armv8.2-a+fp16+dotprod` | absent | **no** |
+| **azahar** | `armv8-a`, `+crc`, `+crypto`, `armv8.2-a+dotprod+i8mm`, and **per-file `armv8.5-a+i8mm+sve2`, `armv9-a+sme`** | **`-flto=thin`, 2,183 TUs** | **no** |
+| Cemu | **none on arm64**; passes `-moutline-atomics` | absent | **no** |
+| melonDS | **none on arm64**; `armv7-a` on the 32-bit ABI | absent | **no** |
+
+**Three things follow.**
+
+**Not one of the four carries `+lse`, and `-mno-outline-atomics` is absent from
+every build**, so **every atomic in these binaries goes through
+`__aarch64_ldadd8_acq_rel`.** Cemu's is deliberate; the other three simply never
+set anything and **the NDK's Armv8.0-A ABI does it for them.**
+
+**azahar is the only fork confirmed to get LTO**, which the build-file census
+could not establish.
+
+**ARMSX2's shipping Release build is the baseline one** — `armv8-a+crc` — while
+its Debug and tools builds get `armv8.2-a+fp16+dotprod`. **The fork has an 8.2
+line and it is not the one that ships.**
+
+### azahar's `armv9-a+sme` is safe, and that is the rule
+
+Those flags are **per-file**, on libyuv's dedicated `row_sve.cc`, `row_sme.cc`,
+`rotate_sme.cc` and `scale_sme.cc`, **dispatched at run time** —
+`if (TestCpuFlag(kCpuHasSME))`.
+
+> **A library with per-file flags and runtime dispatch is safe to give aggressive
+> `-march`. A library that dispatches at compile time is not.**
+
+**So the SVE danger above is not `-march=armv9-a` in itself — it is a GLOBAL
+`-march=armv9-a` reaching a compile-time dispatcher like xxHash.** **eden's
+`YUZU_BUILD_PRESET=armv9` sets a global `-march`**, which is the dangerous form.
+
+See [`research_log/20260824_1500_ground_truth_from_emitted_flags.md`](research_log/20260824_1500_ground_truth_from_emitted_flags.md).
+
 **RE-MEASURED 2026-08-24 AND TWO ROWS ABOVE ARE WRONG.** Method: grep every
 `-march`, `-mcpu`, `-mtune` and outline-atomics flag from each fork's own build
 files — `*.txt`, `*.cmake`, `*.gradle`, `*.lua`, `*.mk` — with vendored trees
