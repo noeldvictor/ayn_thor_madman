@@ -1970,6 +1970,24 @@ the x86 intrinsics in its source sit in paths only an x86 build compiles.**
 > **A separate ARM64 file cannot inherit an x86 correction by accident. A shared
 > file behind a portability shim can.**
 
+**And the shim diverges in the other direction too, undocumented.**
+`sse2neon`'s `_mm_cvttps_epi32` is **plain `vcvtq_s32_f32`**, so it returns
+**ARM's saturating result** — `0x7FFFFFFF` on overflow, `0` on NaN — where the
+x86 intrinsic it is named after returns **`0x80000000` for both.** **Its comment
+is an MSDN link with no note that the edge cases differ.**
+
+> **Both failures have one root: a boundary that claims to be x86 and is not, in
+> exactly the cases nobody tests.**
+
+**ARMSX2 avoids it a second time, and the mechanism is the rule.** Its conversion
+branches on architecture **inside the same function** — `#if defined(ARCH_X86)`
+against `#elif defined(ARCH_ARM64)` — and **reaches the same `vcvtq_s32_f32` the
+shim would have, deliberately and visibly**, with a comment about rounding mode.
+
+> **So the rule is sharper: make the architecture choice visible where the
+> operation is written.** A separate file does that by construction, an `#if` in
+> the function does it explicitly, **and a shim does neither.**
+
 **That is the same DELETE argument as everywhere else in this file, pointed at
 `sse2neon` and its relatives.** A shim exists so one source can serve two
 machines; **it is also the vector through which an x86 assumption reaches ARM64

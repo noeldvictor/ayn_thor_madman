@@ -114,6 +114,61 @@ compile.**
 > cannot inherit an x86 correction by accident.** A shared file behind a shim
 > can.
 
+## The same divergence runs the other way, through `sse2neon`, undocumented
+
+**rpcsx's bug was an x86 correction ADDED where ARM did not need it. The shim
+does the opposite: it DROPS the x86 semantics entirely.**
+
+`sse2neon.h`:
+
+```c
+FORCE_INLINE __m128i _mm_cvttps_epi32(__m128 a)
+{
+    return vreinterpretq_m128i_s32(vcvtq_s32_f32(vreinterpretq_f32_m128(a)));
+}
+```
+
+**Plain `vcvtq_s32_f32`.** So it returns **ARM's saturating result** —
+`0x7FFFFFFF` on overflow, `0` on NaN — where the x86 intrinsic it is named after
+returns **`0x80000000` for both.**
+
+**And the header does not say so.** Its comment is *"Converts the four
+single-precision, floating-point values of a to signed 32-bit integer values
+using truncate"* with an MSDN link, **and no note that the edge cases differ.**
+
+> **Both failures have one root: a boundary that claims to be x86 and is not, in
+> exactly the cases nobody tests.**
+
+**Exposure in this fleet**, own source, sse2neon users, shim itself excluded:
+
+| Fork | `_mm_cvttps_epi32` call sites |
+| --- | --- |
+| **rpcsx** | **5** |
+| ARMSX2 | 1, **and it never compiles on ARM64** — see below |
+| Cemu, eden | 0 |
+
+**ARMSX2 is clean a second time, and the mechanism is worth copying.** Its
+conversion branches on architecture **in the same function**, with the ARM64 side
+written out and a comment about rounding mode:
+
+```c
+#if defined(ARCH_X86)
+    m = truncate ? _mm_cvttps_epi32(v) : _mm_cvtps_epi32(v);
+#elif defined(ARCH_ARM64)
+    // GS thread uses default (nearest) rounding.
+    v4s = truncate ? vcvtq_s32_f32(v.v4s) : vreinterpretq_s32_u32(vcvtnq_u32_f32(v.v4s));
+#endif
+```
+
+**It reaches the same `vcvtq_s32_f32` the shim would have — deliberately and
+visibly.** That is the whole difference: **an informed choice at the point of
+use, rather than a silent substitution three headers away.**
+
+> **So the design rule is sharper than "prefer a separate ARM64 file". It is:
+> make the architecture choice visible where the operation is written.** ARMSX2
+> does it with an `#if` in the same function; a separate file does it by
+> construction; a shim does neither.
+
 ## Limits
 
 - **No fleet instance of the bug was found outside rpcsx.** The search covered
