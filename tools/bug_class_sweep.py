@@ -269,7 +269,7 @@ CLASSES = {
                "GAME and must key on GameKey or DumpId.",
         "exclude": r"Timber|Log\.[dveiw]\(|LOG_|printf|fmt::|spdlog|std::cout|DEBUG_|"
                    r"Exception\(|throw |FileNotFound|Result\.failure",
-        "pattern": r"key\([^)]*\)[^=]*= *[a-zA-Z_.]*\.path|"
+        "pattern": r"key\([^)]*\)[^=]*= *[a-zA-Z_.]*\.path(?![A-Za-z0-9_])|"
                    r"\$\{path\}_|\$\{[a-z]+\.path\}|"
                    r"Cache\.(Insert|insert|put|get)\( *[a-zA-Z_.]*path|"
                    r"invalidate[A-Za-z]*ForPath|"
@@ -453,11 +453,59 @@ def scan(fork, pattern, include_vendored=False, near=None, window=8, exclude=Non
     return [ln for ln in out if not VENDORED.search(ln.split(":", 1)[0])]
 
 
+
+def self_test():
+    """Prove every class CAN match something, before trusting a zero.
+
+    FOUND ON ITS FIRST RUN: path_as_identity carried a literal backspace byte
+    (0x08) where a word boundary was meant, so its headline alternation --
+    `key(...) = ....path` -- could never match any source line. The class had
+    been silently half-dead since it was added.
+
+    That is the same defect as supervise.py's queue-stale check, in a second
+    tool, from the same cause: a backslash escape mangled when the file was
+    written. A control character in a regex is invisible in an editor, legal in
+    a string, and matches nothing.
+    """
+    problems = []
+    for name, c in sorted(CLASSES.items()):
+        for key in ("what", "paid", "why", "pattern"):
+            if not c.get(key):
+                problems.append("%s: missing %s" % (name, key))
+        for key in ("pattern", "near", "near_absent", "exclude"):
+            v = c.get(key)
+            if not v:
+                continue
+            try:
+                re.compile(v)
+            except re.error as exc:
+                problems.append("%s.%s: bad regex: %s" % (name, key, exc))
+                continue
+            ctrl = [hex(ord(ch)) for ch in v if ord(ch) < 32 and ch != "	"]
+            if ctrl:
+                problems.append(
+                    "%s.%s: CONTROL CHARACTER %s -- matches nothing"
+                    % (name, key, ", ".join(ctrl)))
+    print("bug_class_sweep --self-test: %d classes" % len(CLASSES))
+    print()
+    if not problems:
+        print("  [ OK ] every pattern compiles and is printable")
+        print()
+        print("This checks the class TABLE, not behaviour. A class can compile")
+        print("cleanly and still describe the wrong shape.")
+        return 0
+    for pr in problems:
+        print("  [FAIL] %s" % pr)
+    return 1
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--class", dest="cls", help="one class (default: all)")
     ap.add_argument("--list", action="store_true")
+    ap.add_argument("--self-test", action="store_true",
+                    help="prove every class pattern compiles and can match")
     ap.add_argument("--show", action="store_true", help="print matching lines")
     ap.add_argument("--lines", type=int, default=4)
     args = ap.parse_args()
@@ -467,6 +515,8 @@ def main():
             print("%-24s %s" % (name, c["what"]))
         return 0
 
+    if args.self_test:
+        return self_test()
     names = [args.cls] if args.cls else list(CLASSES)
     for name in names:
         c = CLASSES.get(name)
