@@ -28,6 +28,39 @@ Ordered by what unblocks the most.
 | **the harness is not thermally free** | the same run through an input-macro harness reached **70.7 C in ten seconds** and tripped its own guard, while a direct boot never left the fifties |
 | **`simpleperf` needs `<profileable android:shell="true"/>`** | without it, it **cannot attach at all**. Use `/proc/<pid>/stat` fields 14+15 for any A/B spanning an older build |
 
+### Resolving an entry matters as much as adding one
+
+**Taken from Vita3K's `AGENTS.md`, 2026-08-24.** Its rule:
+
+> **"Planned or open attempts are BLOCKERS.** Resolve the current planned
+> attempt as `failed`, `inconclusive`, `superseded` or `succeeded` before
+> starting a nearby experiment, **otherwise the ledger becomes a pile of
+> half-memory."**
+
+**This queue is 26 open entries and had no such rule.** Two consequences:
+
+- **Before adding an entry near an existing one, resolve the existing one** —
+  or say explicitly why both must be open.
+- **A run produces a resolution, not just a number.** An entry that was run and
+  never marked is worse than one never run, because the next reader cannot tell
+  which it is.
+
+**And the preflight, which is what makes "query the ledger first" durable:**
+
+> **Write down, before the run: the commit, the platform, the scene, the debug
+> props, the matching prior attempts, what those attempts proved, and THE ONE
+> REASON THIS RUN IS GENUINELY NEW.** *"If the only difference is 'try it
+> again', stop and choose instrumentation or documentation instead."*
+
+**A query you run and do not write down does not stop the next session
+repeating it.**
+
+**Outcomes get a symptom label as well as a number**, because a queue entry can
+change a symptom without moving a counter: `fixed`, `improved`, `unchanged`,
+`worse`, **`mixed-supports-involvement`**, `contaminated-inconclusive`. **`fixed`
+requires the original symptom gone, no neighbouring regression, no stale debug
+toggles, and proof on every platform affected.**
+
 ### The workload gate, and the false negative that produced it
 
 **Cemu measured this and named the cost.** *"Every scene reachable without
