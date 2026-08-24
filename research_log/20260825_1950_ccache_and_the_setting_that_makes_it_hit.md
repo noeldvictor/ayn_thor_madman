@@ -73,6 +73,35 @@ report both. **That turns open decision 3 from a guess into a comparison.**
 **Recorded rather than run**, because a second full build of a fork is a
 long-running job and this session has been avoiding those.
 
+### CORRECTED IMMEDIATELY: that was not the blocker
+
+**rpcsx's rule, recorded in this repo: "re-read your own blockers before treating
+them as facts." Three of its self-declared blockers were partly self-inflicted,
+one of them being a USB cable.** Applied here at once:
+
+```
+which ccache   -> NOT on PATH
+which sccache  -> NOT on PATH
+```
+
+> **The measurement is not blocked on build time. It is blocked on a HOST TOOL
+> this machine does not have**, and I gave the wrong reason before checking.
+
+**That puts ccache in a class `CLAUDE.md` already tracks and names as important
+for the agentic thesis** — the known-host-tools list, whose stated lesson is
+that *"a fork that needs `pkg-config` and `glslangValidator` cannot be built by
+an agent on a machine that has neither, and nothing in the fork says so."*
+
+**ccache is the same class with a difference: it is not needed to BUILD anything,
+only to build a second time cheaply.** So it fails silently in the other
+direction — **absent, the build still succeeds and is merely slow**, which is the
+same failure mode as `CCACHE_COMPILERCHECK` above. **Two ways to get no cache and
+no error, in one recipe.**
+
+**The measurement is a tool install away, not a redesign away.** That is a
+smaller ask than "a second full build is a long job" implied, and the difference
+is the point of the rule.
+
 ## Limits
 
 - **One commit diff.** Nothing built, nothing measured, no device.

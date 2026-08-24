@@ -882,6 +882,19 @@ Direct the exploration at these:
   and rustup (melonDS), vcpkg (Vita3K), `pkg-config` and `glslangValidator`
   (eden), and `git` with `core.longpaths` on Windows.
 
+  **ADD `ccache`, 2026-08-25, and it belongs to a SECOND class.** Checked on this
+  box: **neither `ccache` nor `sccache` is on `PATH`.** Unlike the tools above it
+  is **not needed to build anything** — it is needed to build a *second* time
+  cheaply.
+
+  > **So it fails in the opposite direction: absent, the build still succeeds and
+  > is merely slow.** No error, no missing-tool message. **That is the same
+  > failure mode as `CCACHE_COMPILERCHECK` above — two ways to get no cache and
+  > no error, in one recipe.**
+
+  **A tool whose absence is silent needs a check that says so**, which is the
+  prove-the-instrument rule applied to a build.
+
   See [`work_log/20260823_0148_azahar_clean_build.md`](work_log/20260823_0148_azahar_clean_build.md)
   and [`work_log/20260823_0207_eden_build_attempt.md`](work_log/20260823_0207_eden_build_attempt.md).
 
