@@ -762,6 +762,35 @@ lose.**
 GPU's timeline onto the CPU's. **GPU busy falling while frame time is unchanged is
 not a win** — check CPU cores-busy in the same window.
 
+## 23. Is `LDAPR` actually faster than `LDAR` on this SoC
+
+**Small, and it is the only target feature that changes codegen by itself.**
+
+Adding **`+rcpc`** to the compile target makes clang emit **`ldapr`** instead of
+**`ldar`** for every `memory_order_acquire` load — **verified on this box, no
+intrinsic, no source change.** A `seq_cst` load correctly keeps `ldar`. The device
+reports `lrcpc` and `ilrcpc`. See
+[`research_log/20260824_1130_rcpc_is_missing_from_our_target.md`](research_log/20260824_1130_rcpc_is_missing_from_our_target.md).
+
+**Why it needs the device.** `LDAPR` is architecturally weaker than `LDAR`, so it
+**should** be no worse — **and this repo's record is fourteen manual-derived
+predictions refuted.** *Should* is not a measurement.
+
+**The run:** a microbenchmark first, since this is an instruction-level question —
+an acquire-load loop compiled both ways, on the X3 and on an A710, reporting
+ns/iteration. **Only if that separates should a whole-backend A/B follow.**
+
+**Expected signature: `ldapr` equal or slightly faster, with the gap larger under
+contention**, because RCpc does not order against unrelated prior stores.
+
+**Prediction: `FLAT` on an uncontended loop, `OPEN` under contention.** On a
+single-threaded loop there is nothing for the stronger ordering to cost.
+
+**The confound that would fake a win:** the two arms are different builds, so
+**anything else that differs between them is attributed to this flag.** Build both
+from the same tree with only the flag changed, and diff the disassembly of the
+benchmark to confirm exactly one instruction differs.
+
 ## Not ready to run
 
 These need a decision or a build first, not device time.

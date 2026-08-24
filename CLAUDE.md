@@ -2256,7 +2256,15 @@ not select it on this device.**
 
 The answer is now written down once in
 **[`hardware_ref/thor/THOR_TARGET.md`](hardware_ref/thor/THOR_TARGET.md)**:
-`-march=armv8.2-a+crc+lse+fp16+dotprod+sha3+i8mm+bf16 -mtune=cortex-x3`.
+`-march=armv8.2-a+crc+lse+fp16+dotprod+sha3+i8mm+bf16+rcpc -mtune=cortex-x3`.
+
+**`+rcpc` added 2026-08-24, and it is the exception to the permission rule
+above.** The device reports `lrcpc` and `ilrcpc`; **`-mtune` adds no features**,
+so the previous line left RCPC off. **Measured on this box: an
+`memory_order_acquire` load compiles to `ldar` without it and `ldapr` with it**,
+unprompted, with no intrinsic. A `seq_cst` load correctly keeps `ldar`. **Whether
+`LDAPR` beats `LDAR` on this SoC is unmeasured.** See
+[`research_log/20260824_1130_rcpc_is_missing_from_our_target.md`](research_log/20260824_1130_rcpc_is_missing_from_our_target.md).
 
 **Do not target `armv9-a`.** All four cores are ARMv9, ARMv9.0-A mandates SVE2,
 and **this device has no SVE**. A compiler told `armv9-a` may emit instructions

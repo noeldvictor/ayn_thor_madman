@@ -44,7 +44,31 @@ Every number here is either measured on the device or cited to its source.
 ## 1. The compile target
 
 ```
--march=armv8.2-a+crc+lse+fp16+dotprod+sha3+i8mm+bf16
+-march=armv8.2-a+crc+lse+fp16+dotprod+sha3+i8mm+bf16+rcpc
+
+**`+rcpc` added 2026-08-24, and it is the one feature here that is not merely
+permission.** The device reports **`lrcpc` and `ilrcpc`** in `/proc/cpuinfo`, and
+**`-mtune` does not add features** — only `-march` and `-mcpu` do, so the line
+without it was leaving RCPC off.
+
+**Measured on this box, NDK clang, `aarch64-linux-android33`, same source:**
+
+| C++ memory order | Without `+rcpc` | With `+rcpc` |
+| --- | --- | --- |
+| **`acquire` load** | `ldar` | **`ldapr`** |
+| `seq_cst` load | `ldar` | `ldar` — unchanged, and correctly so |
+| `relaxed` load | `ldr` | `ldr` |
+| `release` store | `stlr` | `stlr` |
+
+**The compiler substitutes it unprompted**, with no intrinsic and no source
+change — unlike `sha3`, `dotprod` and `crc`, which xenia disassembled 1.78 M
+instructions to find **zero** uses of. `LDAPR` provides RCpc, which is exactly
+what `memory_order_acquire` requires; a `seq_cst` load needs RCsc and keeps
+`LDAR`.
+
+**Whether `LDAPR` is faster than `LDAR` on this SoC is unmeasured.** It is
+architecturally weaker, so it should be no worse. **Code that uses `seq_cst`
+everywhere gains nothing.**
 -mtune=cortex-x3
 ```
 
