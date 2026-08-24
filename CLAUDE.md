@@ -2554,6 +2554,39 @@ part may differ from the one measured in the talk that prompted the claim.
 > `/proc/cpuinfo` is not enough: **a vendor configures the part, so a manual
 > describes what a core may implement, not what this device does.**
 
+**AND rpcsx STILL BELIEVES IT, FROM THE SAME MANUAL. The two are compatible, and
+resolving them adds a fact neither had alone.**
+
+**They measured different quantities.** xenia measured **scaling between two
+cores** and found it near-linear. rpcsx quotes ARM's §4.11 for **sharing**, and
+adds a separate row from the A510 tables that xenia's probe could not see:
+
+| Operation | Latency | Throughput (D, Q) |
+| --- | --- | --- |
+| `CMEQ`, `AND`/`EOR`/`ORR` | **3** (against 2 on the big cores) | **2, 1** |
+| `MLA`, `MLS`, `SDOT`/`UDOT` | 4 | **2, 1** |
+
+> **`2,1` means 128-bit Q-form NEON is throughput 1 on the A510** — half rate per
+> core, before any sharing.
+
+**Both can hold at once**: if each core is already issue-limited at throughput 1,
+a VPU wide enough to serve two of them shows near-linear scaling **and** low
+absolute throughput. **xenia measured the scaling; nobody has measured the
+absolute rate against a big core.**
+
+**They agree operationally, which is what matters.** rpcsx pins **no vector-heavy
+guest thread to the A510s** — its map is `CPU0-3 General, CPU4 PPU, CPU5-6 SPU,
+CPU7 RSX` — and warns:
+
+> **"move the SPU threads onto the efficiency cores to run cooler" is an obvious
+> next idea, and on this core it is a trap** — two threads on one complex would
+> share a VPU *and* run 128-bit NEON at throughput 1, on a cluster clocked at
+> **2016 MHz against the mid cluster's 2707 MHz.** **Cooler per core, far slower
+> per thread, and quite possibly worse energy per frame.**
+
+**If that experiment is run: pin to different complexes, and measure energy per
+frame.**
+
 ### The A710 stalls three cycles on lane-assembled vector registers
 
 > a V-pipeline uOP containing more than 1 quad-word register source, a portion
@@ -4349,6 +4382,11 @@ Wi-Fi adb rules:
 - Do not measure performance over Wi-Fi adb while pulling a large capture. The
   transfer competes with the run. Pull after the run ends.
 - Record the battery level and the charge state with every measurement.
+- **ENERGY PER FRAME, NOT WATTS.** Watts alone rewards a slower core: move work
+  to an A510 and the power drops while the frame takes longer, **and total energy
+  can rise.** rpcsx's instruction for any little-core experiment is exactly this
+  — *"measure energy per frame rather than watts."* **The two disagree precisely
+  where a handheld cares most.**
 - **Watts, not only frames.** The stated target for xenia on this device is
   about 5 W and 50 C. Throughput alone answers the wrong question on a
   handheld. A change that holds fps and lowers temperature is a win.
