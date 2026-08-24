@@ -355,6 +355,16 @@ emitted per guest instruction for the same guest block, in a fork with an IR and
 one without. **That is a disassembly count, exactly like the target-features
 work**, and it separates *does the IR change the code* from *is it slower*.
 
+> **THIS IS ENTRY 13, and neither entry cited the other until 2026-08-25.** Entry
+> 13 supplies the instrument for exactly this count — xenia's
+> `--disassemble_functions` with a function filter — **and wrongly claimed it
+> needed the device.** With that corrected, **the cheap half of this entry and
+> the whole of entry 13 are one device-free experiment.**
+>
+> **Which matters, because this entry calls itself "the only device experiment in
+> this queue with a published mechanism behind it, rather than a hunch."** The
+> best-founded item in the queue has been waiting for hardware it does not need.
+
 **Prediction: `FLAT` for the device half.** Three reasons. **The IR's cost is at
 translation time, not run time**, so it shows up as first-run stutter rather than
 steady-state frames — and this project already owns that through the shader and
