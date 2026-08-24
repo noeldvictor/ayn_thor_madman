@@ -5,12 +5,19 @@
 > **Corrected 2026-08-24.** An earlier version of this banner said the premise had
 > been tested and refuted. **It quoted one of two measurements that disagree.**
 >
-> **Two instruments measured the same title's frame five days apart:**
+> **Three measurements of the same title's frame, within five days, gave three
+> answers:**
 >
-> | Instrument | Verdict |
-> | --- | --- |
-> | the driver's `u_trace`, 2026-07-04 | **~90% fragment execution**, ~6 ms EDRAM structure |
-> | per-pass GPU timestamps, 2026-07-09 | **71% between-pass EDRAM tile store**, 29% in-pass, across ~43 passes |
+> | Date | Instrument | Verdict |
+> | --- | --- | --- |
+> | 2026-07-04 | driver `u_trace` | **~90% fragment execution**, ~6 ms EDRAM structure |
+> | **2026-07-06** | **half-resolution A/B** | **not fragment-bound** — 818 ms against 823 ms, no change |
+> | 2026-07-09 | per-pass GPU timestamps | **71% between-pass tile store**, 29% in-pass, ~43 passes |
+>
+> **And the fork's own verdict on 2026-07-06 is that the confound is
+> "GENUINELY UNIDENTIFIED"**, because the only stable profile available is on the
+> Qualcomm driver, which is 14x slower than Turnip and therefore measures the
+> driver rather than the game — and **profiling on Turnip is blocked by a crash.**
 >
 > **The later entry says explicitly that it corrects the earlier one**, and its
 > own projection is the opposite conclusion: cut passes 43 to ~20 and the frame

@@ -4743,12 +4743,18 @@ Wi-Fi adb rules:
   **And this fleet has an instance of two instruments disagreeing by a factor of
   three about the same frame**, five days apart, same title:
 
-  | Instrument | Verdict |
-  | --- | --- |
-  | driver `u_trace`, 2026-07-04 | **~90% fragment execution**, ~6 ms EDRAM structure |
-  | per-pass GPU timestamps, 2026-07-09 | **71% between-pass EDRAM tile store**, 29% in-pass |
+  | Date | Instrument | Verdict |
+  | --- | --- | --- |
+  | 2026-07-04 | driver `u_trace` | **~90% fragment execution**, ~6 ms EDRAM structure |
+  | **2026-07-06** | **half-resolution A/B** | **not fragment-bound** — 818 ms against 823 ms |
+  | 2026-07-09 | per-pass GPU timestamps | **71% between-pass tile store**, 29% in-pass |
 
-  **The later entry states that it corrects the earlier one.** **A render-path
+  **Three measurements, three answers, within five days.** The 2026-07-09 entry
+  says it corrects the first; **the 2026-07-06 half-resolution A/B disproves the
+  fragment-overdraw premise outright** — halving the fragments changed nothing.
+  **And that fork's own verdict is that the bottleneck is "GENUINELY
+  UNIDENTIFIED"**, because the only stable profile is on a driver **14x slower
+  than Turnip**, so it measures the driver. **A render-path
   decision resting on one of them rests on the choice of instrument.** What is
   *not* disputed is measured directly: **bindless regressed 129 ms to 161 ms**,
   native GMEM render targets `DEAD`, fragment levers capped low — **and the

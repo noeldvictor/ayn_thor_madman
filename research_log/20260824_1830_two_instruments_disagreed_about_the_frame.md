@@ -1,4 +1,4 @@
-# Correction: two instruments measured the same frame and disagreed, and I recorded one side as settled
+# Correction: three measurements, three answers, and the fork itself calls the confound open
 
 **This corrects
 [`20260824_0410_the_rearch_premise_was_refuted_on_device.md`](20260824_0410_the_rearch_premise_was_refuted_on_device.md),
@@ -65,6 +65,43 @@ finding are in the same ledger: **`gpu_skip_edram_transfers` `CONFOUNDED`**,
 
 > **So the fork's own position is unresolved, and this morning I presented one
 > side of it as settled.**
+
+## A third measurement, and it disproves a premise I quoted
+
+**Found by continuing the audit.** `CORRECTION: half-width RT = NO change`,
+**`OPEN`, 2026-07-06** — between the other two.
+
+> **RIGOROUS DISPROOF:** `gpu_bd_native_rt_width=640` — half the native RT width,
+> **half the fragments** — gave **818 ms against 823 ms. NO change.**
+> **Fragment/pixel overdraw would scale with resolution. It does not.**
+
+**So the cost is not fragment overdraw**, and the entry says so explicitly:
+*"contradicts my prior 'alpha-test foliage overdraw' claim, which was from the
+Qualcomm profile."*
+
+**I quoted that overdraw claim this morning** — the line about alpha-test foliage
+defeating early-Z so the Adreno's effective advantage is only 2-4x. **It was
+already disproved in the same fork, two days after the document I took it from.**
+
+**And the entry names its own confound.** The 823 ms profile is **on the Qualcomm
+proprietary driver, 14x slower than Turnip**, so it is dominated by that driver's
+handling of the native pass rather than by the game.
+
+> **Its own verdict: "The TURNIP perf confound is GENUINELY UNIDENTIFIED."**
+> Profiling on Turnip is blocked by the Turnip timing-race crash, so **the only
+> stable profile available is the driver-confounded one.**
+
+**That leaves three measurements and three answers:**
+
+| Date | Instrument | Verdict |
+| --- | --- | --- |
+| 2026-07-04 | driver `u_trace` | ~90% **fragment execution** |
+| **2026-07-06** | **half-resolution A/B** | **not fragment-bound at all** — 818 against 823 ms |
+| 2026-07-09 | per-pass GPU timestamps | 71% **between-pass tile store** |
+
+**The 14x driver figure survives** — it is used *within* that entry as the reason
+the Qualcomm profile is unusable, so it is treated there as established. **What
+does not survive is any anatomy derived from a Qualcomm-driver profile.**
 
 ## The finding that replaces it, and it is more useful
 
