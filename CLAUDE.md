@@ -1819,6 +1819,28 @@ Every item is already written somewhere in the fleet. None needs invention.
 | **Reading `getThermalHeadroom` to close the loop** | xenia, rpcsx | everyone reporting work duration open-loop |
 | **Storing the guest's declared activity state** | — | **eden, Vita3K and azahar all receive it and discard it** |
 | `COLOR_ATTACHMENT_OPTIMAL` instead of `GENERAL` | — | Cemu |
+| **`fastmem_exclusive_access` DERIVED from fastmem availability, plus a `CpuAccuracy` tier with ~10 named sub-options** | **eden** | **Vita3K, which leaves it at the default `false` and asked for exactly this surface** |
+| **The C++20 once-guard: `test(relaxed)` before `test_and_set()`** | **Vita3K** | anything still on the C++17 idiom |
+| **`+lse` in the arm64 baseline** | **xenia, Vita3K** | **six forks** |
+
+**Three forks share one JIT and configure it three ways, found 2026-08-25.**
+`dynarmic` is vendored by eden, Vita3K and azahar. **eden runs the fastmem arena
+with exclusive access on, derived rather than chosen** —
+`config.fastmem_exclusive_access = config.fastmem_pointer != std::nullopt` — and
+wraps every option in a named setting behind a `CpuAccuracy` tier. **Vita3K runs
+the arena with exclusive access off**, so guest `LDREX`/`STREX`, which the Vita
+kernel uses for every lock, fall out to callbacks. **azahar does not use the
+arena at all**; it takes `config.page_table`, the per-access lookup, so the
+question does not arise there.
+
+**eden's configuration surface is this project's per-game override design,
+already built, for the exact subsystem Vita3K says needs it**: one tier for
+somebody who wants a single switch, named sub-options for somebody who does not,
+and a default that follows from a fact. **It must stay a declared per-backend
+extension** — a CPU-accuracy tier is meaningful for three dynarmic backends and
+meaningless for ARMSX2's emitters, which is the texture-class rule again.
+
+See [`research_log/20260825_0150_once_guards_and_three_dynarmic_configs.md`](research_log/20260825_0150_once_guards_and_three_dynarmic_configs.md).
 
 **Two of those rows are the same missing piece seen from both ends, found
 2026-08-23.** **eden patches a Switch module's whole text segment ahead of time**,
