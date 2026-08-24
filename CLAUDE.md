@@ -2383,8 +2383,32 @@ host-side uses: zero.** It also sits in **pipeline 2**, so it would land in a
 hot shared path rather than one backend's lowering. **Unproven — no fork's
 swizzle code has been read.**
 
-**Hardware `CRC32` is unused everywhere** (searched twice), **but do not assume a
-win.** The ~20x in the literature is software CRC32 against hardware, **not
+**Hardware `CRC32` is unused everywhere IN FORK-OWN CODE** (searched twice) —
+**corrected 2026-08-24: azahar ships both `CRC32` and `PMULL` inside vendored
+Crypto++**, behind `HasCRC32()` / `HasPMULL()` runtime gates, and its index says
+the fork vendored that tree specifically to keep its **ARM feature-probe
+repairs**. The searches filtered vendored trees, correctly, and the claim should
+have said so. **The uses are genuine crypto — `gf2n` Galois-field
+multiplication — so the swizzle candidate is not refuted.** **What changes is
+better: there is a working, runtime-gated PMULL path in the fleet to copy the
+ENABLEMENT pattern from**, which this repo proposed the idea without.
+
+> **azahar's gating rule, and it is the opposite of the `-march` decision made
+> here — both right for their case:** *"Keep CRC32 and PMULL in **specialized
+> translation units** with runtime gates; **never enable optional crypto ISA
+> extensions globally.**"*
+>
+> **A global `-march` extension is a licence for the compiler to use the
+> instruction in code you did not write and cannot gate.** For a **mandatory**
+> feature — `+lse`, `+dotprod`, `+fp16` on a fixed device — that is exactly what
+> you want. For an **optional** one it removes the fallback.
+
+**And the caution attached to it:** *"AES and SHA already use their existing
+hardware paths, so **do not attribute their performance to the CRC32/PMULL probe
+repair**."* See
+[`research_log/20260824_2220_azahars_index_is_a_regression_prevention_ledger.md`](research_log/20260824_2220_azahars_index_is_a_regression_prevention_ledger.md).
+
+**Do not assume a win.** The ~20x in the literature is software CRC32 against hardware, **not
 CRC32 against xxHash**, and the fleet already uses xxHash heavily. **Where it
 plausibly pays is short keys** — `crc32cx` hashes 8 bytes per instruction — which
 means **block validation, not texture hashing**. ARMSX2 validates recompiler
