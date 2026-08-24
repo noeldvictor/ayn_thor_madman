@@ -99,6 +99,35 @@ kind of patch, distinct from content patches, code patches and file mods.
 one are the same mechanism seen twice. Decide whether they are one screen before
 building either.
 
+### Six requirements for the input layer, before it is written
+
+**From XenDroid's five input commits, 2026-08-25.** This project is gamepad-first
+by decision, so none of these is an edge case here.
+
+- **Quantise before de-duplicating.** A deadzone is a CORRECTNESS requirement,
+  not a feel one: analog hardware never reports exactly zero, so an
+  equality-based "only forward changes" test never matches.
+- **Enqueue guest keystrokes on TRANSITIONS only.** A queue fed by every motion
+  sample never reports EMPTY, and **a guest that drains by polling until EMPTY
+  then never terminates.**
+- **Deliver one queued event per poll**, lowest index first, **clearing only that
+  bit.** Returning the most recent and discarding the rest silently drops
+  characters in text entry.
+- **Two sources for one control release only what they pressed.** A D-pad arrives
+  as BOTH a hat axis and key events; a hat handler that clears on centre cancels
+  a press from the key path. **Edge-detect each source.**
+- **Thresholds, never equality, on any hardware float.** `== ±1f` fails on a pad
+  that reports 0.999.
+- **No early return in an input branch.** One shortcut in the hat path disabled
+  sticks and triggers for as long as the D-pad was held.
+
+> **The first two, third and fifth are ONE root cause seen four ways**: a control
+> emitting continuously at rest. Its symptoms were JNI traffic, global-lock
+> contention, and a guest protocol that cannot terminate. **The third would have
+> been debugged in the keystroke loop.**
+
+See [`../research_log/20260825_1815_one_high_rate_source_three_symptoms.md`](../research_log/20260825_1815_one_high_rate_source_three_symptoms.md).
+
 ### A contract gap: a setting the GUEST may ignore
 
 **Found 2026-08-25.** XenDroid exposed `internal_display_resolution` described as
