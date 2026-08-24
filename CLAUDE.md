@@ -5432,6 +5432,23 @@ making arms comparable, reading the numbers, stacking, and the standing prior.
 **This section grew by more than half in one day**, and the rules were correct
 long before the list was navigable.
 
+**[`VERIFICATION_DEBT.md`](VERIFICATION_DEBT.md) holds everything this project
+ASSERTS that is not verified the way it would need to be.** Taken from melonDS,
+which keeps such a list. **It is not the device queue**: that holds experiments
+somebody proposed; this holds **claims already being relied on**, which is a
+larger and quieter set.
+
+**Four states, and they are not degrees of one thing** — **argued** (a manual,
+and this fleet is **0 for 13** on manual-derived predictions), **read**,
+**emitted** (the compiler or the binary was checked), **measured** (on the
+device, on a workload that could have produced a different answer).
+
+> **Most of this repo sits at "read". Almost nothing sits at "measured".**
+
+**The most dangerous rows are the numbers taken from another fork**, because they
+look measured. **Every one must name its fork and its workload wherever it is
+quoted.**
+
 **[`DEVICE_QUEUE.md`](DEVICE_QUEUE.md) holds everything waiting on the Thor**,
 with the expected signature for each run and the gates to check first. There is
 one physical device, so device work is a queue and analysis is not. **Add to it
