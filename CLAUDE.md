@@ -3779,6 +3779,32 @@ an existing fix is the exact failure mode this section describes.
   is not.** Vulkan has attachment feedback loops, the PS2 reads render targets
   constantly, and ARMSX2 renders through Vulkan on the Thor. **Read it before
   touching the ARMSX2 texture path.**
+
+  **QUALIFIED 2026-08-25, and the qualification is on the mechanism itself.**
+  ARMSX2's own driver-profile table carries
+  **`vk-turnip-attachment-self-read`**, marking Turnip on Adreno with **both**
+  `BrokenSubpassFeedback` **and** `BrokenAttachmentFeedbackLoopLayout`, with the
+  workaround `UseRenderTargetCopyForFeedback` — **a full render-target copy per
+  feedback draw**, which also **turns texture barriers off and disables
+  framebuffer fetch**, because they are the same in-tile read.
+
+  **Its provenance is a real device A/B, on different hardware.** ARMSX2 #442:
+  an HD texture pack made *Tales of the Abyss* lose its entire 2D text layer, and
+  the A/B on **Turnip / Mesa 26.1.2 with an Adreno 650** showed both in-pass
+  forms dropping the content while a separate RT copy rendered correctly. *"The
+  reporter sees the same failure on the proprietary blob"*, so it is an Adreno
+  property rather than a Mesa regression.
+
+  > **The Thor is an Adreno 740 and the pin is newer Mesa. There is no evidence
+  > either way for this device**, and the rule carries no version bound because
+  > it was written from one A/B — not because it was re-tested.
+
+  **So the premise of the transfer is exactly what is unproven here**: the
+  technique needs in-pass attachment self-read, and that is the thing recorded
+  broken on the neighbouring part. **`DEVICE_QUEUE.md` entry 26 is a
+  game-free Vulkan probe that settles it**, and the device-free half is already
+  done — all 30 rules listed, no superseding rule. See
+  [`research_log/20260825_1710_turnip_breaks_attachment_self_read.md`](research_log/20260825_1710_turnip_breaks_attachment_self_read.md).
 - **rpcs3 landed ARM64 Cell optimisations using `SDOT` and `UDOT`**, the
   ARMv8.2 dot-product instructions, plus an SPU recompiler change worth roughly
   5 to 7% on SPU-heavy titles.

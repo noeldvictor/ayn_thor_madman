@@ -875,6 +875,53 @@ guest-thread function with `llvm-objdump`. **If the hot path holds no atomics, t
 lever is dead before it is built** — the applicability rule that already closed
 the Armv8.4 question above.
 
+## 26. Does the pinned Turnip still break attachment self-read
+
+**ARMSX2's driver profile records Turnip on Adreno as breaking BOTH forms of
+attachment self-read** — `BrokenSubpassFeedback` and
+`BrokenAttachmentFeedbackLoopLayout` — with **no version bound**, so the rule
+applies to every Turnip build. Its workaround is
+`UseRenderTargetCopyForFeedback`: **a full render-target copy per feedback
+draw**, which also **turns texture barriers off and disables framebuffer fetch**,
+because they are the same in-tile read.
+
+**Why it is worth device time.** `CLAUDE.md` names PCSX2 2.6.0's feedback reads
+as a technique to take, on the grounds that Vulkan has attachment feedback loops
+and the PS2 reads render targets constantly. **This rule says the mechanism does
+not work on the pinned driver.** The premise of the transfer is exactly what is
+in question.
+
+**PROVENANCE READ, and it is the reason to run rather than a reason not to.**
+The rule comes from **ARMSX2 #442**: with an HD texture pack, *Tales of the
+Abyss* lost its entire 2D text layer, and a **device A/B on Turnip / Mesa 26.1.2
+with an Adreno 650** showed both in-pass forms dropping the content while a
+separate RT copy rendered correctly.
+
+> **That is a real measured defect on a DIFFERENT GPU generation and an OLDER
+> Mesa.** The Thor is Adreno 740; the pin is Mesa 26.3.0 or MrPurple T30, whose
+> changelog claims it **fixed a7xx support**. **The rule carries no version
+> bound because it was written from one A/B, not because it was re-tested.**
+
+**The run.** On the pinned Turnip build, a Vulkan probe that (a) creates a
+subpass with an input attachment reading the colour attachment, and (b) creates a
+pipeline with `VK_PIPELINE_CREATE_COLOR_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT`, and
+renders a known pattern through each. **Compare against the reference the CPU
+computes.** No game, no emulator.
+
+**Prediction: both still fail.** Stated so it can fail — and **if either now
+works, the PCSX2 feedback-read technique becomes available and the render-graph
+work gains its in-pass read.**
+
+**Gates.** Verify the driver actually loaded and report its `driverID` and
+version string with the result; a probe that silently ran on the stock driver
+answers a different question. **Run the same probe on the stock Qualcomm driver
+too** — ARMSX2's comment says the reporter saw the same failure there, and
+confirming that makes it an Adreno property rather than a Mesa regression.
+
+**The device-free step is DONE**: all 30 rules listed, no superseding Turnip
+rule, and the provenance comment read. **Nothing further can be learned without
+the device.**
+
 ## Not ready to run
 
 These need a decision or a build first, not device time.
