@@ -1,5 +1,33 @@
 # The Thor render architecture
 
+> ## READ THIS FIRST — the premise was tested on this device and refuted, 2026-07-04
+>
+> **xenia built this document's agenda and measured it.** See
+> [`../research_log/20260824_0410_the_rearch_premise_was_refuted_on_device.md`](../research_log/20260824_0410_the_rearch_premise_was_refuted_on_device.md)
+> and `xenia/docs/research/native-render-path-rearch.md`.
+>
+> **The driver's own `u_trace` gave the frame anatomy: ~90% fragment and draw
+> EXECUTION, ~6 ms EDRAM structure, ~1 ms tile I/O.** There was about **7 ms of
+> emulation structure to reclaim**, not a 15-20x stack. Native GMEM-resident
+> render targets measured **DEAD**; bindless resources rendered pixel-perfect and
+> **regressed 129 ms to 161 ms**, because the per-draw descriptor binds are
+> shared-memory and per-draw constants, which bindless cannot remove.
+>
+> **Two rules follow and they bind everything below.**
+>
+> **1. Measure the frame anatomy before designing a render path.** The split
+> between emulation structure and intrinsic rendering work decides whether any of
+> this can win, and it is measurable headlessly on this device — see xenia's
+> `xenia-thor-adb-gpu-stage-split` skill. **It needs the app to be debuggable.**
+>
+> **2. The ratio generalises; the number does not.** xenia measured one title
+> whose alpha-test overdraw foliage is near a worst case for a tiler. **On a
+> light guest the same fixed structural overhead is a far larger share of the
+> frame**, so this document's ideas are most likely to pay on DS, 3DS and PS2
+> rather than on the heavy 3D backends. **That is the opposite of where this repo
+> has been pointing them, and it is untested.**
+
+
 **What a renderer looks like if it will only ever run on one Adreno 740, under
 one pinned Turnip build, on one device.**
 

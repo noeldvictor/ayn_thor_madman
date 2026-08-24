@@ -4048,6 +4048,30 @@ Wi-Fi adb rules:
   [`research_log/20260823_1848_fleet_skills_mined.md`](research_log/20260823_1848_fleet_skills_mined.md).
 - **`CONFOUNDED` is a verdict.** A number that cannot be trusted gets labelled,
   not discarded and not promoted to a win.
+- **MEASURE THE FRAME ANATOMY BEFORE DESIGNING A RENDER PATH.** The split between
+  **emulation structure** and **intrinsic rendering work** decides whether
+  structural work can win at all. xenia's driver `u_trace` gave it for one title:
+  **~90% fragment and draw execution, ~6 ms EDRAM structure, ~1 ms tile I/O** —
+  about **7 ms of structure to reclaim**, and the brick that attacked the biggest
+  slice **regressed**. **This list named fps, frame time, watts and temperature
+  and never named the stage split.**
+- **The per-stage GPU split is obtainable headlessly on this device**, with no
+  root and no desktop GUI, through Turnip's freedreno perfetto counter producer,
+  gfxreconstruct capture and replay, or in-engine per-pass Vulkan timestamps. See
+  xenia's `xenia-thor-adb-gpu-stage-split` skill. **It requires the app to be
+  debuggable**, which is a build-configuration requirement for the unified app
+  that is recorded nowhere else.
+- **Headless `adb shell perfetto` with KGSL ftrace events returns EMPTY on the
+  retail Thor.** Shell is uid 2000, it can read tracefs but cannot enable events,
+  and there is no `su`. **The kernel-ftrace route is dead headless** — use the
+  driver's own per-context counters instead.
+- **TWO FORKS GIVE OPPOSITE STACKING RULES, AND BOTH ARE RIGHT.** rpcsx: one new
+  component per proof run, each individually clean first. **xenia: build and
+  measure the COMPOUND, never one layer — "that's the trap that killed every
+  lever."** rpcsx's rule protects **attribution**; xenia's protects
+  **detection**, because a component of a multiplicative stack is individually
+  below the noise floor. **Decide which regime you are in, and say which rule you
+  used.**
 - **STACKING RULES, from rpcsx.** These are absent from this repo and it would
   have got the last one wrong:
   - **One new component per proof run**, and only after each is individually
