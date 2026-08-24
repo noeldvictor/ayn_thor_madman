@@ -23,6 +23,33 @@ Ordered by what unblocks the most.
 | **15 minutes or more** when heat matters | thermal behaviour settles over minutes |
 | **temperature must rise** | no heating means an idle or menu scene, so the run is invalid whatever the counter said |
 | query the experiment ledger first | `python tools/exp_ledger.py check "<keyword>"` in xenia-thor |
+| **CAN THE WORKLOAD EXPRESS THE CHANGE?** For any CPU experiment, **measure the LOADING phase, not gameplay or a menu** | see below |
+| **cumulative counters, never a spot reading** | an instantaneous `current_now * voltage_now` on an idle device spread **1.66 W**; differencing `charge_counter` over the window spread **0.002 W** |
+| **the harness is not thermally free** | the same run through an input-macro harness reached **70.7 C in ten seconds** and tripped its own guard, while a direct boot never left the fifties |
+| **`simpleperf` needs `<profileable android:shell="true"/>`** | without it, it **cannot attach at all**. Use `/proc/<pid>/stat` fields 14+15 for any A/B spanning an older build |
+
+### The workload gate, and the false negative that produced it
+
+**Cemu measured this and named the cost.** *"Every scene reachable without
+playing is **vsync capped at 60fps with the GPU around 15% busy and 2 of 8 CPU
+cores in use**, so nothing is saturated and **per-instruction work is
+invisible**."*
+
+> **A real 3-instructions-to-2 recompiler win measured 7922 against 7897 ticks —
+> nothing** — because whole-process CPU during gameplay is dominated by threads
+> spinning.
+
+**Loading is the workload that works**, because roughly half its samples land in
+recompiled guest code.
+
+**Consequence for this queue, stated plainly: several entries below specify
+"same route, same scene" without saying whether that scene is saturated.**
+**A 0.2% noise floor on a gated title screen is precision without sensitivity** —
+the floor is tight because nothing is happening. **Before running any CPU entry,
+confirm the route is CPU-bound, or the FLAT it returns means nothing.**
+
+**This does not apply to the GPU and thermal entries**, where a fixed, repeatable
+scene is the point.
 
 ---
 
