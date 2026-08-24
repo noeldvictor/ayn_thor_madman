@@ -23,12 +23,20 @@ failure than this repo has ever managed**:
 the method. This says WHY naming the method works**, and it distinguishes two
 kinds of search that this repo has been treating as one.
 
-**And it audits my own tools.** `bug_class_sweep.py` searches by pattern over
-globs — shape-scoped, and safe. **`capability_probe.py` and `hle_coverage.py`
-are path-scoped**: a wrong fork path returns zero silently. **That is exactly
-why `capability_probe.py --self-test` exists**, and it is now clear that the
-self-test is not belt-and-braces but the thing that makes a path-scoped tool
-usable at all.
+**And it audits my own tools.** `bug_class_sweep.py` and `dead_guard.py` search
+by pattern over globs — shape-scoped, and safe. **`capability_probe.py`,
+`hle_coverage.py` and `vk_capability_census.py` are path-scoped**: a wrong fork
+path returns zero silently. **That is exactly why `capability_probe.py
+--self-test` exists**, and it is now clear the self-test is not belt-and-braces
+but the thing that makes a path-scoped tool usable at all.
+
+> **CLOSED THE SAME SESSION.** Both remaining tools now carry `--self-test` with
+> positive controls and a floor below the measured value. The census sees
+> **42 / 35 / 35 / 27 / 13 / 13 / 9** extensions per fork; the HLE collectors see
+> **Vita3K 7,377** — matching the number `CLAUDE.md` already carried — plus
+> **eden 4,986** and **Cemu 470**, which it did not. **Both failure texts refuse
+> the conclusion rather than reporting a miss:** *do not report an extension as
+> unrequested, or a function as unimplemented, until these pass.*
 
 ## The three shapes, added as classes
 
