@@ -81,6 +81,9 @@ correct and the list had become unnavigable.
 | **Total system power is exact; CPU-attributed power is not available** | same |
 | **`unknown[+X]` is the JIT arena, not a symbol** | `CLAUDE.md` |
 | **Measure the thread, not the process** | `CLAUDE.md` |
+| **CHECK THAT THE DENOMINATOR COUNTS ONLY CASES THE CHANGE CAN REACH.** Two ratios in one document were wrong this way: *"0.834 spins per episode"* counted episodes that never reach the spin, and *"93% of spin is GETLLAR"* counted CPU that was never spinning | rpcsx `docs/arm64/spin.md` |
+| **AN EXACT NO-OP IS MORE INFORMATIVE THAN A SMALL WIN.** *"300.0 ticks per call, unchanged"* proved the change never reached the code; **"had the ladder produced a 5% shift, it would have been tempting to keep it and never notice the denominator was wrong"** | same |
+| **Instrument the thing you CHANGED, not only the thing you hoped to improve.** An outcome measurement would have read "the lever is small"; a mechanism measurement showed the mechanism never ran | same |
 | **A SHARE OF A SUBSET SAYS NOTHING ABOUT THE SUBSET'S SHARE OF THE WHOLE.** *"93% of spin is GETLLAR"* was measured and correct, the config value was confirmed, and the conclusion was still wrong — **because how much of TOTAL CPU was spin had never been established.** Swept: −2.9%, the noise floor | rpcsx `docs/arm64/spin.md`; `research_log/20260825_0030_*` |
 | **Before quoting a section of a long document, search THAT DOCUMENT for its own later corrections.** The claim sat at line 678 and its refutation at line 1268 of the same file. `fleet_docs_index.py --after` covers this between documents; **nothing covered it inside one** | same |
 | **Temperature proves the run happened** — but see the sensor rule | `CLAUDE.md` |

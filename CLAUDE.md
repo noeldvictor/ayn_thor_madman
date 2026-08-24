@@ -1982,6 +1982,23 @@ See [`research_log/20260823_1626_xenia_plans_render_passes.md`](research_log/202
 
 Every item is already written somewhere in the fleet. None needs invention.
 
+> **A FIX THAT TRANSFERS FROM ONE SITE TO ANOTHER IS A HYPOTHESIS, NOT A
+> CONCLUSION.** rpcsx took a backoff fix that worked on `passive_lock` to
+> `GETLLAR`, at 82.5% of all emulator spin, and it **measured an exact no-op —
+> 300.0 ticks per call, unchanged to the decimal** — because the GETLLAR
+> busy-wait is only reached after a gate has already decided the wait is durable,
+> **so the new ladder's short tiers were unreachable.** *"The gate was visible in
+> the source the whole time."*
+>
+> **The failure mode is precise: shape similarity established at the wrong level
+> of description.** Both sites were "a busy-wait whose measured wait seems shorter
+> than its backoff", and they differ in whether the code is reachable at all.
+>
+> **This file already has the same lesson about the GUEST** — separate host-side
+> from guest-side before claiming a technique transfers, learned when half an
+> rpcs3 list died because Espresso has no VMX. **This one is about the SITE.**
+> See [`research_log/20260825_0210_two_denominator_errors_and_the_transfer_caution.md`](research_log/20260825_0210_two_denominator_errors_and_the_transfer_caution.md).
+
 | Take | From | Give to |
 | --- | --- | --- |
 | Transient colour attachments — **correctness and hygiene, NOT a performance play**; the `LAZILY_ALLOCATED` memory half is unbound fleet-wide and **would buy nothing here** | Vita3K for the ops | everyone |
