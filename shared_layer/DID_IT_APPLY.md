@@ -112,6 +112,43 @@ paid.
 
 ---
 
+## THE GUARDS ARE SUBJECT TO THE SAME DISEASE
+
+**Added 2026-08-26, from five instances in ONE session, every one in a tool
+written to catch this very failure.**
+
+> **A detector that cannot fire reports "clean" on every input.** That is
+> mechanism 12 — a probe that cannot fire — **relocated from the code under test
+> into the thing testing it.**
+
+| Guard | The defect | What it reported |
+| --- | --- | --- |
+| **`supervise.py` `queue-stale`** | `` written as a **literal backspace byte** (``); a regex starting with one matches no ordinary text | **`OK` on every input**, including a file plainly citing entry 26 |
+| **`supervise.py` `dead-levers`** | new alternatives landed **after the pattern's closing paren**, becoming `re.compile`'s second argument | **crashed** |
+| **`hle_coverage.py --self-test`** | referenced names that did not exist in the module | crashed |
+| **`bug_class_sweep.py` `near_absent`** | did not check the **match line itself**, only the window | **false positive** on correct code that names ARM64 in its own guard |
+| **`dead_guard.py`** | `git grep -o` truncated build-file hits to the keyword, **dropping the macro name** | wrong answer, silently |
+
+**Three of the five failed SILENTLY**, which is the whole point: **a crashing
+guard is a good day.**
+
+### The habit that caught all five
+
+**Every one was found by a positive control run FROM HABIT, not from
+suspicion.** In each case the control was written because this repo's rule says
+so — *an instrument that can return zero must be proved able to return
+non-zero* — **and in each case I had no reason to suspect the tool.**
+
+> **The rule is usually stated about MEASUREMENT instruments.** These were
+> **verification instruments**, and they need it more: **a broken measurement
+> gives a wrong number somebody may question; a broken guard gives silence
+> nobody questions.**
+
+**And a control must test the EXEMPTION too.** `queue-stale` needed three: it
+fires, it stays quiet with no citation, **and it stays quiet when the queue was
+updated.** A guard that never stops firing is as useless as one that never fires,
+and only the third control catches that.
+
 ## The four rules
 
 1. **Verify from the emitted artefact, not from the source that asks for it.**
