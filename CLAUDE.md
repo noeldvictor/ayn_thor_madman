@@ -824,6 +824,13 @@ These are the shared flows. None of them work across a module boundary.
   between a texture cache and a shader cache. Two owners cannot.
 - **Link-time optimisation across the boundary.** The shared layer sits in the
   hot path. Inlining across it is free speed, and a module boundary blocks it.
+  **But verify it from the emitted compile commands, not from the CMake.**
+  Vita3K's `USE_LTO` defaulted to `RELEASE_ONLY`, which covers the `Release`
+  configuration — **and neither of its shipped builds is `Release`.** Confirmed
+  from the flags: **all 973 translation units compiled with `-O2 -DNDEBUG` and no
+  `-flto`.** **The default meant "never."** Every CMake fork emits a
+  `compile_commands.json`, so this is a build-time check needing no device. See
+  [`research_log/20260824_1420_lto_is_easy_to_configure_and_easy_to_have_off.md`](research_log/20260824_1420_lto_is_easy_to_configure_and_easy_to_have_off.md).
 - **One frame pacing and present path.** Consistent pacing needs one owner.
 
 ### And one nobody had stated: packing raises every backend's capability ceiling
