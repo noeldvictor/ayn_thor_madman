@@ -8,9 +8,11 @@ shortest document it has and the highest yield per line.** Reading all eight cos
 under two hours and produced a correction to Foundation point 1, a measured
 answer to a queued device experiment, and eleven rules this repo did not have.
 
-**Nobody is disciplined about everything.** Each fork is rigorous in one place and
-casual elsewhere, and the rigour is always where that fork got burned. **This is
-the index of who is good at what, so the next question goes to the right fork.**
+**Of the eight read, none is disciplined about everything.** Each is rigorous in
+one place and casual elsewhere, and **in every one of the eight the rigour sits
+where that fork visibly got burned** — the index says so, usually with the
+incident. **This is the map of who is good at what, so the next question goes to
+the right fork.**
 
 ---
 
@@ -117,8 +119,11 @@ what this document is for.
   invariants are a rejection ledger nobody has mined.
 - **A fork writing a rule down is not evidence it follows it.** Nothing here was
   audited against the fork's actual commits.
-- **melonDS has no `AGENTS.md`**; its conventions live in a 620-line workspace
-  `CLAUDE.md` one directory up, which is why earlier surveys missed it.
+- **melonDS has no `AGENTS.md` at either level** — checked by listing both
+  `melonds_HD/` and `melonds_HD/melonDS-android/`. Its conventions live in a
+  620-line workspace `CLAUDE.md` **one directory up from the fork**, which is why
+  a survey looking inside each fork missed it. **`melonds_HD_2` was not
+  checked.**
 
 ## Sources
 

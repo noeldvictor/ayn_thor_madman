@@ -4053,9 +4053,9 @@ all eight, read in one pass on 2026-08-24: **who is disciplined about what, the
 eleven rules taken, four detection heuristics, and the three places where two
 forks disagree and both are right.**
 
-> **Nobody is disciplined about everything. Each fork is rigorous in one place
-> and casual elsewhere, and the rigour is always where that fork got burned.**
-> Send the question to the fork that was burned by it.
+> **Of the eight read, none is disciplined about everything.** Each is rigorous
+> in one place and casual elsewhere, and **the rigour sits where that fork got
+> burned.** Send the question to the fork that was burned by it.
 
 **Cost of the pass: under two hours. It produced a correction to Foundation
 point 1, a measured answer to a queued device experiment, and eleven rules this
