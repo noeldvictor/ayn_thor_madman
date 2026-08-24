@@ -7109,9 +7109,32 @@ a good port from a regression, and the fan-out in
   **And the AAPCS detail is worth knowing on its own.** *"`v8`-`v15` are
   callee-saved"* is the half-known version; **the guarantee covers only the low
   64 bits.** **Four forks hand-write ARM64 emitters** — ARMSX2, xenia, Cemu,
-  melonDS — and every one is entered from compiled code. **Not swept, and no
-  claim about any fork**; it is recorded because half-knowing it produces a
-  delayed, data-dependent corruption. See
+  melonDS — and every one is entered from compiled code.
+
+  **SWEPT 2026-08-25, and the four save sites read are all correct — each for a
+  different reason.** **xenia saves full `q8`-`q15`** and **ARMSX2 saves all live
+  `q8`-`q15`**, both because their JITs use the upper halves, **and both wrote
+  nearly the same comment at the save site, independently.** **Cemu saves exactly
+  `v8.d[0]`..`v15.d[0]`**, which is precisely the ABI requirement. **melonDS's A64
+  JIT emits no vector code at all** — **searched all four
+  `melonDS-android-lib/src/ARMJIT_A64/*.cpp` for any `V`/`D`/`Q` register
+  reference and for `ARM64FloatEmitter`, after a positive control confirmed the
+  path holds six tracked files: zero and zero** — **so the contract is unreachable there, which is a
+  different statement from nobody getting it wrong.** **Four sites, not four forks
+  audited.**
+
+  > **Where a rule is easy to half-know, the forks that got it right wrote it in
+  > a comment at the point of use.** That is the cheapest durable form available
+  > without a test, and it is what made the sweep possible.
+
+  **One method note: the first melonDS search returned zero and was nearly
+  believed.** It spells register saving as
+  `ABI_PushRegisters(BitSet32(...) | CallerSavedPushRegs)`, a Dolphin-derived
+  abstraction, **so a grep for literal `D8`/`Q8` cannot see it** — the
+  search-for-a-name trap again. **A positive control on the path, then a search
+  for the mechanism, gave the real answer.** See
+  [`work_log/20260825_0620_the_aapcs_vector_contract_swept_clean.md`](work_log/20260825_0620_the_aapcs_vector_contract_swept_clean.md)
+  and
   [`research_log/20260825_0540_absence_of_output_means_check_the_gate.md`](research_log/20260825_0540_absence_of_output_means_check_the_gate.md).
 - A test that needs a human to look at a screenshot is not a test. Automate the
   comparison or record it as a known limit.
