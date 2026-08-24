@@ -275,6 +275,57 @@ CLASSES = {
                    r"invalidate[A-Za-z]*ForPath|"
                    r"[Mm]ap<std::string,[^>]*> *[a-z_]*(cache|Cache)",
     },
+    "publish_then_flag": {
+        "what": "Two adjacent relaxed stores to different atomics -- the flag "
+                "published before, or without ordering against, the data it guards.",
+        "paid": "rpcsx swept all three weak-memory shapes across its tree and found four "
+                "defects: an RSX auditor inversion where the flag was stored before the "
+                "data (wrong on x86 too), a semaphore fast cache, an SPU reservation "
+                "seqlock, and an MFC DMA read. Two of the four are this shape.",
+        "why": "x86 TSO gives store-store ordering for free, so a publish-then-flag "
+               "written on x86 is correct there and racy on AArch64. Read the hits: a "
+               "descriptive field consumed by a stats dump is benign last-writer-wins; "
+               "what matters is whether a reader keys on one store to decide the other "
+               "is visible.",
+        # The signature is TWO ADJACENT relaxed stores, not one. Matching a
+        # single relaxed store gave 58 hits in one fork and is useless; the
+        # pair is what makes it a publish-then-flag.
+        "near": r"\.store\([^)]*relaxed|atomic_store_explicit\([^)]*relaxed",
+        "window": 3,
+        "pattern": r"\.store\([^)]*relaxed[^)]*\)|atomic_store_explicit\([^)]*relaxed",
+    },
+    "validated_reread": {
+        "what": "The same accessor loaded twice with work between, then compared -- a "
+                "seqlock shape.",
+        "paid": "rpcsx: the MFC DMA read at SPUThread.cpp:3767 needed an acquire fence "
+                "before the validating read.",
+        "why": "THE DECIDING FACTOR IS WHICH READ COMES FIRST, and two sites that "
+               "pattern-match identically need opposite treatment. Version-then-data is "
+               "safe when the version load is an acquire, because the data read cannot "
+               "move above it. Data-then-version is the trap: the data read can sink "
+               "below the validating counter read. A hit is not a diagnosis and here it "
+               "is not even a direction -- read the order.",
+        "pattern": r"seqlock|seq_?cst_?counter|"
+                   r"(version|seq|generation|stamp|rtime)[a-z_]* *!= *[a-z_]*(acquire|load)",
+    },
+    "double_check": {
+        "what": "Hand-rolled double-checked locking: test, take a lock, test again.",
+        "paid": "rpcsx swept for it and found ZERO -- and the zero is STRUCTURAL, not "
+                "luck: lazy initialisation there uses function-local statics, `static "
+                "const auto x = []{...}()`, 413 of them across 25 files, which C++11 "
+                "requires to be thread-safe and for which the compiler emits a guard "
+                "with correct acquire/release.",
+        "why": "A ZERO THAT IS EXPLAINED IS WORTH MORE THAN A ZERO THAT IS REPORTED. If "
+               "this class returns nothing for a fork, check whether that fork uses "
+               "function-local statics for lazy init before believing it.",
+        # A null/initialized test only counts when a LOCK appears just below;
+        # without that clause `if (!initialized)` matches ordinary lazy setup
+        # and gave 37 hits in one fork.
+        "near": r"lock\(\)|lock_guard|unique_lock|scoped_lock|mutex|EnterCritical",
+        "window": 4,
+        "pattern": r"if *\([^)]*== *nullptr\)|double.?check|"
+                   r"if *\(![a-z_]*[Ii]nitialized[a-z_]*\)",
+    },
     "declared_and_unused": {
         "what": "A type or key declared for a feature that was never built.",
         "paid": "eden: PatchCacheKey has a std::hash specialisation and zero uses, so "

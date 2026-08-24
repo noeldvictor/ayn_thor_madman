@@ -1202,6 +1202,25 @@ Rules:
 
 1. **Never write "no fork has this" without a search that names its method.**
    State what you searched for, where, and how.
+
+   **AND PREFER A SHAPE-SCOPED SEARCH TO A PATH-SCOPED ONE.** rpcsx states the
+   reason better than this file ever has, after an architecture-neutrality claim
+   turned out to rest on **a grep across two directories that do not exist in
+   that fork**:
+
+   > **"The difference is not diligence, it is that a shape-defined search cannot
+   > silently cover nothing: if the pattern matches zero files, that is a fact
+   > about the pattern, which is checkable, rather than a fact about a path list,
+   > which is not."**
+
+   > **A path-scoped search that covers nothing looks identical to one that found
+   > nothing.**
+
+   **This audits the tools here.** `bug_class_sweep.py` and `dead_guard.py`
+   search by pattern over globs and are safe. **`capability_probe.py`,
+   `hle_coverage.py` and `vk_capability_census.py` are path-scoped**, and a wrong
+   fork path returns zero silently — **which is why `capability_probe.py
+   --self-test` exists, and why the other two still need one.**
 2. **A capability recorded from a listing is a hypothesis.** Mark it unread
    until somebody opens the file.
 3. **Reading is cheap.** Each correction above took under fifteen minutes and
