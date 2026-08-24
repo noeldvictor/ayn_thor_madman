@@ -349,6 +349,32 @@ unconditionally on an Adreno. On Android the acquire goes through a
 Vita3K all pass `UINT64_MAX` and block; ARMSX2, melonDS and eden were not
 resolved by that search. **rpcsx is out of the binary.**
 
+**A SECOND Turnip defect, and this one is measured with a frame cost.** xenia
+records that **on Turnip-over-KGSL a fence status query — `vkGetFenceStatus`, or
+any wait reaching the kernel with `timeout = 0` — BLOCKS on an in-flight fence
+until that submission retires**, because Mesa's `tu_knl_kgsl.cc` passes ioctl
+`timeout=0` and **the KGSL kernel documents `timeout==0` as "wait forever"**.
+
+> **`timeout = 0` means "return immediately" in Vulkan and "wait forever" in
+> KGSL**, and the inversion happens inside Mesa, invisible to the caller.
+
+**Cost: an unconditional pre-poll serialises the CPU to the GPU for a full GPU
+frame at every frame open — Burnout B85, 46.9 ms.**
+
+**This one reaches the shared layer directly.** One texture upload path, one
+memory budget owner, one pipeline cache — **every one of them asks "is this fence
+done yet?" to decide whether a resource can be reused.** On this device that
+question is the most expensive thing the CPU can do, **and a shared pool would
+ask it on behalf of seven backends.**
+
+**Take xenia's API shape with the table**: two accessors, one **cached** and one
+**querying**, with the querying one documented as a full-frame stall here, and a
+flag exposing which mode is in force. Its rule: *"callers doing optional
+freshness polls should use `GetCompletedSubmissionFromLastUpdate` instead of
+`UpdateAndGetCompletedSubmission`."*
+
+See [`../research_log/20260825_0520_a_fence_status_query_blocks_on_turnip_over_kgsl.md`](../research_log/20260825_0520_a_fence_status_query_blocks_on_turnip_over_kgsl.md).
+
 **Two cautions before it moves.**
 
 **The table is mostly not about this device.** 30 rules across seven driver

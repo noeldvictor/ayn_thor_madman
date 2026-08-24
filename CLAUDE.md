@@ -3661,6 +3661,24 @@ something no fork does today.
   > under Mesa PanVK, and both the r44p1 `DEVICE_LOST` fix and the 8 Elite
   > push-descriptor disable had to be gated on the driver.
 
+  **A SECOND Turnip defect, measured with a frame cost, found 2026-08-25.**
+  xenia records that **on Turnip-over-KGSL a fence status query —
+  `vkGetFenceStatus`, or any wait reaching the kernel with `timeout = 0` —
+  BLOCKS on an in-flight fence until that submission retires**, because Mesa's
+  `tu_knl_kgsl.cc` passes ioctl `timeout=0` and **the KGSL kernel documents
+  `timeout==0` as "wait forever"**.
+
+  > **`timeout = 0` means "return immediately" in Vulkan and "wait forever" in
+  > KGSL.** The inversion happens inside Mesa, invisible to the caller.
+
+  **An unconditional pre-poll therefore serialises the CPU to the GPU for a full
+  GPU frame at every frame open — 46.9 ms on one title.** **And it reaches the
+  shared layer**: one texture path, one memory budget owner and one pipeline
+  cache all ask *"is this fence done yet?"* to decide whether a resource is
+  reusable. **On this device that is the most expensive question the CPU can
+  ask**, and a shared pool would ask it for seven backends. See
+  [`research_log/20260825_0520_a_fence_status_query_blocks_on_turnip_over_kgsl.md`](research_log/20260825_0520_a_fence_status_query_blocks_on_turnip_over_kgsl.md).
+
   **And there is a live instance of that distinction for this device:**
   `m_broken_colormask_with_depth = IsDeviceAdreno() && !is_turnip`. **The Adreno
   proprietary driver has a broken colour mask with depth test and Turnip does
