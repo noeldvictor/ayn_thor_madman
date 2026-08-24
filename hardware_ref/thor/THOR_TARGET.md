@@ -72,6 +72,21 @@ everywhere gains nothing.**
 -mtune=cortex-x3
 ```
 
+**`+lse` is doing more work than it looks, and it is sufficient on its own.**
+**The NDK's `arm64-v8a` ABI is Armv8.0-A**, which predates LSE, so **clang's
+default is `-moutline-atomics`: every atomic becomes a call to a stub that loads
+a feature flag and branches.** Verified on this box:
+
+| Flags | Emitted for one `fetch_add(acq_rel)` |
+| --- | --- |
+| NDK default | **`bl __aarch64_ldadd8_acq_rel`** |
+| **this line, with `+lse`** | **`ldaddal` — one instruction** |
+| **`-mno-outline-atomics` alone** | **`ldaxr`/`stlxr` retry loop — worse than the default** |
+
+> **Do not add `-mno-outline-atomics` without `+lse`.** Without LSE available the
+> compiler cannot emit the atomic, so removing the helper only removes the
+> runtime upgrade path. **`+lse` alone already produces `ldaddal`.**
+
 **AUDITED 2026-08-23: these flags are permission, and the permission is barely
 used.** Enabling `+sha3` does not make a compiler emit `EOR3`; somebody must
 write the intrinsic. **Across the fleet, exactly one place does** — xenia's
