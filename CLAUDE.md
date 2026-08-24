@@ -2645,6 +2645,42 @@ individually and then using the whole register is the normal case for PS2 VU,
 Xbox 360 VMX128 and DS geometry. Three cycles on first use, on two of the
 Thor's cores.
 
+**CONFIRMED AND FIXED 2026-08-24 — and it is the FIRST manual-derived lead in
+this fleet not to be refuted.** Fourteen others were measured and failed. **This
+one survived because every step was checked against emitted code.**
+
+**§4.11 gives the three conditions that must all hold**, which §4.2 alone does
+not: the producer writes an **S-register, not a `D[x]` scalar**; the consumer
+reads an **overlapping Q-register**; and the consumer is an **FP/ASIMD µOP**, not
+a store or a `MOV`.
+
+**`_mm_set_epi32` produces it verbatim**, at `-O2 -mcpu=cortex-a710`:
+
+```
+fmov  s1, w0                 <- S-register write        (4.11)
+mov   v1.s[1], w1            <- single-word lane writes (4.2)
+add   v0.4s, v1.4s, v0.4s    <- two quad-word sources, FP/ASIMD consumer
+```
+
+**The obvious workaround fails.** Writing to a stack array and loading back
+**compiles to byte-identical code** — clang folds the round-trip and rebuilds it
+lane by lane. **A reasoned fix would have been believed and done nothing.**
+
+**The guide's own mitigation works**, because §4.11 exempts `D[x]` writes: pack
+into 64-bit halves first and get `fmov d1, x8` plus `mov v1.d[1], x9` — **two
+writes instead of four, no hazard.**
+
+**Applicability, counted before building anything.** Sites using
+`_mm_set_epi32`, `_mm_setr_epi32` or `vsetq_lane_*`, submodules included:
+**rpcsx 18, ARMSX2 18, eden 5, xenia 2, Vita3K 1, Cemu 0, azahar 0, melonDS 0.**
+**ARMSX2 has as many as the fork that found it.** **18 sites is small and whether
+any is hot is unknown** — count, then measure, then build.
+
+> **A manual gives a hypothesis. A disassembly gives a finding.** The fourteen
+> that failed were mostly the former.
+
+See [`research_log/20260824_1540_the_one_manual_lead_that_survived.md`](research_log/20260824_1540_the_one_manual_lead_that_survived.md).
+
 **All these leads belong in the experiment ledger before anyone acts on them.**
 
 ### AND A MEASURED PRIOR AGAINST THEM, FOUND 2026-08-23
