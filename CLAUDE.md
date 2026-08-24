@@ -2048,6 +2048,47 @@ intent — and it was **worse on the Thor**, `LatteCP_readU32Deprc` going 5.13% 
 > Changing either alone is a regression risk, and the correct total backoff time
 > is per-loop, not a fleet constant.
 
+**AND THE ITERATION COUNT IS THE LARGER HALF, MEASURED 2026-08-24.** rpcsx
+profiled a healthy 60 fps run with `simpleperf` — **31,657 samples, 0 lost**,
+build ID verified — and found **73.9% of all CPU cycles in two lv2 wait
+functions.** The call graph proves it is spinning rather than blocking: both
+report **self time and neither reaches `atomic_wait_engine::wait`**, while
+`sys_timer_usleep` in the same profile does.
+
+**The cause is a constant that was correct on x86:**
+
+```cpp
+for (usz i = 0; cpu_flag::signal - ppu.state && i < 50; i++) { rx::busy_wait(500); }
+```
+
+**`busy_wait` counts generic-timer ticks and `CNTFRQ_EL0` is 19.2 MHz here**, so
+500 ticks is **26 µs** and fifty of them is **1.3 ms per pass**. **The same line
+costs about 1 µs on a 3 GHz TSC.** Its own conclusion: *"`ISB` costs 23% more,
+`nop` is equivalent. **Neither of those is the fix — the instruction is not the
+problem, the 1.3 ms is.**"* **Eight sites, the whole guest synchronisation
+layer.**
+
+**This is a third kind of x86 detour** — not instruction selection, not the
+register model, but **a timing constant that assumed a fast free-running
+counter** — and it is the largest of the three.
+
+**Vita3K already has the cure**, and its comment names the disease: it derives
+the spin budget from `CNTFRQ_EL0` **"rather than from an iteration count tuned on
+x86"**, and notes such budgets are *"wall-clock stable across cores and SoCs,
+unlike the x86-tuned iteration constants they replace."* **It reads
+`mrs cntfrq_el0` directly and falls back to iteration counts only where no such
+counter exists.**
+
+**That also resolves the `ISB` disagreement.** Vita3K adopted `ISB` citing a net
+power win; rpcsx measured `ISB` as a regression. **Vita3K changed both halves of
+the pair at once** — the instruction *and* a wall-clock budget. **Take the pair,
+never the instruction alone.**
+
+**Two device facts worth keeping:** **`CNTFRQ_EL0` is 19.2 MHz**, and
+**`FEAT_WFxT` is absent**, so `WFE` cannot carry a timeout on this chip.
+
+See [`research_log/20260824_0810_the_spin_is_a_timing_constant_not_an_instruction.md`](research_log/20260824_0810_the_spin_is_a_timing_constant_not_an_instruction.md).
+
 **Three tiers exist in the fleet, and the best one exists twice:**
 
 | Tier | Mechanism | Where |
@@ -4146,6 +4187,19 @@ Wi-Fi adb rules:
 - **Check whether a `grep` was truncated before concluding something is absent.**
   A `head -12` hid an entire upstream subsystem. **This is this repo's most
   repeated failure, and another fork wrote the rule first.**
+- **FOR "WHERE DOES THE TIME GO", USE A SAMPLING PROFILER, NOT INSTRUMENTED
+  COUNTERS.** rpcsx's counter-based wait profiler reported *"93% of all emulator
+  spin is the SPU `GETLLAR` wait"* — **because every site it had been told to
+  instrument was SPU-side.** Eight PPU sites were never instrumented, **so they
+  could not appear, and their absence read as evidence they were not there.**
+  A sampling profiler then found **74% of cycles** in two of them.
+  > **A search that finds nothing and a search that searches nothing look
+  > identical.**
+- **NAME THE CONFOUND THAT WOULD FAKE A WIN, before the run.** rpcsx's spin
+  prediction does this: parking instead of spinning **may let the scheduler
+  migrate the thread off its big core onto an A510**, so cores-busy and power
+  both drop **while the emulator gets slower**. Its instruction: **check
+  per-cluster residency.** **No entry in `DEVICE_QUEUE.md` does this yet.**
 - **Stop after two failed or inconclusive guesses in one subsystem.** The next
   move is instrumentation, dumps, RenderDoc or Ghidra — **not a third guess.**
 - **A diagnostic toggle is not a fix.** A prop, a draw skip or a forced path is
