@@ -81,6 +81,8 @@ correct and the list had become unnavigable.
 | **Total system power is exact; CPU-attributed power is not available** | same |
 | **`unknown[+X]` is the JIT arena, not a symbol** | `CLAUDE.md` |
 | **Measure the thread, not the process** | `CLAUDE.md` |
+| **A SHARE OF A SUBSET SAYS NOTHING ABOUT THE SUBSET'S SHARE OF THE WHOLE.** *"93% of spin is GETLLAR"* was measured and correct, the config value was confirmed, and the conclusion was still wrong — **because how much of TOTAL CPU was spin had never been established.** Swept: −2.9%, the noise floor | rpcsx `docs/arm64/spin.md`; `research_log/20260825_0030_*` |
+| **Before quoting a section of a long document, search THAT DOCUMENT for its own later corrections.** The claim sat at line 678 and its refutation at line 1268 of the same file. `fleet_docs_index.py --after` covers this between documents; **nothing covered it inside one** | same |
 | **Temperature proves the run happened** — but see the sensor rule | `CLAUDE.md` |
 | **A negative result needs a workload that could have produced a positive one** | `CLAUDE.md` |
 | **MEASURE THE LOADING PHASE, NOT GAMEPLAY, for any CPU change.** *"Every scene reachable without playing is vsync capped at 60fps with the GPU around 15% busy and 2 of 8 CPU cores in use, so nothing is saturated and per-instruction work is invisible."* Loading is genuinely CPU bound | Cemu `AGENTS.md` |

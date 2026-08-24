@@ -20,6 +20,14 @@ being re-run. This repo's experiment ledger exists for the same reason.
     python tools/fleet_docs_index.py --search cache --show    # with the title line
     python tools/fleet_docs_index.py --search residency --after 20260626
 
+AND THE SAME TRAP INSIDE ONE DOCUMENT, 2026-08-25. A 1,480-line topic file was
+sampled by heading; a claim at line 678 was written up as a live lever and its
+refutation sat at line 1268 of the same file, measured and dead. --after guards
+this BETWEEN documents and nothing guarded it WITHIN one.
+
+    > Before quoting a section of a long document, grep that document for its own
+    > later corrections: refute|corrected|superseded|wrong|dead|does not.
+
 THE SUPERSEDED-CONCLUSION TRAP. On 2026-08-24 three conclusions were taken from
 dated fork documents and each had been overturned by later work in the same fork:
 a frame anatomy corrected five days later, a residency result measured CONFOUNDED a

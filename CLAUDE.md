@@ -2603,6 +2603,23 @@ re-derived.** Two knobs, and the asymmetry is the finding:
 never revisited for the larger"* — and its own framing: **"an x86-era default
 that nobody re-derived for a passively cooled handheld."**
 
+> **AND IT WAS SWEPT, AND IT IS DEAD.** Eternal Sonata: **100% gives 13,745
+> Mcyc/s at 5.223 cores busy; 10% gives 13,352 at 5.037 — −2.9%, the noise floor
+> there.** *"Busy-waiting is not what draws the power on that screen."* The cores
+> stay at ~5.0–5.2 in **both** arms, so the work is **real emulation** — SPU at
+> **47.1%** on that title.
+>
+> **The error is the finding, and it is a statistical rule this file did not
+> have:** *"this was argued from a measured 93% figure and a confirmed config
+> value, and was still wrong — because **'93% of spin is GETLLAR' says nothing
+> about how much of the TOTAL is spin.**"*
+>
+> **A share of a subset says nothing about the subset's share of the whole.**
+>
+> **The SHAPE survives** — a desktop default nobody re-derived, with ARMSX2's
+> readback spins and xenia's disruptor strategy beside it. **This instance of it
+> is measured and dead.** Twelfth prediction, twelfth refutation.
+
 **The trade inverts on this device for Foundation reasons**: spinning buys wake
 latency by burning a core; sleeping buys power at the cost of latency. **The
 title already holds its 30 fps cap at twenty-to-thirty percent CPU, so latency

@@ -1,5 +1,49 @@
 # Park-versus-spin has a break-even, the WFE wake floor is 95 µs, and 93% of one fork's spin is a desktop default
 
+> ## FINDING 3 IS REFUTED BY THE SAME DOCUMENT, 590 LINES LATER. Corrected within the hour.
+>
+> **The GETLLAR percentage was swept, and it is not a lever.** Eternal Sonata:
+>
+> ```
+> 100%   13,745 Mcyc/s   5.223 cores busy
+>  10%   13,352 Mcyc/s   5.037 cores busy   (-2.9%)
+> ```
+>
+> **−2.9% is the noise floor there.** *"Cutting the spin to a tenth barely moves
+> the load, so **busy-waiting is not what draws the power on that screen**."*
+> The cores stay at ~5.0–5.2 busy in **both** arms, so the work is **real
+> emulation** — the overlay reported SPU at **47.1%** on that title.
+>
+> **rpcsx's own diagnosis of the error is the finding, and it is sharper than
+> anything in the section below:**
+>
+> > **"The one that hurts is that this was argued from a measured 93% figure and
+> > a confirmed config value, and was still wrong — because **'93% of spin is
+> > GETLLAR' says nothing about how much of the TOTAL is spin.**"**
+>
+> **A share of a subset says nothing about the subset's share of the whole.**
+> 93% of spin is a large fraction of a quantity whose size was never
+> established.
+>
+> **And I made the identical mistake reading it.** I sampled a 1,480-line
+> document by heading, read the claim at line 678, wrote it up as *"large, cheap
+> and untested"*, and **did not read the refutation at line 1268.** The document
+> carries both.
+>
+> > **When a document is long enough to sample by heading, search it for its own
+> > later corrections BEFORE writing up any section of it.** `--after` exists in
+> > `fleet_docs_index.py` for exactly this trap between documents; **this was the
+> > same trap inside one.**
+>
+> **What survives:** findings 1 and 2 — the 95 µs wake floor, the break-even at
+> depth 6.1, and the histogram method — are untouched. **The seventh-detour-form
+> framing also survives as a SHAPE** (a desktop default nobody re-derived, with
+> ARMSX2's and xenia's instances beside it) — **but this instance of it is
+> measured and dead.**
+>
+> **rpcsx's own count: "Twelfth prediction, twelfth refutation."**
+
+
 **Goal: read rpcsx's `docs/arm64/spin.md`, the last large topic document, at
 1,480 lines.**
 
