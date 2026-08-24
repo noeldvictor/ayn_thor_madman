@@ -138,6 +138,17 @@ CLASSES = {
                "warns. Only the reference implementation runs. CORRECT code names ARM64 beside "
                "x86 in the same guard -- Cemu's fast_float, Vita3K's spin_wait and eden's "
                "uint128 all do. Look for an x86 macro with NO ARM sibling.",
+        # An x86 guard counts only when NO ARM token follows within the window.
+        # Added 2026-08-25 after rpcsx recorded getting exactly this wrong: it
+        # read an `#if defined(ARCH_X64)` guard, stopped before the `#endif`,
+        # and concluded ARM had no arm -- the AArch64 branch was twenty lines
+        # below inside the same conditional. A line-based grep cannot see that.
+        # Any of these nearby means the hit is not a defect: an ARM sibling in
+        # or under the guard, or -- Cemu's precompiled.h:29 -- a guard whose
+        # body DEFINES the architecture token rather than gating a fast path.
+        "near_absent": r"__aarch64__|_M_ARM64|ARCH_ARM64|__ARM_NEON|arm_neon\.h|"
+                       r"defined\(__arm|AArch64|aarch64|#\s*define\s+ARCH_",
+        "window": 30,
         "pattern": r"defined\(__SSE2__\)|defined\(__AES__\)|defined\(_M_X64\)|"
                    r"defined\(__AVX2__\)|defined\(__BMI2__\)",
     },
@@ -277,7 +288,8 @@ CLASSES = {
 }
 
 
-def scan(fork, pattern, include_vendored=False, near=None, window=8, exclude=None):
+def scan(fork, pattern, include_vendored=False, near=None, window=8, exclude=None,
+         near_absent=None):
     """Lines matching `pattern`, optionally only where `near` is close by.
 
     WHY `near` EXISTS. Broadening wrong_launch_path beyond xenia's own
@@ -298,7 +310,7 @@ def scan(fork, pattern, include_vendored=False, near=None, window=8, exclude=Non
         return None
     cmd = ["git", "-C", root, "grep", "--recurse-submodules",
            "-nIE", pattern, "--"] + SOURCE
-    if near:
+    if near or near_absent:
         # -A gives the following lines; the co-occurrence has to be found in a
         # second pass so the line numbers stay honest.
         cmd = ["git", "-C", root, "grep", "--recurse-submodules",
@@ -327,6 +339,32 @@ def scan(fork, pattern, include_vendored=False, near=None, window=8, exclude=Non
             else:
                 block.append(ln)
         flush()
+        out = kept
+
+    if near_absent:
+        # THE OPPOSITE OF `near`, and it fixes a real blind spot. rpcsx recorded
+        # concluding "ARM has no arm" from reading an `#if defined(ARCH_X64)`
+        # guard and stopping before its `#endif` -- the AArch64 branch was
+        # twenty lines below, inside the same conditional. A line-based grep
+        # cannot see that, so an x86 guard only counts here when NO ARM token
+        # appears within the window.
+        rx = re.compile(near_absent)
+        kept, block, head = [], [], None
+        def flush_abs():
+            # The MATCH LINE counts too. Cemu's fast_float.h reads
+            # `#if defined(_M_X64) || defined(_M_ARM64)` -- correct code that
+            # names ARM64 in the guard itself, and checking only the FOLLOWING
+            # lines reported it as x86-only. Found by reading a hit, 2026-08-25.
+            if head and not rx.search(head) and not any(rx.search(b) for b in block):
+                kept.append(head)
+        for ln in out:
+            if ln == "--":
+                flush_abs(); block, head = [], None; continue
+            if head is None:
+                head = ln; block = []
+            else:
+                block.append(ln)
+        flush_abs()
         out = kept
 
     if exclude:
@@ -367,7 +405,9 @@ def main():
         print("WHY     %s" % c["why"])
         for fork in FORKS:
             hits = scan(fork, c["pattern"], c.get("include_vendored", False),
-                        c.get("near"), exclude=c.get("exclude"))
+                        c.get("near"), window=c.get("window", 8),
+                        exclude=c.get("exclude"),
+                        near_absent=c.get("near_absent"))
             if hits is None:
                 print("  %-10s [not present beside this repo]" % fork)
                 continue

@@ -5387,6 +5387,18 @@ Wi-Fi adb rules:
 - **Check whether a `grep` was truncated before concluding something is absent.**
   A `head -12` hid an entire upstream subsystem. **This is this repo's most
   repeated failure, and another fork wrote the rule first.**
+- **AND THE CONCEPTUAL FORM: read to the `#endif`.** rpcsx concluded a park
+  *"was never written"* for AArch64 after reading an `#if defined(ARCH_X64)`
+  guard and stopping before its `#endif` — **the ARM branch was twenty lines
+  below, inside the same conditional.** Not a `head -N` truncation: **you find
+  the x86 arm and assume the conditional has one.** Third instance in that fork
+  alone. **`tools/bug_class_sweep.py` made the identical mistake by
+  construction** and now takes a `near_absent` clause; the tightened class drops
+  from 39 hits to 22 in rpcsx, to **zero** in Cemu and Vita3K whose code was
+  correct, and leaves **one true positive** across the packed-binary forks.
+- **Ask whether the thing is ENABLED before claiming it does not exist.** From
+  the same correction: *"that is a measurement, and it should have been the first
+  question rather than a claim about missing code."*
 - **FOR "WHERE DOES THE TIME GO", USE A SAMPLING PROFILER, NOT INSTRUMENTED
   COUNTERS.** rpcsx's counter-based wait profiler reported *"93% of all emulator
   spin is the SPU `GETLLAR` wait"* — **because every site it had been told to
