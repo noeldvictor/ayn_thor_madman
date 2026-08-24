@@ -99,6 +99,69 @@ same quantity.**
 
 ---
 
+## CONFIRMED BY DISASSEMBLY, 2026-06-26, and the mechanism has a name
+
+**xenia proved this with no device.** `scratch/thor-debug/residency_killtest.c`:
+the same guest hot loop compiled two ways, aarch64 `-O2`, disassembled.
+
+| Form | Guest-register memory ops per iteration |
+| --- | --- |
+| guest regs as context-struct fields | **~4** |
+| **guest regs localized to C locals** | **0** |
+
+**The loop contains an opaque `mem_read32(ctx, ...)` call**, which defeats alias
+analysis and forces the struct form to reload and spill around it. **The
+localized form keeps the registers in `x24`, `x21`, `x23` across the loop and
+across the call.**
+
+### The lever is LOCALIZATION, not static recompilation
+
+**Two static recompilers differ on exactly this.** **DolRecomp** emits guest
+registers as `ctx->gpr[%u]` struct fields and **gets no residency** — the host
+compiler round-trips them just as a JIT does. **XenonRecomp localizes them to C
+locals and does.**
+
+> **A recompiler being static does not give residency. Making guest registers
+> host-compiler locals does.**
+
+### The in-JIT retrofit is built, host-correct, and crashes
+
+`arm64_register_cache_inherit` carries **320 assertions** and **crashes on
+device** — `SIGBUS`, fault address `0x1fffffff8`, a **stale inherited register on
+a back edge**. It has consumed **12 or more device fires**, and xenia calls it the
+highest-risk unit in its design.
+
+**The crash and the win are the same code shape.** Its hottest function is four
+sorted linked-list traversals; each loop is **three basic blocks** because of two
+conditional exits, so the node pointer and the search key round-trip **every
+block, every iteration**. **That is the tax, concretely** — and stale inheritance
+of that node pointer is the fault.
+
+### Three consequences for this document
+
+- **Prefer a targeted hybrid AOT over whole-program.** `CLAUDE.md` objects that
+  whole-program static recompilation needs per-game decompilation and symbols,
+  which this project cannot pay across eight systems. xenia's recommendation is
+  **AOT the hot cluster, JIT everything else, share the dispatcher** — which the
+  objection does not reach.
+- **Lazy flags compound with residency**, and xenia calls them likely the single
+  biggest sub-lever. **This document did not mention them**, and the ACM TACO
+  inflation work independently found compare-and-branch worth roughly 18% of
+  inflation.
+- **There is a device-free kill test with a pass bar stated in advance:**
+  **>20-25% fewer host instructions than the JIT is a go; <15% is dead.**
+
+**Four hard parts are enumerated there and are the real cost**: bit-exact CR, XER
+and FPSCR; indirect control flow through `bctr`, `bcctr`, `blr` and jump tables;
+the guest memory model; and self-modifying code, where the suggested answer is to
+detect it and fall back to the JIT for those pages.
+
+**DolRecomp's PC-switch entry table** — one function per guest function with
+`switch (ctx->pc)` and a label per address — **is the fix for the indirect-entry
+case the in-JIT lever mishandles.**
+
+See [`../research_log/20260824_0445_localization_is_the_residency_win.md`](../research_log/20260824_0445_localization_is_the_residency_win.md).
+
 ## The distinction that matters: residency is not allocation
 
 **Do not conflate these. They are worth different amounts.**
