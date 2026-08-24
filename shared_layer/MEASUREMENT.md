@@ -133,7 +133,7 @@ turns it into a re-runnable sweep.
 | Tool | Answers |
 | --- | --- |
 | `tools/supervise.py` | is this session repeating a known failure |
-| `tools/capability_probe.py` | which fork has this capability, asked several ways |
+| `tools/capability_probe.py` | which fork has this capability, asked several ways. **`--self-test` proves the search can return non-zero for all nine forks, and zero for a nonsense pattern. Run it before reporting any absence** |
 | `tools/bug_class_sweep.py` | where else does a bug class that already paid appear |
 | `tools/vk_capability_census.py` | what does each fork ask the GPU for |
 | `tools/fleet_docs_index.py` | what has the fleet already written, and what failed |

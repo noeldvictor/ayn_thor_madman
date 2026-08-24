@@ -251,6 +251,81 @@ def probe(fork_path, pattern):
     return [ln for ln in out if not VENDORED.search(ln.split(":", 1)[0])]
 
 
+# POSITIVE CONTROLS. An instrument that can return zero must be proved able to
+# return non-zero, or a broken search reads as an absent capability.
+#
+# This is not hypothetical here. xenia's desktop HLE diagnostic intercepts
+# returned count=0 for weeks because the dispatcher never checked kExtern, and
+# the fix CORRECTED an earlier research conclusion built on that zero. This repo
+# has its own instances: a plain `git grep` missing a submodule three separate
+# times, a VENDORED filter that read `externals` and not `external`, and one
+# device-layer file mistaken for a whole fork.
+#
+# Each string below is a symbol this repo already cites from that fork's OWN
+# source. If one stops matching, either the search is broken or the fork changed
+# in a way worth knowing about. Both need a person.
+CONTROLS = {
+    "ARMSX2":   r"GSDeviceVK",
+    "xenia":    r"A64Emitter",
+    "Cemu":     r"VulkanRenderer",
+    "azahar":   r"CheatEngine",
+    "melonDS":  r"TouchVibrator",
+    "Vita3K":   r"SceGxm",
+    "eden":     r"KThread",
+    "GameThor": r"WineEnvVarFix",
+    "rpcsx":    r"SPUThread",
+}
+
+# A pattern that must NEVER hit. If it does, the search matches everything and
+# every "N/M probes hit" line above is meaningless.
+NEGATIVE_CONTROL = r"zzq_capability_probe_negative_control_zzq"
+
+
+def self_test(verbose=False):
+    """Prove the search can return non-zero, and can return zero."""
+    failures = 0
+    print("positive controls -- a miss means the SEARCH is broken, not the fork")
+    print("")
+    for fork, path in FORKS.items():
+        pattern = CONTROLS.get(fork)
+        if not pattern:
+            print("  %-10s [no control -- absence from this fork is unproven]" % fork)
+            failures += 1
+            continue
+        found = probe(path, pattern)
+        if found is None:
+            print("  %-10s SKIP  not present beside this repo" % fork)
+            continue
+        if not found:
+            print("  %-10s FAIL  %r returned nothing" % (fork, pattern))
+            failures += 1
+        else:
+            print("  %-10s ok    %r -> %d line(s)" % (fork, pattern, len(found)))
+            if verbose:
+                print("             %s" % found[0][:110])
+
+    print("")
+    print("negative control -- a hit means the search matches everything")
+    print("")
+    clean = True
+    for fork, path in FORKS.items():
+        found = probe(path, NEGATIVE_CONTROL)
+        if found:
+            print("  %-10s FAIL  matched %d line(s)" % (fork, len(found)))
+            failures += 1
+            clean = False
+    if clean:
+        print("  clean")
+
+    print("")
+    print("%d failure(s)." % failures)
+    if failures:
+        print("DO NOT REPORT AN ABSENCE FROM THIS TOOL until these pass. A search")
+        print("that cannot find a symbol it is told is there cannot support the")
+        print("sentence 'no fork has this'.")
+    return failures
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -258,7 +333,14 @@ def main():
     ap.add_argument("--list", action="store_true", help="list capabilities and exit")
     ap.add_argument("--show", action="store_true", help="print matching lines")
     ap.add_argument("--lines", type=int, default=3, help="lines per probe with --show")
+    ap.add_argument("--self-test", action="store_true",
+                    help="prove the search can return non-zero. RUN THIS BEFORE "
+                         "reporting any absence: a broken search reads exactly "
+                         "like an absent capability.")
     args = ap.parse_args()
+
+    if args.self_test:
+        return 1 if self_test(args.show) else 0
 
     if args.list:
         for name, c in CAPABILITIES.items():
