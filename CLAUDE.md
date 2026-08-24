@@ -2533,8 +2533,68 @@ ARMSX2 sets `-march=armv8-a` for Android deliberately while selecting
 `armv8.4-a -mcpu=apple-m1` for Apple Silicon, so **it targets an M1 more
 precisely than it targets the Thor.**
 
+### MEASURED IN THE SHIPPED BINARIES 2026-08-24: `+lse` is the flag nobody sets
+
+**This section has argued from build files. Six forks' `arm64-v8a` libraries were
+disassembled instead**, with the standard row's `llvm-objdump`, and the flag
+question turns out to have one measurable consequence rather than only
+"permission".
+
+| fork | direct LSE instructions | `ldaxr`/`stlxr` | outline call sites |
+| --- | --- | --- | --- |
+| **xenia** | **1,998** | 10 | **53** |
+| Cemu | 38 | 60 | **406** |
+| **ARMSX2** | **28** | 51 | **886** |
+| Vita3K | 29 | 50 | not counted |
+| azahar | 20 | 34 | not counted |
+| melonDS | 6 | 10 | not counted |
+
+**All six carry `__aarch64_have_lse_atomics`. Only xenia — the one fork that sets
+`+lse` — emits LSE at scale.** An outline atomic is a `bl` to a stub that loads a
+global feature byte and branches, **to decide something constant for the life of
+the device**: `/proc/cpuinfo` reports `atomics`, which is `FEAT_LSE`.
+
+**The chain is verified end to end**: ARMSX2's `compile_commands.json` shows
+`-march=armv8-a+crc` in Release and `armv8.2-a+fp16+dotprod` in Debug, **no
+`+lse` in either**, and the binary matches.
+
+**Cemu wrote the whole analysis into `CMakeLists.txt:260` and chose the other
+way**, on purpose: `ldxr`/`stxr` retry loops in `FSpinlock`, coreinit spinlocks
+and the striped atomic HLE, which "livelocks harder under contention, which is
+exactly the multi-core guest case" — then took `-moutline-atomics` because
+`+lse` "SIGILLs on hardware without LSE", and named the exit: **"an explicit
+opt-in build, not the default." This project is that build.**
+
+**This is the DELETE operation, not a tuning change.** The dispatch exists to
+serve variability this device does not have.
+
+**Two guards.** `-mno-outline-atomics` **on its own is worse than the default** —
+without `+lse` the compiler cannot emit an LSE atomic, so it removes the upgrade
+path and leaves the loop unconditionally; `tools/target_check.py` probe 3 fails
+on exactly that. And **nothing here is timed**: `DEVICE_QUEUE.md` entry 25
+carries the price, predicting **FLAT on throughput** with contention as the only
+arm likely to move.
+
+**The Armv8.4 question was asked in the same pass and closed by counting.** LSE2
+turns a 16-byte atomic store from an 11-instruction `caspl` loop into `stp` —
+and **`casp` appears zero times in 25.9 million instructions across the six
+binaries.** Ledger queried first, zero prior entries. **Do not raise the
+baseline.** See
+[`research_log/20260824_2230_five_of_six_forks_ship_a_runtime_atomic_dispatch.md`](research_log/20260824_2230_five_of_six_forks_ship_a_runtime_atomic_dispatch.md).
+
 **eden ships a `YUZU_BUILD_PRESET=armv9` option that sets `-march=armv9-a`. Do
 not select it on this device.**
+
+**And no negative attribute rescues a wrong `-mcpu`.** `+nosve`, `+nosve2` and
+both together all leave **`__ARM_FEATURE_SVE2` defined** on NDK 29 and NDK 30,
+producing a macro state that describes no real machine. Plain `-mcpu=cortex-x3`
+**emits `uqadd z0.b`** from an SVE2-guarded dispatcher. **rpcsx measured that
+`-sve`/`-sve2` clears SVE and is right about the LLVM backend it calls through
+`setMAttrs`; the clang frontend is the half this project compiles on.** See
+[`research_log/20260824_2140_nosve_clears_the_backend_not_the_frontend.md`](research_log/20260824_2140_nosve_clears_the_backend_not_the_frontend.md).
+
+> **A feature can be cleared from the backend and left in the frontend. Ask which
+> one a claim measured.**
 
 The answer is now written down once in
 **[`hardware_ref/thor/THOR_TARGET.md`](hardware_ref/thor/THOR_TARGET.md)**:

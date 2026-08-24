@@ -25,9 +25,13 @@ it, all invisible without compiling something:
 Use `--flags=...` with an equals sign: a value beginning with `-` is otherwise
 parsed as another option.
 
-PROVEN AGAINST THE THREE REAL TRAPS, 2026-08-24:
+PROVEN AGAINST THE FOUR REAL TRAPS, 2026-08-24:
   * the pre-2026-08-24 target line          -> FAIL "acquire load uses LDAPR"
   * `-mcpu=cortex-x3`                       -> FAIL "no SVE is selected"
+  * `-mcpu=cortex-x3+nosve+nosve2`          -> FAIL "no SVE is selected", because
+    NO negative attribute clears __ARM_FEATURE_SVE2 from the preprocessor. The
+    surviving state -- SVE2 defined, SVE not -- describes no real machine, and
+    acting on it is a hard compile error rather than a SIGILL.
   * `-mno-outline-atomics` on its own       -> FAIL "atomic RMW is a single LSE instruction"
 
 Exit status is non-zero if any assertion fails, so this is usable as a gate.
@@ -94,7 +98,12 @@ long f(std::atomic<long>& a){ return a.fetch_add(-1, std::memory_order_acq_rel);
         "name": "no SVE is selected",
         "why": "The Thor reports no sve in /proc/cpuinfo. -march=armv9-a and "
                "-mcpu=cortex-x3 both define __ARM_FEATURE_SVE, and a compile-time "
-               "dispatcher like xxHash then picks SVE over NEON with no fallback.",
+               "dispatcher like xxHash then picks SVE over NEON with no fallback -- "
+               "confirmed emitted: uqadd z0.b. AND NO NEGATIVE ATTRIBUTE FIXES IT: "
+               "+nosve, +nosve2 and both together all leave __ARM_FEATURE_SVE2 "
+               "DEFINED, so this probe must test BOTH macros. rpcsx measured that "
+               "-sve/-sve2 clears SVE, and that is true of the LLVM BACKEND it calls "
+               "through setMAttrs; the clang FRONTEND is the half we compile on.",
         "source": """#if defined(__ARM_FEATURE_SVE) || defined(__ARM_FEATURE_SVE2)
 #error "SVE selected on a device that has none"
 #endif

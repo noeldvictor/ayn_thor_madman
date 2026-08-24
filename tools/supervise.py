@@ -245,10 +245,17 @@ def check_dead_levers(paths):
         r"|measure on the (?:device|Thor)|queue(?:d|s)? (?:an?|this) (?:run|experiment))\b",
         re.I,
     )
+    # A file that RECORDS the query has already done what this check asks for.
+    # Fired on hardware_ref/thor/THOR_TARGET.md on 2026-08-24, on a passage whose
+    # subject was the ledger query and its zero result. Same class as the
+    # DEVICE_QUEUE false positive: the document was right and the tool was wrong.
+    # This is not a magic word -- it demands the query be named, which is an act.
+    satisfied = re.compile(r"exp_ledger|ledger was queried|queried the (?:experiment )?ledger", re.I)
     hits = [p for p in paths if proposing.search(chr(10).join(_lines(p)))
+            and not satisfied.search(chr(10).join(_lines(p)))
             and not p.startswith("research_log/")]
     if not hits:
-        return OK, "no new experiment proposed", []
+        return OK, "no new experiment proposed, or the ledger query is recorded", []
     return (
         WARN,
         "%d file(s) propose an experiment. Query the ledger before running one."

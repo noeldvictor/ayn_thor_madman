@@ -148,6 +148,77 @@ softening it: whether the vector units physically exist is irrelevant when the
 OS does not enable SVE state handling, because the instruction still traps. That is why the forks that chose `armv8-a` were not
 simply being lazy, and it is the single most important line in this document.
 
+### And there is no negative attribute that rescues a wrong `-mcpu`
+
+**Measured 2026-08-24 on NDK 29 and NDK 30**, triple `aarch64-linux-android33`:
+
+| flags | `__ARM_FEATURE_SVE` | `__ARM_FEATURE_SVE2` |
+| --- | --- | --- |
+| `-mcpu=cortex-x3` | defined | defined |
+| **`-mcpu=cortex-x3+nosve`** | cleared | **STILL DEFINED** |
+| **`-mcpu=cortex-x3+nosve+nosve2`** | cleared | **STILL DEFINED** |
+| `-march=armv9-a+nosve` | cleared | still defined |
+| **the line above** | **clear** | **clear** |
+
+**Plain `-mcpu=cortex-x3` emits `uqadd z0.b` from an SVE2-guarded dispatcher**,
+which is the trap as an instruction rather than as an inference. **And no
+spelling of the negative attribute clears the SVE2 macro**, leaving
+`__ARM_FEATURE_SVE2` defined with `__ARM_FEATURE_SVE` undefined — a state that
+describes no real machine, and where acting on the macro is a **hard compile
+error**.
+
+**rpcsx measured the opposite and both results are correct.** Its
+`docs/arm64/ledger.md` counts SVE instructions and finds `-sve`/`-sve2` reduces
+them to zero. **That is the LLVM backend, reached through `setMAttrs` from a
+JIT, where no preprocessor exists.** This document governs ahead-of-time C++,
+which is the half its measurement does not cover.
+
+> **A feature can be cleared from the backend and left in the frontend. Ask which
+> one a claim measured.**
+
+**So the rule is unchanged and now has no escape hatch: name the features, do
+not name a core.** `-mtune=cortex-x3` remains correct because `-mtune` adds no
+features.
+
+### The Armv8.4 / LSE2 question, asked and CLOSED the same day
+
+`-march=armv8.4-a` is clean of every SVE macro, and rpcsx raised its own AOT
+baseline there **to get LSE2**. The Thor reports `ilrcpc`, which is
+`FEAT_LRCPC2`, an Armv8.4 feature, so the hardware sits above the `armv8.2-a`
+written here.
+
+**The emission difference is real and large:**
+
+| | `armv8.2-a+lse` | `armv8.4-a` |
+| --- | --- | --- |
+| 16-byte atomic load | **`caspa`** — a *read* takes the line exclusive | `ldp` + `dmb ishld` |
+| 16-byte atomic store | **an 11-instruction `caspl` retry loop** | `dmb ish` + `stp` |
+
+**And it has no consumer.** The experiment ledger was queried first — `armv8.4`,
+`lse2` and `march` all return zero entries — then the applicability count was run
+before any change, per the rule taken from rpcsx's 0.04% audit:
+
+> **`casp` count across six shipped `arm64-v8a` binaries: zero, in 25.9 million
+> instructions.** `ldxp`/`stxp`: 8, all in azahar.
+
+**So do not raise the baseline.** Raising it widens the `SIGILL` surface for
+every instruction the compiler may then choose unguarded, and buys an
+optimisation for an operation the fleet does not perform. **Revisit only if a
+backend starts using 16-byte atomics**, which is a one-command check.
+
+### But the same count found `+lse` is the flag nobody sets
+
+**Five of six forks ship a runtime dispatch for every atomic.** ARMSX2 compiles
+at `-march=armv8-a+crc` and its binary holds **886 outline calls against 28
+direct LSE instructions**; xenia sets `+lse` and holds **1,998 LSE against 53**.
+**Cemu wrote the analysis into its `CMakeLists.txt` and chose the portable option
+deliberately**, naming an explicit opt-in build as the condition for dropping it.
+**This project is that build.**
+
+See [`research_log/20260824_2230_five_of_six_forks_ship_a_runtime_atomic_dispatch.md`](../../research_log/20260824_2230_five_of_six_forks_ship_a_runtime_atomic_dispatch.md).
+
+See [`research_log/20260824_2140_nosve_clears_the_backend_not_the_frontend.md`](../../research_log/20260824_2140_nosve_clears_the_backend_not_the_frontend.md).
+
 **eden already ships the hazard.** Its `CMakeLists.txt` offers
 `YUZU_BUILD_PRESET=armv9`, which sets `-march=armv9-a`. **Do not select it on
 this device.** Its default preset is `custom`, which leaves `march` undefined

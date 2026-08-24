@@ -828,6 +828,42 @@ the CPU decoder never runs, and the finding closes.
 textures in a real PS2 pack are BC7 rather than PNG or DXT? **Per the `EOR3`
 rule, count before writing a NEON decoder.**
 
+## 25. Price `+lse`: does removing the runtime atomic dispatch move anything
+
+**Everything except the price is already established, device-free.**
+
+**Five of six shipped `arm64-v8a` binaries route every `std::atomic`
+read-modify-write through a `__aarch64_*` outline helper** — a `bl` to a stub
+that loads a global feature byte, branches, then executes the instruction. Only
+xenia, which sets `+lse`, emits LSE directly at scale: **1,998 LSE against 53
+outline calls, where ARMSX2 is 28 against 886.** Verified from
+`compile_commands.json` to the disassembly: ARMSX2 compiles at
+`-march=armv8-a+crc`, with no `+lse` in any configuration.
+
+**The device reports `atomics` in `/proc/cpuinfo`, which is `FEAT_LSE`**, so the
+dispatch decides something constant for the life of the device.
+
+**The arm:** rebuild **one** fork with `+lse` added to `-march` and nothing else
+changed. **Do not add `-mno-outline-atomics` on its own** — without `+lse` it
+removes the upgrade path and leaves the `ldxr`/`stxr` loop unconditionally, which
+`tools/target_check.py` probe 3 fails on.
+
+**Prediction, and it is deliberately unexciting: FLAT on frame time.** The atomic
+count is small relative to the instruction stream, and this fleet's record is
+thirteen manual-derived predictions refuted. **What could produce a real result is
+contention, not throughput** — Cemu's own `CMakeLists.txt` argues `ldxr`/`stxr`
+"livelocks harder under contention, which is exactly the multi-core guest case",
+so the arm most likely to move is a **multi-core guest under load**, not a menu.
+
+**Gates.** Same route, same scene, fresh process per arm, `status=Discharging`,
+report `[min..max]` and never a mean of one run. **A savestate route has a ~5%
+noise floor**, so a claim under 5% there is not a result.
+
+**Cheaper check first, and it needs no device:** count outline call sites in a hot
+guest-thread function with `llvm-objdump`. **If the hot path holds no atomics, the
+lever is dead before it is built** — the applicability rule that already closed
+the Armv8.4 question above.
+
 ## Not ready to run
 
 These need a decision or a build first, not device time.
