@@ -176,8 +176,8 @@ duplicated code does it remove?*
 
 | Candidate | Move | Why |
 | --- | --- | --- |
-| **The artifact store (PERSIST)** | **new, near the top** | The one operation that **did not shrink on reading.** Already built in four forks — rpcs3's `ppu-<sha1>` cache, ARMSX2's `.vuprog`, melonDS's self-populating pack, Cemu's cache merger — and **nothing connected them.** `ARTIFACT_STORE.md` |
-| **0. Vulkan device layer** | **stronger, same place** | It now has the **capability-ceiling** argument and a named instance: **ARMSX2's frame generation runs fp32 because its device layer never requests `VK_KHR_shader_float16_int8`.** Plus **no fork of the four built here ships LSE atomics** |
+| **The artifact store (PERSIST)** | **new, near the top** | The one operation that **did not shrink on reading.** Already built in four forks — rpcs3's `ppu-<sha1>` cache, ARMSX2's `.vuprog`, melonDS's self-populating pack, Cemu's cache merger — and **no cross-reference between them exists**, searched by reading each fork's own docs and source `ARTIFACT_STORE.md` |
+| **0. Vulkan device layer** | **stronger, same place** | It now has the **capability-ceiling** argument and a named instance: **ARMSX2's frame generation runs fp32 because its device layer never requests `VK_KHR_shader_float16_int8`.** Plus, from the emitted flags of the four forks built on this machine, **not one carries `+lse`**, so every atomic goes through the outline helper |
 | **1. Touch overlay** | **down** | The Thor has physical buttons. Recorded before; restated because the queue still shows it at 1 |
 
 **And one candidate is now understood differently.** **Frame pacing was never in
