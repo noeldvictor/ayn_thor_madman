@@ -2261,6 +2261,31 @@ PowerPC, MIPS and ARM.** Rosetta and FEX need it; we do not.
 **The warning matters as much as the opportunity.** The technique is largely
 untried here — **and both times anyone did try it, the result was null.**
 
+**QUALIFIED 2026-08-25: the `DEAD` verdict is about applicability, and there is a
+SECOND axis nobody measured — the shape of the use.** rpcsx's `tools/bcax_bench.c`
+times the instruction itself on this silicon, per core, **with no game and no
+boot.** BCAX against the two-op form, best of five:
+
+| shape | X3 | A715 | A510 |
+| --- | --- | --- | --- |
+| **latency, serial chain** | **1.96x** | **2.01x** | **2.00x** |
+| throughput, 4 independent chains | **0.94x** | 1.00x | **2.02x** |
+
+> **The big cores have enough vector pipes to issue the old pair in parallel, so
+> a wider instruction wins nothing there and can lose slightly. It wins when the
+> result feeds the next instruction.**
+
+**So "three audits, three empties" is still right about candidates and incomplete
+about value.** A throughput-bound use on a big core gains nothing even where
+candidates exist; **the same instruction is a 2x latency win where the consumer
+is the next instruction.** rpcsx checked its own lowering rather than assuming —
+its `SHUFB` emits `bcax` immediately followed by the `tbx` that consumes it.
+
+**Take the method more than the number.** A standalone microbenchmark, on the
+device, per core, answering a codegen question **without booting a game**. This
+project has no such harness and `DEVICE_QUEUE.md` is full of questions shaped
+exactly like that one.
+
 **THIRD AUDIT, 2026-08-24, AND IT IS THE STRONGEST NUMBER AGAINST THIS LANE.**
 rpcsx audited **seven** x86 SIMD tricks against what its JIT actually emits:
 `PSADBW`, `SUMB`, `VPDPBUSD`, `VDBPSADBW`, `GF2P8AFFINEQB`, `GBB` and `FCGT`.

@@ -59,11 +59,16 @@ correct and the list had become unnavigable.
 | **NEVER compare a package-shaped limit against a junction maximum.** 72 C against junction is **a load detector, not a thermal bound** — junction is unremarkable to ~95-105 C. A whole scheduling default in one fork was adopted to satisfy that mistake | rpcsx `docs/arm64/thermal.md` |
 | **Classify the zone before you read it.** `cpu-<cluster>-<core>` is junction; `cpuss-*` and `gpuss-*` are subsystem. A classifier matching `cpu` catches both and its `max` is always the junction | same |
 | **A USB-attached power reading is a FLOOR, not fiction** | `CLAUDE.md` |
+| **USE A CUMULATIVE COUNTER WHEREVER ONE EXISTS.** An instantaneous `current_now * voltage_now` on an IDLE device measured **0.300, 0.588, 1.447, 1.914, 1.961 W** — a 1.66 W spread. Differencing the cumulative `charge_counter` over the window gave **0.627, 0.629, 0.629, 0.628 W**, a 0.002 W spread. **~800x tighter**, and it costs **two adb round trips for any window length** | rpcsx `docs/arm64/instruments.md` |
+| **There is no measured USB input current on this device.** `usb/current_now` is frozen at the negotiated input limit and `ucsi` reports 0, so `usb_in - battery_charge` returns **negative watts**. Nothing to subtract | same |
+| **THE HARNESS IS NOT THERMALLY FREE.** Same build and game: a direct boot holds `44-57 C`; the same run through an input-macro harness climbs to **70.7 C in ten seconds and trips its own early stop**, because each sample spawns an `adb shell` walking ~50 `thermal_zone*` entries and each readiness poll takes a **1080p `screencap`**. **Treat harness temperatures as an upper bound that includes the observer** | same |
+| **Sample thermals at 2 s or finer.** A 4 s sweep reported a 57.8 C peak and missed a **60.2 C spike that collapsed to 46.2 C two seconds later** | same |
 | **Total system power is exact; CPU-attributed power is not available** | same |
 | **`unknown[+X]` is the JIT arena, not a symbol** | `CLAUDE.md` |
 | **Measure the thread, not the process** | `CLAUDE.md` |
 | **Temperature proves the run happened** — but see the sensor rule | `CLAUDE.md` |
 | **A negative result needs a workload that could have produced a positive one** | `CLAUDE.md` |
+| **When a probe returns a physically impossible number, THE PROBE is broken.** Negative watts, a 10 ns `WFE`, an `ESR` decode that is always zero — three instances. It is not a surprising result to be explained | rpcsx `docs/arm64/instruments.md` |
 | **A run at any guest time scale but 100% is NOT a measurement.** Fast forward, slow motion and pause all invalidate frame time, noise floors and energy per frame | `research_log/20260825_0245_*`; `app/shell/TimeScale.kt` |
 
 ## From the number to the decision
