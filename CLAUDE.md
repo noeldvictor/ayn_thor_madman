@@ -274,7 +274,37 @@ Vulkan on Adreno 740. ARM64 on Snapdragon 8 Gen 2. Android 13. One pinned
 Mesa Turnip driver. See [The driver baseline](#the-driver-baseline-pinned-turnip).
 
 We do not carry a second GPU backend, a second ABI or a second device. Every
-line of code may assume this hardware. A portability layer that costs speed is
+line of code may assume this hardware.
+
+> ### STATE THIS AS A DECISION, NOT A HARDWARE FACT. Corrected 2026-08-24.
+>
+> **ARMSX2's `AGENTS.md:69` says the product line has two GPUs:** *"Thor ships
+> both an 8 Gen 2 (Adreno 740) and an **865 (Adreno 650)** variant, so never
+> assume 8 Gen 2."* **It acts on that**, gating GPU features on
+> `MobileGpuArchitecture` detection.
+>
+> **What this repo has is one device, measured**: xenia's 2026-05-17 baseline
+> reads board platform `kalama` — an 8 Gen 2 — with an Adreno 740, and records
+> the target as the **Thor Max**. **Both statements can be true**: this unit is
+> an 8 Gen 2 Thor, and the line may hold another SKU. **Not settled here; it
+> needs a second device or a source outside the fleet.**
+>
+> **The consequence does not wait on that.** *"Every line of code may assume
+> this hardware"* is a hardware fact only if the Thor is one machine. **If it is
+> not, the sentence is a scope decision — we target the 8 Gen 2 Thor — and a
+> decision must be written as one**, because somebody will otherwise read it as
+> a fact and ship a740-only code to a 650 owner.
+>
+> **Nothing built on this point changes for the device we target.** One driver,
+> one pinned Turnip, one memory budget, a render path tuned to these limits —
+> all unaffected. **What changes is that the boundary is ours and is
+> acknowledged.**
+>
+> **And it makes the Turnip attachment-self-read defect more relevant, not
+> less.** That rule was measured on an **Adreno 650**, recorded here as "a
+> different GPU generation". **If ARMSX2 is right, it is the other Thor
+> variant's GPU.** See
+> [`research_log/20260825_1900_armsx2_says_the_thor_has_two_gpus.md`](research_log/20260825_1900_armsx2_says_the_thor_has_two_gpus.md). A portability layer that costs speed is
 not welcome. See [Target hardware](#target-hardware).
 
 ### 2. Speed is the product
