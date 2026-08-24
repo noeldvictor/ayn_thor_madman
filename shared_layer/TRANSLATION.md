@@ -329,14 +329,57 @@ primary source returns HTTP 403 from here and was not read**, so that split is
 recorded, not adopted. See
 [`../research_log/20260823_2205_translate_once_ship_it.md`](../research_log/20260823_2205_translate_once_ship_it.md).
 
+### The unifying principle: express guest state as values the compiler can see
+
+**Added 2026-08-24, and it merges this document's two biggest levers into one.**
+
+- **Residency.** XenonRecomp makes guest registers **C locals**, so the host
+  compiler keeps them in host registers. Measured: **0 guest-register memory ops
+  per loop iteration against ~4** through a context struct.
+- **Lazy flags.** rpcs3's `PPUTranslator` puts condition-register bits in **SSA
+  locals** through `RegLoad`/`RegStore`, flushed only when observable. **LLVM's
+  dead-code elimination then does the laziness** — a CR field computed and
+  overwritten before any branch reads it **disappears entirely, including
+  transitively across inlined blocks.**
+
+> **These are the same technique. Express guest state as values the host compiler
+> can see, rather than as memory it must assume aliases.** Do that and residency
+> and laziness both fall out of passes that already exist.
+
+**rpcsx's own words: "Rosetta has to implement that analysis; here it falls out
+of emitting IR."**
+
+### Which is an argument FOR an IR that this document did not have
+
+This document and `CLAUDE.md` treat an IR mainly as **portability machinery**, a
+DELETE candidate, with correctness verification as its one defence. **This is a
+second defence and it is a performance one.**
+
+**The honest counterweight, from the same fork:** rpcs3's JIT targets
+`cortex-a78`, Armv8.2, which **omits `flagm`**. `RMIF`/`SETF8`/`SETF16` are the
+natural way to move PPC condition bits into and out of NZCV, and **it is unclear
+that this is reachable from LLVM IR at all**, because portable IR has no "set the
+flags" operation.
+
+> **The IR gives you the optimiser and takes away the instruction.**
+
+See [`../research_log/20260824_0730_rpcsx_checked_rosetta_first.md`](../research_log/20260824_0730_rpcsx_checked_rosetta_first.md).
+
 ### The half of Rosetta that does NOT transfer: TSO
 
 **Rosetta's other pillar is hardware TSO** — Apple put x86's strong memory
 ordering into the CPU, because x86 is total-store-ordered and ARM64 is weakly
 ordered, and emulating that in software is expensive.
 
-**Measured 2026-08-23: this fleet does not have that problem.** Counting ordering
-mnemonics in each ARM64 emitter directory:
+**Measured 2026-08-23: this fleet does not have that problem** — and rpcsx
+reached the same conclusion independently, with a **stronger reason** than "both
+are weak": **since Armv8, AArch64 guarantees multi-copy atomicity and PowerPC
+does not**, so *"the translator never has to manufacture ordering the target
+lacks — the position Rosetta is permanently in."* **The translation direction is
+favourable.** Its instruction to itself: **do not go looking for a TSO problem,
+and do not add barriers defensively.**
+
+Counting ordering mnemonics in each ARM64 emitter directory:
 
 | Fork | `dmb` | `ldaxr` / `stlxr` | `ldar` / `stlr` |
 | --- | --- | --- | --- |

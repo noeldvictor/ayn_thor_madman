@@ -4242,6 +4242,12 @@ Wi-Fi adb rules:
   177 entries: 75 `OPEN`, 57 `WIN`, 32 `DEAD`, 8 `FLAT`, 5 `CONFOUNDED`.** The
   **75 `OPEN` entries are analysed levers awaiting a run**, and are a resource
   this repo had never named.
+- **ASK WHETHER THE CODE IS EXECUTED BEFORE ASKING FOR A BETTER INSTRUCTION.**
+  **Two forks reached this independently.** rpcsx: *"the interesting question is
+  almost never 'is there a better instruction', it is **is this code executed, and
+  how much data goes through it**."* xenia reached it from the other end — its
+  `EOR3` fusion was right on both hardware axes and died on **0 of 1 fusable
+  candidates**.
 - **MEASURE APPLICABILITY BEFORE BUILDING A TRANSFORM.** xenia's `EOR3`/`BCAX`
   fusion was right on both hardware axes and died because **the pattern does not
   exist**: a compile-time counter reported **"0 of 1 V128 XORs are fusable
