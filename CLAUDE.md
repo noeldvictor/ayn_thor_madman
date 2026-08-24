@@ -5744,6 +5744,22 @@ Wi-Fi adb rules:
   path**; forcing them on measured **+2.88%, with 11 of 11 intervals favouring
   on.** Its own note: *"every device number taken this session was on a
   handicapped baseline."*
+
+  > **THE CURE, found 2026-08-25 in XenDroid: a DATED DEFAULT MIGRATION.**
+  > `UPDATE_from_string(turnip_debug, 2026, 7, 24, 12, "")` says *at this
+  > timestamp the default changed, and the OLD default was this value.* **A user
+  > still holding the old default is moved; a user who chose deliberately is left
+  > alone.**
+  >
+  > **That is the difference between changing a default and changing it for the
+  > people who never chose one.** Without it a better default reaches only new
+  > installs — **which is exactly how three validated fastpaths ended up false on
+  > a device whose code said true.**
+  >
+  > **It is lighter than melonDS's migration framework and complementary to it:
+  > that one migrates a SCHEMA, this one migrates a VALUE.** `app/shell/` has
+  > neither. See
+  > [`research_log/20260825_1615_two_forks_opposite_sysmem_defaults_and_both_are_right.md`](research_log/20260825_1615_two_forks_opposite_sysmem_defaults_and_both_are_right.md).
 - **CHECK WHICH LAUNCH PATH SETS A DEFAULT, not that a default exists.** xenia's
   AOT object cache was enabled by a block guarded on *no cvar bundle supplied* —
   **but the launcher always attaches one when a game starts from the app.** So

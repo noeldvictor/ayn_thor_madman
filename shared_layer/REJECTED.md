@@ -13,6 +13,10 @@ xenia-only.** This file is fleet-wide, narrative and diffable. **Query both.**
 
 ## How to read a row
 
+**A REJECTION IS SCOPED TO THE QUESTION THAT WAS ASKED.** The forced-Sysmem row
+below was rejected on performance and is another fork's default for stability.
+**Read what the fork was optimising before treating a row as settled.**
+
 **A rejection is of a SPECIFIC IMPLEMENTATION, not of an idea.** Almost every
 entry below leaves the door open to a materially different implementation, or to
 a matched title showing a material win, and the forks say so explicitly. **Treat
@@ -84,7 +88,7 @@ of 439,505 assertions** and crashed a title **within one second**.
 | **forced GMEM over autotune** | xenia | **never beat autotune** — parity from 16 draws up, **+157% worse at one draw** | `CLAUDE.md` |
 | **`LOAD_OP_CLEAR` conversion** | rpcsx | correct, applied to 100% of clears, **12.39% against 12.65% GPU busy** at an identical clock | `CLAUDE.md` |
 | **foliage forced early-Z** | xenia | **decisive math ceiling** — even a perfect reject floors at ~95 ms | `CLAUDE.md` |
-| **forced-Sysmem Turnip R8** | azahar | **+21.86% GPU time** against generic R8 | `CLAUDE.md` |
+| **forced-Sysmem Turnip R8** | azahar | **+21.86% GPU time** against generic R8. **QUALIFIED 2026-08-25: rejected on PERFORMANCE only. XenDroid DEFAULTS to sysmem** as a correctness workaround — it *"masks a class of tiled-rendering (GMEM) artifacts and Adreno GPU hangs"* — knowingly, recording that it hides a bug rather than fixing one. **Both are right; they asked different questions** | `CLAUDE.md`, `research_log/20260825_1615_*` |
 | **transient and `LAZILY_ALLOCATED` attachments, and subpass merging, AS PERFORMANCE** | xenia | the frame measured **ALU-bound, not bandwidth-bound** — blend free, 2x bytes/pixel **+8-10%**, flat across a 36x working set | `research_log/20260824_2000_*` |
 
 ---
