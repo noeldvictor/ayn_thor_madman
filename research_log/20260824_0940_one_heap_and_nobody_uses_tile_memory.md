@@ -1,5 +1,24 @@
 # One heap, 11.4 GB, all device-local — and nobody backs a transient attachment with tile memory
 
+> ## SUPERSEDED WHERE IT MATTERS, 2026-08-24
+>
+> **The observation stands: no fork binds `LAZILY_ALLOCATED` memory. The
+> inference does not.**
+>
+> xenia measured this on the device on **2026-08-16**, at a representative shape:
+> **framebuffer bandwidth is NOT the constraint** — blend is free, 2x bytes/pixel
+> is +8-10%, and throughput is **flat across a 36x working set with no cache
+> cliff**. **Forced GMEM never beats autotune; best case is parity.**
+>
+> > **Any design whose payoff is "fewer framebuffer bytes" is dead on arrival
+> > here** — which **kills transient/`LAZILY_ALLOCATED` attachments and subpass
+> > merging as PERFORMANCE plays.** Its own routing table says **"Do not
+> > re-derive them."**
+>
+> **`DEVICE_QUEUE.md` entries 21 and 22 are withdrawn.** See
+> [`20260824_2000_the_fork_had_a_routing_table_and_i_did_not_read_it.md`](20260824_2000_the_fork_had_a_routing_table_and_i_did_not_read_it.md).
+
+
 **Goal: read `rpcsx/docs/arm64/uma-bar-heap.md`, then check the fleet.**
 
 **Two findings, both in pipeline 2 — the shared upload path this project calls

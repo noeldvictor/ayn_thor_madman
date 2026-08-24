@@ -18,6 +18,14 @@ being re-run. This repo's experiment ledger exists for the same reason.
     python tools/fleet_docs_index.py --verdicts DEAD FLAT     # do-not-retry
     python tools/fleet_docs_index.py --stats
     python tools/fleet_docs_index.py --search cache --show    # with the title line
+    python tools/fleet_docs_index.py --search residency --after 20260626
+
+THE SUPERSEDED-CONCLUSION TRAP. On 2026-08-24 three conclusions were taken from
+dated fork documents and each had been overturned by later work in the same fork:
+a frame anatomy corrected five days later, a residency result measured CONFOUNDED a
+month later, and a fragment-overdraw premise disproved two days later. The repo's
+own rule -- a newest failure outranks an older success -- applies to MEASUREMENTS,
+not only to results. Use --after with the source document's date.
 
 It reads. It never modifies a fork.
 
@@ -127,6 +135,10 @@ def main():
     ap.add_argument("--verdicts", nargs="*", help="only docs mentioning these verdicts")
     ap.add_argument("--fork", help="one fork only")
     ap.add_argument("--stats", action="store_true", help="corpus shape")
+    ap.add_argument("--after", help="only documents dated after this YYYYMMDD. "
+                    "THE QUERY THIS TOOL EXISTED WITHOUT: a conclusion taken from a "
+                    "dated fork document may have been superseded, and on 2026-08-24 "
+                    "three were. Ask what the fork wrote LATER about the same subject.")
     ap.add_argument("--limit", type=int, default=40)
     ap.add_argument("--show", action="store_true", help="print the title")
     args = ap.parse_args()
@@ -145,6 +157,9 @@ def main():
         return 0
 
     rows = index
+    if args.after:
+        rows = [r for r in rows if r["date"] and r["date"] > args.after]
+
     if args.search:
         words = [w.lower() for w in args.search]
         rows = [r for r in rows

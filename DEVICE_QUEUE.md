@@ -707,9 +707,18 @@ the cutscene band to the savestate band, about +/-5%.
 **Prediction: `OPEN`.** A global-lock deadlock during pause may be a symptom of
 the object model rather than of the save path.
 
-## 21. Does Turnip honour LAZILY_ALLOCATED — a probe, not an A/B
+## 21. WITHDRAWN 2026-08-24 — Does Turnip honour LAZILY_ALLOCATED
 
-**Cheap, and it gates entry 22.** The Thor reports a memory type
+**WITHDRAWN.** xenia measured on 2026-08-16 that **framebuffer bandwidth is not
+the constraint on this device** — flat across a 36x working set, no cache cliff,
+forced GMEM never beating autotune. **That kills transient and `LAZILY_ALLOCATED`
+attachments as a performance play**, and its routing table says **"Do not
+re-derive them."** **The observation that no fork binds the memory type still
+stands; the reason to act on it does not.**
+
+**Kept, not deleted, because the distinction is the useful part.**
+
+**The Thor reports a memory type
 `DEVICE_LOCAL | LAZILY_ALLOCATED`, 11,441 MB — **Adreno's on-chip tile memory.**
 An attachment backed by it need never touch DRAM.
 
@@ -732,9 +741,15 @@ needed.
 **Prediction: it is honoured.** Adreno is a tiler and this is the memory type that
 exists for exactly this. **Stated so it can fail.**
 
-## 22. Direct-write uploads on a unified-memory device
+## 22. NARROWED 2026-08-24 — Direct-write uploads on a unified-memory device
 
-**Gated on entry 21 and on reading the fleet's upload paths.**
+**NARROWED.** The bandwidth result above is about **framebuffer** traffic, not
+**upload** traffic, so this entry is not killed by it — **but its prior is much
+worse.** A device measured as ALU-bound and insensitive to a 36x framebuffer
+working set is unlikely to be waiting on a staging copy. **Re-prioritise
+accordingly and expect `FLAT`.**
+
+**Gated on reading the fleet's upload paths.**
 
 **The Thor has one heap.** Types 0-2 are the same 11.4 GB of DRAM described three
 ways, and **type 1 is device-local, host-visible, coherent AND cached.** So the

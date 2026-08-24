@@ -1057,12 +1057,18 @@ Rules:
    each reversed a plan that was already written down.
 4. **Similar names are not a shared capability.** Three LRU caches were three
    designs. Six driver pickers were four concerns.
-5. **`git grep` DOES NOT SEE SUBMODULE CONTENTS.** Three wrong results in this
+5. **READ A FORK'S ROUTING TABLE BEFORE MINING ITS `docs/`.** xenia's own
+   `CLAUDE.md` opens with *if you are about to do X, read Y first* — and its GPU
+   row says **"Do not re-derive them."** **On 2026-08-24 this repo mined more than
+   twenty of its documents and never opened the index to them**, then re-derived a
+   dead lever and queued two device experiments on it. **The fork documents are the
+   source of truth; the routing table is the way in.**
+6. **`git grep` DOES NOT SEE SUBMODULE CONTENTS.** Three wrong results in this
    project came from that alone — dynarmic in Vita3K, xxHash in Vita3K, and a
    fleet SVE search that reported Vita3K clean while its submodule xxHash carried
    five SVE branches. **Pass `--recurse-submodules`, and say whether a search
    did.** The tools in `tools/` now do.
-6. **State whether vendored code counts, because it depends on the question.**
+7. **State whether vendored code counts, because it depends on the question.**
    Excluding it is right for *"which fork implements this"* and **wrong for
    *"what compiles into the binary"***. The same SVE search was wrong both ways
    at once.
@@ -1802,7 +1808,7 @@ Every item is already written somewhere in the fleet. None needs invention.
 
 | Take | From | Give to |
 | --- | --- | --- |
-| Transient colour attachments — **and the `LAZILY_ALLOCATED` memory half, which a search of all eight forks found unbound** | Vita3K for the ops; **the memory half is unbound fleet-wide** | everyone |
+| Transient colour attachments — **correctness and hygiene, NOT a performance play**; the `LAZILY_ALLOCATED` memory half is unbound fleet-wide and **would buy nothing here** | Vita3K for the ops | everyone |
 | Depth and stencil `DontCare` by default | Cemu | eden, azahar |
 | `eClear` instead of `eLoad` when the pass clears | azahar | eden — **but see below: measured null once** |
 | **Persisting relocatable emitted code, with a validity sentinel** | **ARMSX2** | **eden's NCE patcher, which has the key type and no cache** |
@@ -1848,6 +1854,28 @@ blaming the scene.**
 **And the instrument is one this file never recorded:**
 **`/sys/class/kgsl/kgsl-3d0/gpubusy`** — a cumulative busy/total pair that
 **resets on read**, needing no root and no perfetto.
+
+**MEASURED ON THE DEVICE 2026-08-16, AND IT CHANGES WHY THESE MATTER.** At a
+representative shape — 1280x2048 with depth and up to 256 overlapping draws —
+xenia measured **the GPU frame as ALU-bound, not bandwidth-bound**: blend free,
+2x bytes/pixel **+8-10%**, **flat across a 36x working set with no cache cliff**,
+the EDRAM-span render target **+1.5%**, and **forced GMEM never beating autotune**
+— parity from 16 draws up, **+157% worse at one draw.**
+
+> **Any design whose payoff is "fewer framebuffer bytes" is dead on arrival on
+> this device.** That kills **transient and `LAZILY_ALLOCATED` attachments and
+> subpass merging as PERFORMANCE plays** — ARM measures them at 45% fewer reads
+> and 56% fewer writes, **which is a large saving of a resource this device is not
+> short of.** xenia's routing table: **"Do not re-derive them."**
+
+**So keep the attachment-op rows as correctness and hygiene**, and expect no
+frames from them.
+
+**What IS expensive there, over 159 gameplay frames: EDRAM ownership transfers.**
+**45 per frame**, `pass_break_rt_change` **27**, and **24 of the 45 change no
+format at all** — moves, not reinterpretations. **A third of that title's passes
+exist only to service them.** See
+[`research_log/20260824_2000_the_fork_had_a_routing_table_and_i_did_not_read_it.md`](research_log/20260824_2000_the_fork_had_a_routing_table_and_i_did_not_read_it.md).
 
 **The four-way spread is itself the argument for the shared layer.** Four forks
 gave four answers to one question, and the best answer is not in the newest or

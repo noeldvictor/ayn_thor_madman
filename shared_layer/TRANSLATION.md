@@ -139,6 +139,19 @@ same quantity.**
 > **`CONFOUNDED` is not `DEAD`.** Residency may still win; **it has not been shown
 > to**, and the in-JIT route still crashes.
 >
+> **AND THERE IS AN ARCHITECTURAL CEILING, which is stronger than the confounded
+> result.** xenia's routing table, under *expect a big win from register
+> residency*:
+>
+> > **AAPCS64 preserves only the LOW 64 BITS of `v8`-`v15`, so a 128-bit guest
+> > vector CANNOT stay resident across a call — vector residency is
+> > architecturally impossible, GPRs cap at 8.**
+>
+> **So the ceiling is 8 general-purpose registers, with guest vectors excluded
+> across any call by the ABI.** The disassembly kill test below shows the
+> mechanism on a loop with no call in it; **across a call the ABI decides, not the
+> allocator.**
+>
 > **And the same entry carries a larger, solid finding:** **30+ functions fall
 > back from LLVM to the a64 emitter and every one is `mul_add`/`mul_sub`**, from a
 > deliberate `cpu_backend_llvm_lower_vmaddfp=false` workaround. **So every
