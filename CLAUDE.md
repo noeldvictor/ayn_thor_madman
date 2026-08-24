@@ -289,6 +289,16 @@ line of code may assume this hardware.
 > an 8 Gen 2 Thor, and the line may hold another SKU. **Not settled here; it
 > needs a second device or a source outside the fleet.**
 >
+> **HOW TO SETTLE IT, when anyone touches another Thor.** `midr_el1` is
+> world-readable per core through sysfs and names the part exactly:
+> `/sys/devices/system/cpu/cpuN/regs/identification/midr_el1`. **An 8 Gen 2 reads
+> `0xd4e` X3, `0xd4d` A715, `0xd47` A710, `0xd46` A510. A Snapdragon 865 would
+> read A77 and A55 instead** — a different part set entirely, so one read
+> distinguishes them with no ambiguity. **Read it with `run-as <package>`, not
+> from an `adb shell`**, if the question is what the app will see. **On THIS
+> device it only confirms what is already known**, so it is not a queue entry —
+> it is the method for whoever meets a second unit.
+>
 > **The consequence does not wait on that.** *"Every line of code may assume
 > this hardware"* is a hardware fact only if the Thor is one machine. **If it is
 > not, the sentence is a scope decision — we target the 8 Gen 2 Thor — and a
