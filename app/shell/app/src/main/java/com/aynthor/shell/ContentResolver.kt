@@ -19,11 +19,28 @@ import java.io.File
  *
  * See shared_layer/PROPAGATION.md item 12.
  */
-enum class Kind(val dirName: String, val extension: String) {
-    CHEAT("cheats", "txt"),
-    TEXTURE_PACK("textures", "zip"),
-    MOD("mods", "zip"),
-    SAVE("saves", "sav"),
+enum class Kind(val dirName: String, val defaultExtensions: List<String>) {
+    CHEAT("cheats", listOf("txt", "pnach", "ncl", "mch", "psv")),
+    TEXTURE_PACK("textures", listOf("zip")),
+    MOD("mods", listOf("zip")),
+    SAVE("saves", listOf("sav")),
+    ;
+
+    /**
+     * A FALLBACK, not the answer. The extension belongs to the BACKEND.
+     *
+     * The kind is ours -- the shell decides that cheats, texture packs, mods
+     * and saves are the categories it shows and where it keeps them. The file
+     * extension is not: this repo's own survey found SIX cheat formats behind
+     * five spellings, and records save formats as "irreducibly per-backend".
+     *
+     * A single hardcoded extension per kind failed the discriminator derived
+     * on 2026-08-25: a fixed list is correct when the HOST owns the concept
+     * and wrong when the GUEST does. So [ContentResolver.candidates] takes the
+     * extensions, and these values serve only a caller that has no backend to
+     * ask -- a library scan before a backend is chosen, or a test.
+     */
+    fun fallbackExtensions(): List<String> = defaultExtensions
 }
 
 /**
@@ -47,14 +64,30 @@ object ContentResolver {
      * that was tried, not only the answer.** "No cheats found" is not
      * actionable; "looked in these six places" is.
      */
-    fun candidates(roots: List<ContentRoot>, kind: Kind, titleId: String): List<Pair<File, ContentRoot>> =
-        roots.map { root ->
-            File(File(root.path, kind.dirName), "$titleId.${kind.extension}") to root
+    fun candidates(
+        roots: List<ContentRoot>,
+        kind: Kind,
+        titleId: String,
+        /** Backend-declared, in precedence order. Defaults to a fallback. */
+        extensions: List<String> = kind.defaultExtensions,
+    ): List<Pair<File, ContentRoot>> =
+        roots.flatMap { root ->
+            // Root is the outer loop: a root's own file beats a later root's,
+            // whatever the extension. Precedence between roots is the thing a
+            // person configured; precedence between extensions is not.
+            extensions.map { ext ->
+                File(File(root.path, kind.dirName), "$titleId.$ext") to root
+            }
         }
 
     /** The first candidate that exists. Order is precedence. */
-    fun locate(roots: List<ContentRoot>, kind: Kind, titleId: String): Located? =
-        candidates(roots, kind, titleId)
+    fun locate(
+        roots: List<ContentRoot>,
+        kind: Kind,
+        titleId: String,
+        extensions: List<String> = kind.defaultExtensions,
+    ): Located? =
+        candidates(roots, kind, titleId, extensions)
             .firstOrNull { (file, _) -> file.isFile }
             ?.let { (file, root) -> Located(file, root) }
 

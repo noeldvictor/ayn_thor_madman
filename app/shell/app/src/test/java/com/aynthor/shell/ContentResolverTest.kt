@@ -2,6 +2,7 @@ package com.aynthor.shell
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -24,7 +25,7 @@ class ContentResolverTest {
 
     private fun place(root: ContentRoot, kind: Kind, titleId: String): File {
         val dir = File(root.path, kind.dirName).apply { mkdirs() }
-        return File(dir, "$titleId.${kind.extension}").apply { writeText("x") }
+        return File(dir, "$titleId.${kind.defaultExtensions.first()}").apply { writeText("x") }
     }
 
     @Test
@@ -106,5 +107,44 @@ class ContentResolverTest {
         assertTrue(ContentResolver.has(listOf(only), Kind.CHEAT, "GAME004"))
         assertFalse(ContentResolver.has(listOf(only), Kind.MOD, "GAME004"))
         assertFalse(ContentResolver.has(listOf(only), Kind.SAVE, "GAME004"))
+    }
+
+    /**
+     * The extension belongs to the BACKEND. This repo's own survey found six
+     * cheat formats; a single hardcoded extension could see one of them.
+     */
+    @Test
+    fun candidates_cover_every_declared_extension() {
+        val roots = listOf(root("app"))
+        val got = ContentResolver.candidates(roots, Kind.CHEAT, "T1", listOf("pnach", "ncl"))
+        assertEquals(2, got.size)
+        assertTrue(got[0].first.name.endsWith(".pnach"))
+        assertTrue(got[1].first.name.endsWith(".ncl"))
+    }
+
+    /**
+     * Root is the outer loop. Precedence between roots is what a person
+     * configured; precedence between extensions is not, so a nearer root's
+     * second-choice extension still beats a further root's first choice.
+     */
+    @Test
+    fun a_nearer_root_beats_a_further_one_whatever_the_extension() {
+        val roots = listOf(root("near"), root("far"))
+        val order = ContentResolver
+            .candidates(roots, Kind.CHEAT, "T1", listOf("pnach", "ncl"))
+            .map { it.second.label }
+        assertEquals(listOf("near", "near", "far", "far"), order)
+    }
+
+    @Test
+    fun locate_finds_a_non_default_extension() {
+        val only = root("only")
+        File(only.path, Kind.CHEAT.dirName).apply { mkdirs() }
+        File(File(only.path, Kind.CHEAT.dirName), "T1.ncl").writeText("x")
+        val found = ContentResolver.locate(
+            listOf(only), Kind.CHEAT, "T1", listOf("pnach", "ncl"),
+        )
+        assertNotNull(found)
+        assertTrue(found!!.file.name.endsWith(".ncl"))
     }
 }
