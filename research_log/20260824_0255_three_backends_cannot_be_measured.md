@@ -74,6 +74,62 @@ almost no GPU or CPU claim can be made at all.
 **And it is worse than "no measurement".** A harness that runs on five backends
 and silently cannot run on three will read as a passing suite.
 
+## QUALIFIED 2026-08-24: a deterministic scene is one route, not the only one
+
+**rpcsx solved the same problem without one, and the technique is better than
+what this log recommended.**
+
+Two of its WFE experiments failed because the workload would not hold still.
+**The third fixed the metric instead of the workload.**
+
+Its reservation wait has **two** profiled sites, and **only one is behind the
+flag under test**. So the other — the outer retry count — is **an independent
+measure of how much contention the workload is generating, unaffected by the
+change.** That is a denominator:
+
+```
+inner GETLLAR spin ticks / outer retry calls
+```
+
+Validated on two control windows **chosen because they differ wildly in load**:
+
+| Window | Cores spinning | Ticks per retry |
+| --- | --- | --- |
+| 8.8 s | 0.814 | **263.7** |
+| 20.6 s | 1.295 | **260.7** |
+| **spread** | **59%** | **1.1%** |
+
+> **The absolute rate varied 59% between two windows of the same build. The
+> normalised ratio varied 1.1%.**
+
+**Its own general lesson, which is worth more than the number:**
+
+> Both earlier attempts tried to stabilise the *workload* — matched settle times,
+> matched window lengths, **savestates for a fixed scene**. **None of that was
+> necessary.** The workload was allowed to vary **as long as the metric divided by
+> something that varied with it.** Look for a quantity **the change under test
+> provably does not touch**, and normalise by it [...] **reading which branch the
+> flag sat in was worth more than any amount of measurement discipline.**
+
+**So this log's conclusion needs narrowing.** Cemu, eden and xenia cannot supply a
+deterministic scene, and **that blocks whole-frame questions** — is this title
+faster, does the 99th percentile improve — because those have no natural
+denominator.
+
+**It does not block a specific lever.** If the change is local and some
+neighbouring quantity is provably untouched by it, **the scene may vary freely.**
+
+**Three routes to a comparable measurement, in order of cost:**
+
+| Route | Needs | Blocked for |
+| --- | --- | --- |
+| **Work-normalised metric** | **a denominator the change does not touch** | whole-frame questions |
+| Savestate fixture | a savestate | **Cemu, eden; xenia's deadlocks** |
+| Input replay | a deterministic replay | Cemu, Vita3K, rpcsx |
+
+**And the agent loop's priority is unchanged**, because it serves the whole-frame
+questions that no denominator covers.
+
 ## What follows
 
 **1. The paused agent loop is not a feature for these three. It is the only

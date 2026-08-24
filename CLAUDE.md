@@ -4170,6 +4170,22 @@ Wi-Fi adb rules:
   how anybody plays. This follows Google's ADPF guidance.
 - **Measure without ADPF first.** Establish the baseline before adding hint
   logic, or the hint is tuned against an unknown.
+- **NORMALISE BY SOMETHING THE CHANGE DOES NOT TOUCH, AND THE SCENE MAY VARY.**
+  **This is the cheapest route to a comparable measurement and it needs no
+  determinism at all.** rpcsx failed two experiments trying to stabilise the
+  workload — matched settle times, matched windows, savestates for a fixed scene —
+  then **fixed the metric instead.** Its reservation wait has two profiled sites
+  and **only one sits behind the flag under test**, so the other counts contention
+  independently of the change. Dividing by it: **the absolute rate varied 59%
+  between two windows of the same build; the normalised ratio varied 1.1%.**
+  > **Look for a quantity the change under test provably does not touch, and
+  > normalise by it.** Its own note: *"reading which branch the flag sat in was
+  > worth more than any amount of measurement discipline."*
+
+  **It does not cover whole-frame questions** — is this title faster, did the tail
+  improve — because those have no natural denominator. **Those still need a
+  deterministic scene**, which Cemu and eden cannot supply and xenia's deadlock
+  blocks.
 - **Cross-run comparison is untrustworthy.** Scene complexity swings several
   times a second, so two separate runs are not comparable. Use an in-place
   alternating A/B inside one run, on a busy frame. **Prefer A/B/A** where a live
