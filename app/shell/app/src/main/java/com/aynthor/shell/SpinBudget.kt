@@ -54,4 +54,67 @@ object SpinBudget {
         require(best > 0.0) { "a backoff step cannot measure as free" }
         return best
     }
+
+    // ---------------------------------------------------- when to PARK instead
+
+    /**
+     * The measured `WFE` park wake floor on this SoC, in nanoseconds.
+     *
+     * `FEAT_WFxT` is absent here, so a `WFE` cannot carry its own timeout and a
+     * park waits for the architected event stream. Three numbers agree on the
+     * scale: the stream fires about every 100 us on Linux and Android against
+     * about 1 us on Apple; an armed `WFE` measured 72,024 ns; and the break-even
+     * calculation uses 95,060 ns.
+     *
+     * All three are rpcsx's measurements on this SoC, not reproduced here.
+     */
+    const val WFE_WAKE_FLOOR_NS = 95_060L
+
+    /**
+     * Is parking worth it, given how long this wait is expected to last?
+     *
+     * PARKING PAYS ONLY WHEN THE EXPECTED REMAINING WAIT EXCEEDS THE WAKE FLOOR.
+     * rpcsx's GETLLAR site: one backoff is 15.62 us, so break-even is depth 6.1
+     * and its threshold is 8 -- and 95.5% of its spins are shallower than that,
+     * which is an argument FOR the threshold, because parking would make exactly
+     * those worse.
+     *
+     * Another fork learned the same thing the expensive way: it parked bare in
+     * an RSX FIFO idle wait and had to revert when the wake latency cost
+     * frame-time smoothness. The call site now pre-spins eight times. A pre-spin
+     * is not a tuning detail; it is that reverted experiment, encoded.
+     */
+    fun worthParking(expectedRemainingSpinNs: Long): Boolean =
+        expectedRemainingSpinNs > WFE_WAKE_FLOOR_NS
+
+    /**
+     * A park must not cost a syscall.
+     *
+     * "Every park measured here that traded a spin for a syscall lost."
+     * `SEVL`/`WFE` is in-band; a futex is not.
+     */
+    const val PARK_MUST_NOT_COST_A_SYSCALL = true
+
+    /**
+     * THE STAMPEDE, and it is the reason this is a policy and not a helper.
+     *
+     * A `WFE` park wakes EVERY waiting core at once. Arm's own wording: the
+     * periodic event stream "wakes up all processors waiting in WFE at the same
+     * time which would amplify contention."
+     *
+     * One thread parking is a weak case for that. Every guest in this fleet is
+     * multi-core -- PS2 has EE, IOP and two VUs, Wii U three, Switch four, the
+     * 360 six hardware threads -- so a shared policy that parks every guest
+     * thread on one event stream is the amplification case rather than the win.
+     *
+     * The number is deliberately conservative and deliberately not measured:
+     * nobody has swept it. It exists so a shared spin policy has to state a
+     * bound rather than park everything by default.
+     */
+    const val MAX_THREADS_PARKED_ON_EVENT_STREAM = 1
+
+    /** May this thread park, given how many already are? */
+    fun mayPark(expectedRemainingSpinNs: Long, threadsAlreadyParked: Int): Boolean =
+        worthParking(expectedRemainingSpinNs) &&
+            threadsAlreadyParked < MAX_THREADS_PARKED_ON_EVENT_STREAM
 }

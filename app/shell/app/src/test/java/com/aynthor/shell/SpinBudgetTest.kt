@@ -2,6 +2,7 @@ package com.aynthor.shell
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import kotlin.math.abs
@@ -125,5 +126,29 @@ class SpinBudgetTest {
         assertThrows(IllegalArgumentException::class.java) {
             SpinBudget.calibrate(emptyList())
         }
+    }
+
+    // ------------------------------------------------ when to park instead
+
+    @Test
+    fun `parking pays only above the wake floor`() {
+        // rpcsx's GETLLAR site: one backoff is 15.62 us, break-even is depth 6.1.
+        val backoffNs = 15_620L
+        assertFalse(SpinBudget.worthParking(backoffNs * 1))
+        assertFalse(SpinBudget.worthParking(backoffNs * 4))
+        assertTrue(SpinBudget.worthParking(backoffNs * 8))
+    }
+
+    @Test
+    fun `the stampede bound is enforced, not just documented`() {
+        val deep = SpinBudget.WFE_WAKE_FLOOR_NS * 10
+        assertTrue(SpinBudget.mayPark(deep, threadsAlreadyParked = 0))
+        // Arm: the event stream wakes every waiting core at once.
+        assertFalse(SpinBudget.mayPark(deep, threadsAlreadyParked = 1))
+    }
+
+    @Test
+    fun `a shallow wait never parks however few threads are parked`() {
+        assertFalse(SpinBudget.mayPark(1_000L, threadsAlreadyParked = 0))
     }
 }
