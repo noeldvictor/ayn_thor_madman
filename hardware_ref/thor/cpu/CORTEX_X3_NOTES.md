@@ -176,6 +176,11 @@ constantly, so these matter:
 > matched prediction is evidence about the METHOD, measured on a bench rather
 > than in an emulator.**
 >
+> **THE COLUMN IS NOW BELOW, at the end of this file**, for the instructions
+> this fleet's codegen actually selects. **Transcribed at two hops** — from
+> rpcsx's `microarchitecture.md`, which transcribed Arm's guides — **so verify
+> against the guide before betting a lever on a row.**
+>
 > **Quote all three columns, or do not quote the guide.** See
 > [`../../../research_log/20260826_1120_the_pipelines_column_is_why_manuals_kept_failing.md`](../../../research_log/20260826_1120_the_pipelines_column_is_why_manuals_kept_failing.md).
 
@@ -244,3 +249,68 @@ from ARM if instruction semantics are needed; nothing depends on it.
    they should.
 3. Record both in `capability_inventory.md`, and any experiment in the ledger.
 4. Distil the A715, A710 and A510 guides. Threads land on those clusters too.
+
+---
+
+## Utilised pipelines, for the instructions this fleet selects
+
+**Added 2026-08-26.** The column this file was missing. **`V` is all four
+FP/ASIMD pipes; `V01` and `V13` are two; `V0` and `V1` are one.**
+
+> **PROVENANCE: transcribed from rpcsx `docs/arm64/microarchitecture.md`, which
+> transcribed Arm's Software Optimization Guides.** Two hops from the source.
+> **Verify a row against the guide before betting a lever on it**, and note the
+> correction below about which core's table applies.
+
+### Cortex-X3
+
+| instruction | latency | throughput | pipes |
+| --- | --- | --- | --- |
+| `EOR`/`BIC`/`AND`/`ORR`/`ORN`/`MVN` | 2 | 4 | `V` |
+| **`BCAX`/`EOR3`** | 2 | **1** | **`V0`** |
+| `SQADD`/`UQADD`/`URHADD` | 2 | 4 | `V` |
+| `UMAXP`/`UMAX`/`UMIN` | 2 | 4 | `V` |
+| `CNT`/`CLZ`/`CLS` | 2 | 4 | `V` |
+| `UABD` | 2 | 4 | `V` |
+| `XTN` | 2 | 4 | `V` |
+| **`SQXTN`/`UQXTN`** | **4** | 2 | **`V13`** |
+| `TBL`, 1-2 table regs | 2 | 2 | **`V01`** |
+| **`TBX`, 2 table regs** | **4** | 2 | `V` |
+
+### Reductions, where width changes both columns
+
+| reduce | latency | throughput | pipes |
+| --- | --- | --- | --- |
+| `ADDV`/`SADDLV`/`UADDLV`, **4H/4S** | **2** | **2** | `V13` |
+| `ADDV`/`SADDLV`/`UADDLV`, 8B/8H | 4 | 2 | `V13, V` |
+| `ADDV`/`SADDLV`/`UADDLV`, **16B** | **4** | **1** | `V13` |
+| `UMAXV`/`UMINV`/`SMAXV`/`SMINV`, **4H/4S** | **2** | **2** | `V13` |
+| `UMAXV`/`UMINV`/`SMAXV`/`SMINV`, **16B** | **4** | **1** | `V13` |
+
+**A 16-byte reduction is twice the latency and half the throughput of a 4-lane
+one, and every form is pinned to `V13`** — the same two pipes as every vector
+shift. **Arm 4.7 adds a further cycle**: ASIMD reductions belong to no forwarding
+region, so the consumer waits one more.
+
+> **Narrow with pairwise operations on `V`, then reduce once, as narrow as
+> possible.** `UMAXP` is latency 2, throughput 4, **all four pipes**.
+
+### A715 is TIGHTER, and it is the cluster that runs the code
+
+**rpcsx measured cluster load: A710/A715 at 1.06 cores busy against the X3's
+0.62.** **The mid cluster is where the work is, and its tables are more
+restrictive on exactly these instructions:**
+
+| operation | X3 | **A715** |
+| --- | --- | --- |
+| **`MLA`, `MLS`** | 4(1), thr 2, `V02` | 4(1), thr **1**, **`V0`** |
+| **`SSHL`, `USHL`** | 2, thr 2, `V13` | 2, thr **1**, **`V1`** |
+| `CMEQ`, `AND`/`EOR`/`ORR` | 2, thr 4, `V` | 2, thr **2**, `V` |
+| `SDOT`/`UDOT` 8-bit | 3(1), thr 4, `V` | 3(1), thr **2**, `V` |
+| `ADDV` 8H | 4, thr 2, `V13` | **5**, thr 1, `V1`,`V` |
+
+> **The X3 is the right reference only for work pinned to `cpu7`.** For anything
+> on the mid cluster, quote the A715/A710 tables.
+
+**`MLA` being single-pipe on A715 is the mechanism behind azahar's measured
+rejection of the `MLA` -> `MADD` fusion**, which regressed both its A715 patterns.
