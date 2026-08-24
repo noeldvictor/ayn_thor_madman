@@ -1988,6 +1988,38 @@ shim would have, deliberately and visibly**, with a comment about rounding mode.
 > operation is written.** A separate file does that by construction, an `#if` in
 > the function does it explicitly, **and a shim does neither.**
 
+**AND THE SHIM SHIPS OPT-IN FLAGS FOR ITS OWN DIVERGENCES, DEFAULTED OFF.**
+
+```c
+#ifndef SSE2NEON_PRECISE_MINMAX
+#define SSE2NEON_PRECISE_MINMAX (0)     /* _mm_min|max_ps|ss|pd|sd */
+#endif
+#ifndef SSE2NEON_PRECISE_DIV
+#define SSE2NEON_PRECISE_DIV (0)        /* _mm_rcp_ps and _mm_div_ps */
+#endif
+```
+
+**With the flag**, `_mm_max_ps` is `vbslq_f32(vcgtq_f32(a,b), a, b)` — take `a`
+**only when strictly greater**, so a NaN comparison falls through to `b`, which
+is x86's rule. **Without it**, plain `vmaxq_f32`. **The shim's own comment names
+the symptom:** *"would solve a hole or NaN pixel in the rendering result."*
+
+**Searched all four forks that carry `sse2neon` — Cemu, rpcsx, ARMSX2 and eden —
+in their build files and their own source: none defines either flag.** So all
+four get the fast paths, **and this is a visual-correctness difference that would
+be blamed on the emulator's renderer rather than on a shim default.**
+
+**It also has a hand-written sibling.** xenia's ledger carries `vmaxfp/vminfp a64
+NaN fixup` as **`OPEN`** — the same problem in its own emitter. **Guest min/max
+NaN semantics is unresolved in this fleet in both forms.**
+
+**And note which rule is actually wanted.** x86's `MAXPS` behaviour is **not
+automatically the guest's** — it matters only because these emulators were
+written on x86. **The PS2, PS3, Xbox 360 and Wii U each define their own**, and
+the shared layer should write a guest `max` against the guest's rule rather than
+inherit either host's by accident. See
+[`research_log/20260824_1710_sse2neon_precision_flags_are_off.md`](research_log/20260824_1710_sse2neon_precision_flags_are_off.md).
+
 **That is the same DELETE argument as everywhere else in this file, pointed at
 `sse2neon` and its relatives.** A shim exists so one source can serve two
 machines; **it is also the vector through which an x86 assumption reaches ARM64
