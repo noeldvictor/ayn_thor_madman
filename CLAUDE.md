@@ -3635,7 +3635,36 @@ profiled here.**
 
 **The fleet's own record agrees.** xenia implemented all three CPU leads and left
 them **off by default**; `EOR3`/`BCAX` fusion measured **`DEAD`**; the
-`TBL2`-for-`TBX2` rewrite measured **null**. **Thirteen for thirteen.**
+`TBL2`-for-`TBX2` rewrite measured **null**. ~~**Thirteen for thirteen.**~~
+
+> ### THE TALLY DOES NOT SURVIVE BEING COUNTED — corrected 2026-08-26
+>
+> **This file says ten (3628), thirteen (here), and fourteen (3538 and 3587).**
+> The number grew as items were added and **nobody reconciled it.**
+>
+> **And at least three counted items are not refutations, by this file's own
+> record twenty lines away:**
+>
+> | Counted | What this file says elsewhere |
+> | --- | --- |
+> | **A710 lane-assembly stall** | *"CONFIRMED AND FIXED — the FIRST manual-derived lead in this fleet not to be refuted"* |
+> | **Spill GPRs to the vector file** | *"off, **measured**: `UMOV` latency 2 against `LDR` 4"* — **the manual was RIGHT**, declined on guest vector pressure |
+> | **FPCR single mode** | *"off, census first"* — **unmeasured** |
+> | `a64_vmx_nan_fixup_branchless` | *"off, pending a qemu differential"* — **unmeasured** |
+> | **`EOR3`/`BCAX`** | `DEAD` on **0 of 1 candidates** — an APPLICABILITY failure, not a cost one |
+>
+> **"Off by default" is not a verdict.** Two are unmeasured, one is confirmed,
+> and one had its manual claim upheld by measurement.
+>
+> **This is the "57 WINs" error on the other side of the ledger** — an aggregate
+> of heterogeneous members quoted as a prior — **and it matters more, because
+> this number decides whether a lever is chased at all.**
+>
+> **The useful prior survives: a one-sided, single-instruction argument from a
+> manual has a poor record.** Of the items named HERE, **two are genuine
+> refutations** (A510 shared VPU, `TBX2`), and **rpcsx's ten are its own and are
+> not audited.** See
+> [`research_log/20260826_1215_thirteen_for_thirteen_does_not_survive_being_counted.md`](research_log/20260826_1215_thirteen_for_thirteen_does_not_survive_being_counted.md).
 
 > **REFINED 2026-08-26, and the `TBX2` null is the evidence.** The guides carry a
 > third column — **utilised pipelines** — that this project's own extracted notes
