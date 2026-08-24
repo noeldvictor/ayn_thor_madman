@@ -2572,6 +2572,58 @@ never the instruction alone.**
 **Two device facts worth keeping:** **`CNTFRQ_EL0` is 19.2 MHz**, and
 **`FEAT_WFxT` is absent**, so `WFE` cannot carry a timeout on this chip.
 
+**AND THE NUMBER THAT DECIDES WHEN PARKING PAYS, measured 2026-08-25.** The tier
+table above says which mechanism to use and never says when to use it.
+
+    one GETLLAR backoff    15.62 us   (300 ticks at 19.2 MHz)
+    WFE park wake floor    95.06 us   (measured; FEAT_WFxT absent, so no timeout)
+
+> **Parking is worth it only when the expected REMAINING spin exceeds the wake
+> floor.** Break-even is **depth 6.1**; rpcsx's threshold is **8**, set from
+> reasoning about the 95 µs event-stream period and **confirmed independently by
+> a histogram** — a manual-derived value that measurement validated, which is
+> worth noting against the 0-for-13 record.
+
+**And the histogram is a method lesson.** Mean GETLLAR spin depth **135.2**,
+median **below 8**: **95.5% of spins are shallower than the park threshold**, and
+the mean was a few very deep waits dragging the average. **Bucket a distribution
+and put the first boundary at the decision threshold.**
+
+### A SEVENTH form of the detour, and it is not code
+
+**93% of one fork's remaining spin is a configuration default nobody
+re-derived.** Two knobs, and the asymmetry is the finding:
+
+| tunable | upstream default | Thor profile |
+| --- | --- | --- |
+| SPU **Reservation** busy-wait % | 0 | **explicitly 0**, `Enabled: false` |
+| SPU **GETLLAR** busy-wait % | **100** | **not overridden** |
+
+*"The trade was considered once, applied to the smaller of the two sites, and
+never revisited for the larger"* — and its own framing: **"an x86-era default
+that nobody re-derived for a passively cooled handheld."**
+
+**The trade inverts on this device for Foundation reasons**: spinning buys wake
+latency by burning a core; sleeping buys power at the cost of latency. **The
+title already holds its 30 fps cap at twenty-to-thirty percent CPU, so latency
+headroom exists, and the machine is passively cooled.**
+
+**Swept the fleet for the same shape.** **ARMSX2 already defaults
+`HWSpinCPUForReadbacks` and `HWSpinGPUForReadbacks` to `false`** — the
+power-friendly choice, made. **xenia found and measured one**: the disruptor
+library's `spin_wait_strategy` *"polls the clock continuously between timer
+events — device-profiled as the top `__kernel_clock_gettime` cost"*, and its
+`timer_queue_sleep_idle` fix took `TimerThreadMain` from **2.63% to 1.79%** and
+**defaults to `false`.**
+
+> **A spinning wait strategy inherited from a third-party concurrency library is
+> the same class as an untouched upstream percentage**, and **that hypothesis
+> class is not named anywhere in Cemu's hunt for its unidentified 23%
+> `clock_gettime` caller.** Its own next step — *"interpose or count rather than
+> sample"* — settles both the caller and the thread attribution at once.
+
+See [`research_log/20260825_0030_park_versus_spin_and_a_desktop_default.md`](research_log/20260825_0030_park_versus_spin_and_a_desktop_default.md).
+
 See [`research_log/20260824_0810_the_spin_is_a_timing_constant_not_an_instruction.md`](research_log/20260824_0810_the_spin_is_a_timing_constant_not_an_instruction.md).
 
 **Three tiers exist in the fleet, and the best one exists twice:**
