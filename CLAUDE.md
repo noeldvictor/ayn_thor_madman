@@ -2021,6 +2021,34 @@ PowerPC, MIPS and ARM.** Rosetta and FEX need it; we do not.
 **The warning matters as much as the opportunity.** The technique is largely
 untried here — **and both times anyone did try it, the result was null.**
 
+**THIRD AUDIT, 2026-08-24, AND IT IS THE STRONGEST NUMBER AGAINST THIS LANE.**
+rpcsx audited **seven** x86 SIMD tricks against what its JIT actually emits:
+`PSADBW`, `SUMB`, `VPDPBUSD`, `VDBPSADBW`, `GF2P8AFFINEQB`, `GBB` and `FCGT`.
+**Four are already optimal, two have no ARM equivalent, one is never reached.**
+
+> **No item is a candidate. Together the seven lowerings account for about 210 of
+> 509,424 emitted instructions — 0.04%.**
+
+**Three audits, three empties.** Treat any new instruction-repurposing proposal as
+requiring **an applicability count before a build**, per the `EOR3` rule above.
+
+**And it supplies a census method better than "read the hits".** rpcsx's own
+notes had recorded **1,661 `udot` instructions as proof the dot-product
+optimisation was taken.** Classifying every `udot` by **the instructions that
+define its two vector sources** showed **1,338 come from SPU block verification —
+not a guest opcode at all — and only 9 are the actual `SUMB` lowering.** The
+attribution was confirmed by a **control instruction**: `addv s, v.4s` appears
+615 times, one per verification site, and 615 x 2.7 pairs gives 1,664.
+
+> **The count was correct and the attribution was not.** The question asked was
+> *"is this instruction present"* rather than *"which lowering emitted it"*.
+
+**Reading the hits is not enough for generated code**, because a JIT emits one
+instruction from many lowerings and there is no comment to read. **Classify by
+operand provenance, then cross-check with a control that should appear once per
+site.** Device-free, and it is how a disassembly count is made to mean something.
+See [`research_log/20260824_1015_seven_tricks_all_already_optimal.md`](research_log/20260824_1015_seven_tricks_all_already_optimal.md).
+
 See [`research_log/20260823_1755_hardware_instruction_repurposing.md`](research_log/20260823_1755_hardware_instruction_repurposing.md).
 
 **Check `/proc/cpuinfo` before trusting an ARM manual.** A core's guide
