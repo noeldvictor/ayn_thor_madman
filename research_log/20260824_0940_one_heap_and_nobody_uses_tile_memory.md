@@ -60,7 +60,10 @@ proven; the payoff is not."* **Host-visible does not mean fast to write**, and
 cached-and-device-local still has to beat cached staging plus a driver-side copy.
 **That is an A/B, not a deduction.**
 
-## Type 3 is the tile memory, and nobody in the fleet uses it
+## Type 3 is the tile memory. Searched eight forks; the one hit is a log string
+
+**Searched all eight forks' own source for `LAZILY_ALLOCATED` and
+`eLazilyAllocated`, vendored trees excluded, and read the single hit.**
 
 `DEVICE_LOCAL | LAZILY_ALLOCATED` with no host visibility **is Adreno's on-chip
 tile memory.** An attachment backed by it — a depth or MSAA target never sampled

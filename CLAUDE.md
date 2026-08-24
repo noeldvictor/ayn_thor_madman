@@ -1786,7 +1786,7 @@ Every item is already written somewhere in the fleet. None needs invention.
 
 | Take | From | Give to |
 | --- | --- | --- |
-| Transient colour attachments — **plus the `LAZILY_ALLOCATED` memory nobody binds** | Vita3K, and **nobody** for the memory half | everyone |
+| Transient colour attachments — **and the `LAZILY_ALLOCATED` memory half, which a search of all eight forks found unbound** | Vita3K for the ops; **the memory half is unbound fleet-wide** | everyone |
 | Depth and stencil `DontCare` by default | Cemu | eden, azahar |
 | `eClear` instead of `eLoad` when the pass clears | azahar | eden — **but see below: measured null once** |
 | **Persisting relocatable emitted code, with a validity sentinel** | **ARMSX2** | **eden's NCE patcher, which has the key type and no cache** |
