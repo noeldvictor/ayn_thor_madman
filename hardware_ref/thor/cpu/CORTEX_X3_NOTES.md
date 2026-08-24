@@ -261,6 +261,20 @@ FP/ASIMD pipes; `V01` and `V13` are two; `V0` and `V1` are one.**
 > transcribed Arm's Software Optimization Guides.** Two hops from the source.
 > **Verify a row against the guide before betting a lever on it**, and note the
 > correction below about which core's table applies.
+>
+> **ONE ROW VERIFIED AT SOURCE, 2026-08-26.** The A715 guide's ASIMD crypto
+> table reads `BCAX, EOR3, RAX1, XAR | 2 | 1 | V0` — **the transcription
+> survived three hops intact.**
+>
+> ### AND NAME THE TABLE, NOT JUST THE GUIDE
+>
+> **The same mnemonics appear TWICE in the same guide.** `BCAX`/`EOR3` is
+> **latency 2** in the ASIMD crypto table and **latency 4** in **§3.31 SVE
+> Cryptographic, Table 3-48**.
+>
+> **This device has no SVE**, so the second table is inapplicable — **and
+> nothing in the row says so.** A reader grepping for an instruction gets two
+> answers and the wrong one is double. **Every row below is ASIMD.**
 
 ### Cortex-X3
 
